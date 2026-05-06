@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gestión de Roles - Panel de Administración</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Public Sans', sans-serif;
+            background-color: #f8f6f6;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-background-dark min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light overflow-x-hidden">
+<!-- Header Section (Derived from Shared Component Structure) -->
+<div class="flex items-center bg-white border-b border-gray-200 p-4 pb-2 justify-between sticky top-0 z-10">
+<div class="text-background-dark flex size-12 shrink-0 items-center cursor-pointer" data-icon="ArrowLeft" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">arrow_left</span>
+</div>
+<h2 class="text-background-dark text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Gestión de Roles</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 bg-transparent text-background-dark gap-2 text-base font-bold leading-normal tracking-[0.015em] min-w-0 p-0">
+<div class="text-background-dark" data-icon="MagnifyingGlass" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">magnification_large</span>
+</div>
+</button>
+</div>
+</div>
+<!-- Search and Action Bar -->
+<div class="px-4 py-3 flex gap-3">
+<label class="flex flex-col min-w-40 h-12 flex-1">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full border border-gray-200 bg-white shadow-sm">
+<div class="text-gray-400 flex items-center justify-center pl-4" data-icon="MagnifyingGlass" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">magnification_large</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 border-none focus:outline-0 focus:ring-0 bg-transparent h-full placeholder:text-gray-400 px-4 pl-2 text-base font-normal leading-normal" placeholder="Buscar roles..." value=""/>
+</div>
+</label>
+<button class="bg-primary text-white px-4 rounded-xl flex items-center justify-center shadow-md hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined mr-1">add</span>
+<span class="font-bold text-sm">Crear</span>
+</button>
+</div>
+<div class="px-4 pb-2 pt-4 flex items-center justify-between">
+<h3 class="text-background-dark text-lg font-bold leading-tight tracking-[-0.015em]">Roles del Sistema</h3>
+<span class="text-xs font-medium text-gray-500 uppercase tracking-wider">4 Roles activos</span>
+</div>
+<!-- Roles List Content -->
+<div class="flex flex-col gap-1 px-2">
+<!-- Admin Role Card -->
+<div class="flex items-center gap-4 bg-white mx-2 rounded-xl p-4 shadow-sm border border-gray-100 mb-2">
+<div class="text-white flex items-center justify-center rounded-xl bg-primary shrink-0 size-12" data-icon="ShieldCheck" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div class="flex flex-col justify-center flex-1">
+<p class="text-background-dark text-base font-bold leading-tight">Administrador</p>
+<p class="text-gray-500 text-sm font-normal leading-normal line-clamp-1 mt-0.5">Acceso total al sistema, gestión de usuarios y configuraciones globales.</p>
+</div>
+<div class="shrink-0 flex gap-2">
+<button class="text-gray-400 hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<div class="text-gray-300 flex size-7 items-center justify-center" data-icon="DotsThreeVertical" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">square_dot</span>
+</div>
+</div>
+</div>
+<!-- Editor Role Card -->
+<div class="flex items-center gap-4 bg-white mx-2 rounded-xl p-4 shadow-sm border border-gray-100 mb-2">
+<div class="text-primary flex items-center justify-center rounded-xl bg-orange-50 shrink-0 size-12" data-icon="Edit" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">edit_note</span>
+</div>
+<div class="flex flex-col justify-center flex-1">
+<p class="text-background-dark text-base font-bold leading-tight">Editor</p>
+<p class="text-gray-500 text-sm font-normal leading-normal line-clamp-1 mt-0.5">Gestión de contenido, redacción y edición de artículos o catálogos.</p>
+</div>
+<div class="shrink-0 flex gap-2">
+<button class="text-gray-400 hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="text-gray-400 hover:text-red-500 transition-colors p-1">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Support Role Card -->
+<div class="flex items-center gap-4 bg-white mx-2 rounded-xl p-4 shadow-sm border border-gray-100 mb-2">
+<div class="text-primary flex items-center justify-center rounded-xl bg-orange-50 shrink-0 size-12" data-icon="Headset" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">support_agent</span>
+</div>
+<div class="flex flex-col justify-center flex-1">
+<p class="text-background-dark text-base font-bold leading-tight">Soporte</p>
+<p class="text-gray-500 text-sm font-normal leading-normal line-clamp-1 mt-0.5">Atención a clientes, visualización de tickets y logs de actividad.</p>
+</div>
+<div class="shrink-0 flex gap-2">
+<button class="text-gray-400 hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="text-gray-400 hover:text-red-500 transition-colors p-1">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Viewer Role Card -->
+<div class="flex items-center gap-4 bg-white mx-2 rounded-xl p-4 shadow-sm border border-gray-100 mb-2 opacity-70">
+<div class="text-primary flex items-center justify-center rounded-xl bg-orange-50 shrink-0 size-12" data-icon="Eye" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">visibility</span>
+</div>
+<div class="flex flex-col justify-center flex-1">
+<p class="text-background-dark text-base font-bold leading-tight">Espectador</p>
+<p class="text-gray-500 text-sm font-normal leading-normal line-clamp-1 mt-0.5">Acceso de solo lectura para reportes y estadísticas básicas.</p>
+</div>
+<div class="shrink-0 flex gap-2">
+<button class="text-gray-400 hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="text-gray-400 hover:text-red-500 transition-colors p-1">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Role Summary / Quick Stats -->
+<div class="mt-4 px-4">
+<div class="bg-primary/5 rounded-xl p-4 border border-primary/10">
+<h4 class="text-primary font-bold text-sm mb-2 uppercase tracking-wide">Resumen de Permisos</h4>
+<div class="flex flex-wrap gap-2">
+<span class="bg-white px-2 py-1 rounded-lg text-xs font-medium text-gray-600 border border-gray-200">Lectura</span>
+<span class="bg-white px-2 py-1 rounded-lg text-xs font-medium text-gray-600 border border-gray-200">Escritura</span>
+<span class="bg-white px-2 py-1 rounded-lg text-xs font-medium text-gray-600 border border-gray-200">Borrado</span>
+<span class="bg-white px-2 py-1 rounded-lg text-xs font-medium text-gray-600 border border-gray-200">Exportación</span>
+</div>
+</div>
+</div>
+<div class="h-24"></div>
+<!-- Bottom Navigation Bar (Shared Component Structure adapted for Light Mode) -->
+<div class="fixed bottom-0 left-0 right-0 z-20 flex gap-2 border-t border-gray-200 bg-white px-4 pb-6 pt-2">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-gray-400" href="#">
+<div class="text-gray-400 flex h-8 items-center justify-center" data-icon="Users" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">group</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Usuarios</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<div class="text-primary flex h-8 items-center justify-center" data-icon="UserFocus" data-size="24px" data-weight="fill">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person_search</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Roles</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-gray-400" href="#">
+<div class="text-gray-400 flex h-8 items-center justify-center" data-icon="Gear" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">settings</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Ajustes</p>
+</a>
+</div>
+<!-- Decorative Illustration Section -->
+<div class="px-4 py-8">
+<img alt="Gestión de equipos" class="w-full h-48 object-cover rounded-xl shadow-inner grayscale opacity-40 mix-blend-multiply" data-alt="A professional collaborative workspace with a modern minimalist aesthetic. Diverse team members are working on translucent glass interfaces displaying intricate organizational charts and role permission nodes. The lighting is bright and high-key, creating a clean white and soft orange atmosphere. The composition is clean and orderly, reflecting a high-end corporate administration software interface with a light-mode color palette of pristine whites and orange accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDx3YJZ28-nb37jin6etcgA6iCTLupSr76J5I8JhbL85ecI-M_nVhLHXK7zBp6Hl-pIoBH7y0KnNfZVlAwm92BDNf-4Yy31QfFcvd950SslWtH3HhAl87OCII4dH00bG8RyonAh7-30cBxtZR9mfB9y1LdAuTI9Cqj-pbDpjuH3WA15PDZjviv2N7i5EpP6VxCYsu6ybRFyJ_hkKWxrBx0k7b-NR4PqKlNrGuan-zaEu3kXWkBRsj9T7bC0vE020WJrSegBdRF39_tv"/>
+</div>
+</div>
+</body></html>

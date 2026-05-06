@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#6dfad2",
+                        "inverse-primary": "#ffb599",
+                        "tertiary-fixed-dim": "#4bddb7",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#131d21",
+                        "inverse-on-surface": "#e7f3f7",
+                        "on-error": "#ffffff",
+                        "secondary": "#586062",
+                        "primary-fixed": "#ffdbce",
+                        "tertiary": "#006b55",
+                        "surface-container-high": "#dfeaef",
+                        "on-primary-fixed": "#370e00",
+                        "surface-tint": "#a63b00",
+                        "primary-container": "#f26522",
+                        "tertiary-container": "#00a484",
+                        "primary-fixed-dim": "#ffb599",
+                        "on-tertiary-fixed": "#002018",
+                        "background": "#f1fbff",
+                        "inverse-surface": "#283236",
+                        "surface-bright": "#f1fbff",
+                        "on-secondary-fixed-variant": "#41484a",
+                        "on-primary-fixed-variant": "#7f2b00",
+                        "secondary-fixed": "#dde4e6",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#8d7166",
+                        "on-surface-variant": "#594138",
+                        "secondary-container": "#dae1e3",
+                        "on-tertiary-container": "#003125",
+                        "surface": "#f1fbff",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "primary": "#a63b00",
+                        "on-error-container": "#93000a",
+                        "surface-container-highest": "#d9e4e9",
+                        "outline-variant": "#e1bfb3",
+                        "on-primary-container": "#4f1800",
+                        "surface-container-low": "#eaf5fa",
+                        "surface-container": "#e4f0f4",
+                        "surface-variant": "#d9e4e9",
+                        "on-surface": "#131d21",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005140",
+                        "surface-dim": "#d1dce0",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#5d6466",
+                        "secondary-fixed-dim": "#c1c8ca",
+                        "on-secondary-fixed": "#161d1f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "container-padding": "24px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "base": "8px",
+                        "sm": "12px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "h1": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "h2": ["Plus Jakarta Sans"],
+                        "status-badge": ["Plus Jakarta Sans"],
+                        "h3": ["Plus Jakarta Sans"],
+                        "label-caps": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "status-badge": ["12px", {"lineHeight": "1", "fontWeight": "600"}],
+                        "h3": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1fbff; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100 shadow-[0px_4px_12px_rgba(0,0,0,0.05)] px-6 py-4 flex justify-between items-center w-full">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform duration-150 hover:bg-slate-50 p-2 rounded-lg">
+<span class="material-symbols-outlined text-slate-900" data-icon="menu">menu</span>
+</button>
+<h1 class="text-xl font-black text-[#F26522] tracking-tight font-h1">GastroGestion</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-6 mr-6">
+<span class="text-slate-500 font-medium cursor-pointer hover:text-[#F26522]">Dashboard</span>
+<span class="text-[#F26522] font-bold cursor-pointer">Menú</span>
+<span class="text-slate-500 font-medium cursor-pointer hover:text-[#F26522]">Mesas</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden ring-2 ring-[#F26522]/20">
+<img alt="Avatar" data-alt="A professional headshot of a restaurant manager with a friendly expression. The person has short hair and is wearing a crisp white chef coat. The background is a blurred, high-end commercial kitchen with stainless steel surfaces and warm ambient lighting. The overall aesthetic is professional and clean, fitting a modern corporate light-mode UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwWKT9JaHvdXT9ku6waaWWYtfWZBO4lXM_CopzNS5ILs7uGcE1d1GYSYwGxE5vBZZ6Yhla1KWxROmoVqkmc-eAas5hGiz_XTnwTcUR7NOqgOaoNa_wazpecE4xCHyBYDWE-r3UX7nZMk2fRPgs_6gDnUaOvlnkJOjSTTclcqtgA_Nb93ADAmC69qnhMXgavxjzXYK4p_WHMsFYY1OkFTQN07X3J1XTkkpjER41szC0xEHkpxTcuNFj1uoNqL2XcgU1TUfOegUexWQO"/>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-container-padding pt-xl">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md mb-xl">
+<div class="space-y-base">
+<h2 class="font-h1 text-h1 text-on-background">Gestión de Platos</h2>
+<p class="font-body-md text-secondary">Administra tu carta, precios e ingredientes en tiempo real.</p>
+</div>
+<div class="flex items-center gap-sm">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#F26522] transition-colors" data-icon="search">search</span>
+<input class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#F26522]/20 focus:border-[#F26522] outline-none w-full md:w-64 transition-all" placeholder="Buscar platos..." type="text"/>
+</div>
+<button class="bg-white border border-slate-200 p-2 rounded-xl text-secondary hover:text-[#F26522] hover:border-[#F26522] transition-all">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+</button>
+</div>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-sm overflow-x-auto pb-md no-scrollbar mb-lg">
+<button class="bg-[#F26522] text-white px-md py-2 rounded-full font-label-caps text-status-badge shadow-lg shadow-[#F26522]/20 whitespace-nowrap">TODOS LOS PLATOS</button>
+<button class="bg-white text-secondary border border-slate-100 px-md py-2 rounded-full font-label-caps text-status-badge hover:border-[#F26522] transition-all whitespace-nowrap">ENTRANTES</button>
+<button class="bg-white text-secondary border border-slate-100 px-md py-2 rounded-full font-label-caps text-status-badge hover:border-[#F26522] transition-all whitespace-nowrap">PRINCIPALES</button>
+<button class="bg-white text-secondary border border-slate-100 px-md py-2 rounded-full font-label-caps text-status-badge hover:border-[#F26522] transition-all whitespace-nowrap">POSTRES</button>
+<button class="bg-white text-secondary border border-slate-100 px-md py-2 rounded-full font-label-caps text-status-badge hover:border-[#F26522] transition-all whitespace-nowrap">BEBIDAS</button>
+</div>
+<!-- Dish Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Dish Card 1 -->
+<div class="bg-white rounded-2xl overflow-hidden shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50 group hover:shadow-xl transition-all duration-300">
+<div class="relative aspect-[16/9] overflow-hidden">
+<img alt="Dish" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A gourmet salad bowl with vibrant greens, roasted chicken slices, cherry tomatoes, and avocado. The dish is presented on a minimalist white ceramic plate against a clean, light wood background. Natural sunlight creates soft shadows, emphasizing the fresh textures and bright colors of the ingredients. The style is clean, modern, and appetizing, perfectly aligned with a professional restaurant management UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYgVwhJkx6OXo7-z4o2GptRccNo5jyT8y3E0GyQNgBTU03h-kZ-tv-1XhD8srEYG7PIvBuRQjs4yRRM7vSqUra9cNGkYoUnQQCtoYNkT4UXbxYgD-DuI9Q5Ew6fHHQc17cOx2lgF94wn9qezv3hBxFQK9uoJnWVccAQ8ArLFwtSaweVydukXg9G1kxO-SihmH8IirEkNUQy3tgZF-PnJ4F6YFO6sUgdbj_3SdVzkO7kiknNdLvoZdl67jgvpd9CZim3sWtApFPpERq"/>
+<div class="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full font-h3 text-primary-container shadow-sm">
+                        14.50€
+                    </div>
+</div>
+<div class="p-lg space-y-md">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-h2 text-h2 text-on-background">Ensalada Premium</h3>
+<span class="text-status-badge font-status-badge text-tertiary-container bg-tertiary-fixed/20 px-2 py-0.5 rounded-md mt-1 inline-block">EN STOCK</span>
+</div>
+</div>
+<div class="flex gap-sm border-t border-slate-50 pt-md">
+<button class="flex-1 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-secondary py-2.5 rounded-xl transition-colors text-body-md font-medium">
+<span class="material-symbols-outlined text-[18px]" data-icon="restaurant">restaurant</span>
+                            Ingredientes
+                        </button>
+<button class="flex-1 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-secondary py-2.5 rounded-xl transition-colors text-body-md font-medium">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+                            Precio
+                        </button>
+</div>
+</div>
+</div>
+<!-- Dish Card 2 -->
+<div class="bg-white rounded-2xl overflow-hidden shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50 group hover:shadow-xl transition-all duration-300">
+<div class="relative aspect-[16/9] overflow-hidden">
+<img alt="Dish" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A gourmet wood-fired pizza with bubbling mozzarella cheese, fresh basil leaves, and vibrant red tomato sauce. The pizza is shown close-up on a dark slate surface, with soft glowing light reflecting off the melted cheese. The background is a clean, modern kitchen environment. The aesthetic is high-quality and professional, emphasizing warmth and appetite through rich textures and colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEK3k26AjdPVCXuiEYY-zHas-25vO3gUZKZHMcTpgZwLJimvbOFETh8ZgG2xrBQ3I05jS0Rmw8OkNxhJ6x-QRvss_lmoE7vsdU_e5A8XcEd6JMrvXKyeh4KTsudT1_qWNmLxP2OLd8K1MZADu_MIn53aT87Hoa02WA_Jy8aw_LncHc2YyA_TvcSxwgoPTDTGpFv_oSq1PZRJLKjIrr1d2UBbEO_HRRp0OE3O5NxTVAw1njfq8pfSy2-ruqsGHTn0aOfkGwcXSV0V8J"/>
+<div class="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full font-h3 text-primary-container shadow-sm">
+                        18.90€
+                    </div>
+</div>
+<div class="p-lg space-y-md">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-h2 text-h2 text-on-background">Pizza Napolitana</h3>
+<span class="text-status-badge font-status-badge text-error bg-error-container/40 px-2 py-0.5 rounded-md mt-1 inline-block">STOCK BAJO</span>
+</div>
+</div>
+<div class="flex gap-sm border-t border-slate-50 pt-md">
+<button class="flex-1 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-secondary py-2.5 rounded-xl transition-colors text-body-md font-medium">
+<span class="material-symbols-outlined text-[18px]" data-icon="restaurant">restaurant</span>
+                            Ingredientes
+                        </button>
+<button class="flex-1 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-secondary py-2.5 rounded-xl transition-colors text-body-md font-medium">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+                            Precio
+                        </button>
+</div>
+</div>
+</div>
+<!-- Dish Card 3 -->
+<div class="bg-white rounded-2xl overflow-hidden shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50 group hover:shadow-xl transition-all duration-300">
+<div class="relative aspect-[16/9] overflow-hidden">
+<img alt="Dish" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Stack of golden-brown pancakes drizzled with maple syrup and topped with fresh blueberries and a mint leaf. The pancakes are presented on a white marble surface in a bright, airy setting with high-key lighting. The color palette is warm and inviting, dominated by whites, light greys, and vibrant fruit colors. The overall mood is fresh and energetic, ideal for a morning menu management screen." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBH-wi_wwV8kxoxr0A0MOuZH-PZ1oqr7wD-GlptdYhMVQ4YRLDCntObNIiFDoiChf_CCm2Ofpm4JB9EvkPXXIXdlxsKIQ9KIoDzsSAVZ48aeymn48xghIiEbgluhuAdnvvctG3CJD62-aLWY4cHdRzhXRIrEWW4hWWyEu6N8A-Lz2_iaNt5r4BLfictlE7dd2T5TYhddWzYU0ugrs8fWQrTDibUeGnfiaX0zEUv0tAGH7Q7bXqX_fOimRJhPXLdPTSGd1aLb-28duJr"/>
+<div class="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full font-h3 text-primary-container shadow-sm">
+                        9.20€
+                    </div>
+</div>
+<div class="p-lg space-y-md">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-h2 text-h2 text-on-background">Pancakes Blueberry</h3>
+<span class="text-status-badge font-status-badge text-tertiary-container bg-tertiary-fixed/20 px-2 py-0.5 rounded-md mt-1 inline-block">EN STOCK</span>
+</div>
+</div>
+<div class="flex gap-sm border-t border-slate-50 pt-md">
+<button class="flex-1 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-secondary py-2.5 rounded-xl transition-colors text-body-md font-medium">
+<span class="material-symbols-outlined text-[18px]" data-icon="restaurant">restaurant</span>
+                            Ingredientes
+                        </button>
+<button class="flex-1 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-secondary py-2.5 rounded-xl transition-colors text-body-md font-medium">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+                            Precio
+                        </button>
+</div>
+</div>
+</div>
+<!-- Dish Card 4 -->
+<div class="bg-white rounded-2xl overflow-hidden shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50 group hover:shadow-xl transition-all duration-300">
+<div class="relative aspect-[16/9] overflow-hidden">
+<img alt="Dish" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A set of prime beef BBQ ribs glazed with a shiny, dark sauce, served with golden corn on the cob. The dish is presented on a wooden board with a side of coleslaw. The lighting is warm and dramatic, highlighting the rich textures of the meat. The style is bold and energetic, using a palette of deep browns and vibrant yellows against a clean background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAD61f-VLBK59uWYSrMtYvb2VeWf0T7NcVl3SaiQAX0Z3VZx9VQfD4pnjHDwVSAk9r1m2gIUVTK0FuySwD2Tp2olGNiQgm57ZKHnan5bWX_DOG3L_3x6-E3T1hh6XtSPP31zgAFeiTi4mYvkua15dKPFEjXSQjS8nsAr2OHvVc5d3J0aasL1AHnpagCaiFbHUi3ZbWpCkCv6JsGWY22nOitM-zXFxjzpbHzfvoz9i2oQ8QJZCPlQ4GMs-S3a0h2pzYWP6-Zxq9IWFSv"/>
+<div class="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full font-h3 text-primary-container shadow-sm">
+                        22.00€
+                    </div>
+</div>
+<div class="p-lg space-y-md">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-h2 text-h2 text-on-background">Costillar BBQ</h3>
+<span class="text-status-badge font-status-badge text-tertiary-container bg-tertiary-fixed/20 px-2 py-0.5 rounded-md mt-1 inline-block">EN STOCK</span>
+</div>
+</div>
+<div class="flex gap-sm border-t border-slate-50 pt-md">
+<button class="flex-1 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-secondary py-2.5 rounded-xl transition-colors text-body-md font-medium">
+<span class="material-symbols-outlined text-[18px]" data-icon="restaurant">restaurant</span>
+                            Ingredientes
+                        </button>
+<button class="flex-1 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-secondary py-2.5 rounded-xl transition-colors text-body-md font-medium">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+                            Precio
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-24 right-6 md:bottom-12 md:right-12 bg-[#F26522] text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-all hover:scale-110 z-50 group">
+<span class="material-symbols-outlined text-[32px]" data-icon="add" style="font-variation-settings: 'FILL' 0;">add</span>
+<span class="absolute right-full mr-4 bg-white text-[#F26522] px-4 py-2 rounded-xl shadow-lg font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-100">Nuevo Plato</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-white border-t border-slate-100 shadow-[0px_-4px_16px_rgba(0,0,0,0.04)] px-4 pb-6 pt-3 flex justify-around items-center md:hidden">
+<div class="flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[12px] font-medium mt-1">Inicio</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[12px] font-medium mt-1">Pedidos</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined" data-icon="table_restaurant">table_restaurant</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[12px] font-medium mt-1">Mesas</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#F26522] bg-orange-50 rounded-xl px-4 py-1">
+<span class="material-symbols-outlined" data-icon="restaurant_menu" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[12px] font-medium">Menú</span>
+</div>
+</nav>
+</body></html>

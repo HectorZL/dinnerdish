@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Configuración de Ingredientes por Plato</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-background-dark">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light overflow-x-hidden">
+<!-- Header: Back-to-Main Exception for Process View -->
+<div class="flex items-center bg-white border-b border-gray-200 p-4 justify-between sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<a class="text-background-dark flex size-10 items-center justify-center rounded-full hover:bg-gray-100" href="#">
+<span class="material-symbols-outlined">arrow_back</span>
+</a>
+<div>
+<h2 class="text-background-dark text-lg font-bold leading-tight tracking-tight">Escandallo de Plato</h2>
+<p class="text-gray-500 text-xs font-medium">Configuración de receta e inventario</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center justify-center rounded-lg h-10 bg-primary text-white px-4 text-sm font-bold shadow-sm hover:opacity-90 transition-opacity">
+<span>Guardar Cambios</span>
+</button>
+</div>
+</div>
+<!-- Hero Section: Selected Dish -->
+<div class="@container px-4 py-4">
+<div class="bg-cover bg-center flex flex-col justify-end overflow-hidden rounded-xl min-h-[180px] relative group" data-alt="A top-down professional food photography shot of a fresh Pizza Margherita with bubbling mozzarella, vibrant basil leaves, and a rich tomato sauce base. The lighting is warm and cinematic, highlighting the charred texture of the crust. The overall aesthetic is rustic yet clean, following a Mediterranean culinary theme with a palette of warm oranges, deep reds, and earthy browns, suitable for a high-end restaurant menu interface." style='background-image: linear-gradient(to top, rgba(34, 22, 16, 0.8) 0%, rgba(34, 22, 16, 0) 60%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuAIZM0MP4i8ZBwMoUuW5y7Y-GqNH1gT6RRmNUCZ28GaeEaj-yAkt0B4c_02O2pmp90DSumxhoYVD6cJStyXrEwXPXSkcPm5DrBk6jV31OE7nGn15PrJ6nuczRHljiK2EwEtm-Ask1C2XGOuaGDZU5hz2-0lgFeXh7Ho7eltSBi32aosM-rq9u-VPz22vH0sVS4xTE109gUYS0KG7mm-v2JyrwSOTlFN5qUls3irl4qErAinwae4woAGO80RdP3skEJgRs9YV9SzeDDd");'>
+<div class="flex flex-col p-6">
+<span class="text-primary text-xs font-bold uppercase tracking-widest mb-1">Categoría: Pizzas Artesanales</span>
+<h1 class="text-white text-3xl font-bold leading-tight">Pizza Margherita Especial</h1>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1 text-white/90 text-sm">
+<span class="material-symbols-outlined !text-sm">payments</span>
+<span>Costo Sugerido: $12.50</span>
+</div>
+<div class="flex items-center gap-1 text-white/90 text-sm">
+<span class="material-symbols-outlined !text-sm">inventory_2</span>
+<span>Stock Posible: 42 raciones</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recipe Content -->
+<div class="flex flex-col gap-6 px-4 pb-24">
+<!-- Summary Stats -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+<p class="text-gray-500 text-xs font-semibold uppercase">Costo Total Receta</p>
+<p class="text-background-dark text-2xl font-bold">$4.82</p>
+<p class="text-green-600 text-xs font-medium flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined !text-xs">trending_down</span> -5% vs mes anterior
+                    </p>
+</div>
+<div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+<p class="text-gray-500 text-xs font-semibold uppercase">Margen Bruto</p>
+<p class="text-background-dark text-2xl font-bold">61.4%</p>
+<div class="w-full bg-gray-100 h-1.5 rounded-full mt-2">
+<div class="bg-primary h-1.5 rounded-full" style="width: 61%"></div>
+</div>
+</div>
+</div>
+<!-- Ingredients List Section -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between px-1">
+<h3 class="text-background-dark text-lg font-bold">Ingredientes &amp; Cantidades</h3>
+<button class="text-primary text-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined !text-lg">add_circle</span>
+                        Añadir Ingrediente
+                    </button>
+</div>
+<!-- Ingredient Item 1 -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+<div class="p-4 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="size-12 rounded-lg bg-gray-100 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bakery_dining</span>
+</div>
+<div>
+<p class="text-background-dark text-base font-bold">Harina de Trigo 00</p>
+<p class="text-gray-500 text-xs">SKU: INV-HAR-001 | $1.20 / kg</p>
+</div>
+</div>
+<button class="text-gray-400 hover:text-red-500">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-50">
+<div>
+<label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Cantidad (gr)</label>
+<div class="flex items-center gap-2 bg-background-light rounded-lg px-3 py-2">
+<button class="text-gray-500 hover:text-primary"><span class="material-symbols-outlined !text-sm">remove</span></button>
+<input class="bg-transparent border-none text-center w-full p-0 focus:ring-0 text-sm font-bold" type="number" value="250"/>
+<button class="text-gray-500 hover:text-primary"><span class="material-symbols-outlined !text-sm">add</span></button>
+</div>
+</div>
+<div>
+<label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Costo Porción</label>
+<div class="flex items-center h-10 px-3 bg-gray-50 rounded-lg">
+<p class="text-sm font-bold text-background-dark">$0.30</p>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-orange-50 px-4 py-2 border-t border-orange-100 flex justify-between items-center">
+<p class="text-orange-700 text-[11px] font-medium flex items-center gap-1">
+<span class="material-symbols-outlined !text-xs" style="font-variation-settings: 'FILL' 1;">warning</span>
+                            Stock bajo en almacén (12kg restantes)
+                        </p>
+<a class="text-primary text-[11px] font-bold underline" href="#">Reabastecer</a>
+</div>
+</div>
+<!-- Ingredient Item 2 -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+<div class="p-4 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="size-12 rounded-lg bg-gray-100 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">egg</span>
+</div>
+<div>
+<p class="text-background-dark text-base font-bold">Queso Mozzarella Fresh</p>
+<p class="text-gray-500 text-xs">SKU: INV-LAC-042 | $8.50 / kg</p>
+</div>
+</div>
+<button class="text-gray-400 hover:text-red-500">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-50">
+<div>
+<label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Cantidad (gr)</label>
+<div class="flex items-center gap-2 bg-background-light rounded-lg px-3 py-2">
+<button class="text-gray-500 hover:text-primary"><span class="material-symbols-outlined !text-sm">remove</span></button>
+<input class="bg-transparent border-none text-center w-full p-0 focus:ring-0 text-sm font-bold" type="number" value="150"/>
+<button class="text-gray-500 hover:text-primary"><span class="material-symbols-outlined !text-sm">add</span></button>
+</div>
+</div>
+<div>
+<label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Costo Porción</label>
+<div class="flex items-center h-10 px-3 bg-gray-50 rounded-lg">
+<p class="text-sm font-bold text-background-dark">$1.27</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Ingredient Item 3 -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+<div class="p-4 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="size-12 rounded-lg bg-gray-100 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">nutrition</span>
+</div>
+<div>
+<p class="text-background-dark text-base font-bold">Salsa de Tomate San Marzano</p>
+<p class="text-gray-500 text-xs">SKU: INV-CON-015 | $4.20 / L</p>
+</div>
+</div>
+<button class="text-gray-400 hover:text-red-500">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-50">
+<div>
+<label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Cantidad (ml)</label>
+<div class="flex items-center gap-2 bg-background-light rounded-lg px-3 py-2">
+<button class="text-gray-500 hover:text-primary"><span class="material-symbols-outlined !text-sm">remove</span></button>
+<input class="bg-transparent border-none text-center w-full p-0 focus:ring-0 text-sm font-bold" type="number" value="100"/>
+<button class="text-gray-500 hover:text-primary"><span class="material-symbols-outlined !text-sm">add</span></button>
+</div>
+</div>
+<div>
+<label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Costo Porción</label>
+<div class="flex items-center h-10 px-3 bg-gray-50 rounded-lg">
+<p class="text-sm font-bold text-background-dark">$0.42</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Additional Settings -->
+<div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+<h4 class="text-background-dark text-sm font-bold mb-4">Costos Operativos Adicionales</h4>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm">
+<span class="text-gray-600">Mano de Obra (est.)</span>
+<span class="font-bold text-background-dark">$2.10</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-gray-600">Packaging / Caja Pizza</span>
+<span class="font-bold text-background-dark">$0.75</span>
+</div>
+<div class="border-t border-gray-100 pt-2 flex justify-between items-center text-base font-bold">
+<span class="text-background-dark">Costo Final Ajustado</span>
+<span class="text-primary">$7.67</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Button for Adding New Item (Mobile Context) -->
+<div class="fixed bottom-6 right-6 lg:hidden">
+<button class="size-14 rounded-full bg-primary text-white shadow-xl flex items-center justify-center hover:scale-105 transition-transform active:scale-95">
+<span class="material-symbols-outlined !text-3xl">add</span>
+</button>
+</div>
+</div>
+</body></html>

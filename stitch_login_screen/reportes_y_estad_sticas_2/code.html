@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-background-dark min-h-screen">
+<header class="sticky top-0 z-50 bg-white border-b border-gray-200">
+<div class="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="text-primary" data-icon="Dashboard" data-size="28px" data-weight="regular">
+<span class="material-symbols-outlined text-3xl">dashboard</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight">Admin Dashboard</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-gray-100 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 block h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-white"></span>
+</button>
+<div class="h-10 w-10 rounded-full overflow-hidden border-2 border-primary">
+<img class="h-full w-full object-cover" data-alt="A professional headshot of a restaurant manager with a friendly expression, captured in a brightly lit modern office setting. The lighting is high-key and natural, creating a clean light-mode aesthetic. The background is a soft-focus interior of a minimalist restaurant with subtle orange accents. The overall mood is sophisticated, reliable, and professional, perfectly aligning with a modern business management UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzRoqfz4D4y8m0wo4mWkm2Hra7OqiD-WTHJhA7Hvp1ngira_2tw54jVxqk2WauE4pj2a4LtRRHcKPAsO1HEDzOE-2u0zXvEWpLQTGPP_gw7f1zNFnoJwql-_woZTtD5nv88swTSSKIF9Ham2BEmikUIe7HFOHbodWlQbSc8R7ty_I7_1BBrOi7-J3f13fcFI95iLVj351PzDedcXRdC0rriANwACkJE7YtIASwac-gD0k35Wu9r5VPF-s4F06y1NPEnH7V9VGVpRCd"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+<section class="flex flex-col gap-6">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h2 class="text-2xl font-bold">Reporte de Ventas</h2>
+<p class="text-gray-500">Resumen operativo y financiero de la jornada</p>
+</div>
+<div class="flex bg-gray-200 p-1 rounded-xl w-fit">
+<button class="px-4 py-2 rounded-lg text-sm font-semibold bg-white shadow-sm text-primary">Día</button>
+<button class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600">Semana</button>
+<button class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600">Mes</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 bg-orange-50 rounded-lg">
+<span class="material-symbols-outlined text-primary">payments</span>
+</div>
+<span class="text-green-600 text-sm font-bold bg-green-50 px-2 py-1 rounded-full">+12.5%</span>
+</div>
+<p class="text-gray-500 text-sm font-medium">Ingresos Totales</p>
+<p class="text-3xl font-bold mt-1">$4,250.00</p>
+</div>
+<div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 bg-blue-50 rounded-lg">
+<span class="material-symbols-outlined text-blue-600">receipt_long</span>
+</div>
+<span class="text-green-600 text-sm font-bold bg-green-50 px-2 py-1 rounded-full">+8.2%</span>
+</div>
+<p class="text-gray-500 text-sm font-medium">Órdenes Realizadas</p>
+<p class="text-3xl font-bold mt-1">142</p>
+</div>
+<div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 bg-purple-50 rounded-lg">
+<span class="material-symbols-outlined text-purple-600">group</span>
+</div>
+<span class="text-red-600 text-sm font-bold bg-red-50 px-2 py-1 rounded-full">-2.4%</span>
+</div>
+<p class="text-gray-500 text-sm font-medium">Clientes Únicos</p>
+<p class="text-3xl font-bold mt-1">89</p>
+</div>
+</div>
+<div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+<div class="h-[300px] w-full flex flex-col">
+<div class="flex justify-between items-end h-full gap-2">
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-gray-100 rounded-t-lg relative h-[40%] hover:bg-primary transition-colors cursor-pointer">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">$1,200</div>
+</div>
+<span class="text-xs font-bold text-gray-400">Lun</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-gray-100 rounded-t-lg relative h-[65%] hover:bg-primary transition-colors cursor-pointer">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">$1,850</div>
+</div>
+<span class="text-xs font-bold text-gray-400">Mar</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-primary rounded-t-lg relative h-[90%] hover:brightness-110 transition-all cursor-pointer">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">$2,450</div>
+</div>
+<span class="text-xs font-bold text-primary">Mie</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-gray-100 rounded-t-lg relative h-[55%] hover:bg-primary transition-colors cursor-pointer">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">$1,600</div>
+</div>
+<span class="text-xs font-bold text-gray-400">Jue</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-gray-100 rounded-t-lg relative h-[75%] hover:bg-primary transition-colors cursor-pointer">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">$2,100</div>
+</div>
+<span class="text-xs font-bold text-gray-400">Vie</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-gray-100 rounded-t-lg relative h-[85%] hover:bg-primary transition-colors cursor-pointer">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">$2,300</div>
+</div>
+<span class="text-xs font-bold text-gray-400">Sab</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-gray-100 rounded-t-lg relative h-[45%] hover:bg-primary transition-colors cursor-pointer">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">$1,350</div>
+</div>
+<span class="text-xs font-bold text-gray-400">Dom</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<section class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+<div class="p-6 border-b border-gray-100 flex items-center justify-between">
+<div>
+<h2 class="text-xl font-bold">Consumo de Ingredientes</h2>
+<p class="text-sm text-gray-500">Alertas de stock y uso proyectado</p>
+</div>
+<button class="text-primary font-semibold text-sm hover:underline">Ver Todo</button>
+</div>
+<div class="divide-y divide-gray-50">
+<div class="p-4 flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-red-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-red-600">warning</span>
+</div>
+<div class="flex-1">
+<h3 class="font-semibold text-gray-800">Aguacate Hass</h3>
+<div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-red-500 h-full w-[12%]"></div>
+</div>
+</div>
+<div class="text-right">
+<p class="text-red-600 font-bold text-sm">Crítico</p>
+<p class="text-xs text-gray-400">4.5 kg rest.</p>
+</div>
+</div>
+<div class="p-4 flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-orange-600">inventory_2</span>
+</div>
+<div class="flex-1">
+<h3 class="font-semibold text-gray-800">Salmón Fresco</h3>
+<div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-orange-500 h-full w-[35%]"></div>
+</div>
+</div>
+<div class="text-right">
+<p class="text-orange-600 font-bold text-sm">Bajo</p>
+<p class="text-xs text-gray-400">12 kg rest.</p>
+</div>
+</div>
+<div class="p-4 flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-green-600">check_circle</span>
+</div>
+<div class="flex-1">
+<h3 class="font-semibold text-gray-800">Arroz Jazmín</h3>
+<div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-green-500 h-full w-[85%]"></div>
+</div>
+</div>
+<div class="text-right">
+<p class="text-green-600 font-bold text-sm">Óptimo</p>
+<p class="text-xs text-gray-400">120 kg rest.</p>
+</div>
+</div>
+</div>
+</section>
+<section class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+<div class="p-6 border-b border-gray-100 flex items-center justify-between">
+<div>
+<h2 class="text-xl font-bold">Platos más Vendidos</h2>
+<p class="text-sm text-gray-500">Favoritos de la audiencia esta semana</p>
+</div>
+<button class="text-primary font-semibold text-sm hover:underline">Reporte Detallado</button>
+</div>
+<div class="p-4 space-y-4">
+<div class="flex items-center gap-4 group">
+<div class="w-16 h-16 rounded-xl overflow-hidden relative">
+<img class="h-full w-full object-cover" data-alt="A gourmet close-up shot of a Salmon Teriyaki Bowl, beautifully plated with vibrant edamame, sliced avocado, and black sesame seeds. The image is captured with professional food photography techniques, using soft side-lighting to highlight textures. The background is a clean, neutral ceramic surface, following the light-mode UI aesthetic with pops of fresh green and orange. The mood is appetizing, fresh, and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLG9DozwlIhmWpFb88W53hTXnUlRiymuRUM6KA7njaIjFAnrhCEzKnBcXXjGn6iI2MGlZCFZeD256yjpyoZC1IeYI2Nry-v_QtuLmZsPLBpx3QBnHaV9sBq9FN6BszIGIfnzaPgLr_U6yrE8POCWMkfoO_CZwN8I7HEBKkzSaW1-0C56hlRsXk9a1szlzUa-eNgd1sDleO3fVJoxGISjOSmqzuoP2sEC4MvsZCpuhl7SSoajbgVkoWPRTeKAy5nIIAp8024F_MPpFy"/>
+<div class="absolute top-1 left-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">#1</div>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-gray-800">Salmon Poke Bowl</h3>
+<p class="text-xs text-gray-400">145 unidades vendidas</p>
+</div>
+<div class="text-right">
+<p class="font-bold text-gray-800">$2,610</p>
+<p class="text-xs text-green-600 font-medium">↑ 14%</p>
+</div>
+</div>
+<div class="flex items-center gap-4 group">
+<div class="w-16 h-16 rounded-xl overflow-hidden relative">
+<img class="h-full w-full object-cover" data-alt="A macro shot of a delicious Wagyu Beef Burger with melting cheese, caramelized onions, and crisp lettuce on a brioche bun. The lighting is warm and directional, creating deep shadows and bright highlights that emphasize the juicy texture. The styling is minimalist yet high-end, presented on a rustic slate board within a bright, modern studio environment. The color palette features rich browns, vibrant greens, and golden yellows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_X-UtX434CHWZb-w_JSmLJHGy1ZakDOkV4uhs0ecnKUq5slDAmWKnNi3La42mO4BG7WG6ZA39AjklXivxSKvKar8h5dQR42Kzb93uLOLEovi_5BJxBof0cDjXBgNtFVy3tjU3bi06JbNoB6MvlYWweoSwrWE7_rKLVEVOSefhK8LLqNs_yyhmihugOb1gzd1JY7InW24p4uNCjQeD8yztDs3gCJZekd9EjlZlIY8G-Zo7Hmij72Yrjf4l7RBreT9YWdzl6emFRvnN"/>
+<div class="absolute top-1 left-1 bg-gray-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">#2</div>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-gray-800">Wagyu Signature Burger</h3>
+<p class="text-xs text-gray-400">128 unidades vendidas</p>
+</div>
+<div class="text-right">
+<p class="font-bold text-gray-800">$2,432</p>
+<p class="text-xs text-green-600 font-medium">↑ 8%</p>
+</div>
+</div>
+<div class="flex items-center gap-4 group">
+<div class="w-16 h-16 rounded-xl overflow-hidden relative">
+<img class="h-full w-full object-cover" data-alt="A top-down aesthetic view of a fresh Truffle Mushroom Pasta dish in a wide white bowl, garnished with micro-greens and parmesan shavings. The lighting is bright and even, characteristic of high-end lifestyle photography. The overall aesthetic is clean and minimalist, using a light color palette that enhances the rich tones of the mushrooms and cream sauce. The image conveys a sense of high-quality ingredients and contemporary culinary art." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAlTCgdOtzjmzpT8sHq-PzDvUihYwCwbpCQEXBZOXjqmNZhlK_FZH9K7FD3-8qdNFs2JXF7vS4Au90kRAmg1Ds621vwlHXWD_vslLme9BmYja_QMy9-4TTF6DVqLtQ1IVZ7oeAVVdO7yydbMxjvQyEYbPZZkDzYvRnN1sfpP7VRJbHMxrf2I7lPh06lNebQCA-6CKjMjhSYSZ0tD1AtIZHfBGes0FpL5RMsgTIyAhpQQAyig87zXUFi1UO9KK2WhX6qcQ8S4AJXA1p"/>
+<div class="absolute top-1 left-1 bg-gray-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">#3</div>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-gray-800">Truffle Mushroom Pasta</h3>
+<p class="text-xs text-gray-400">102 unidades vendidas</p>
+</div>
+<div class="text-right">
+<p class="font-bold text-gray-800">$1,938</p>
+<p class="text-xs text-red-600 font-medium">↓ 3%</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<nav class="fixed bottom-0 w-full border-t border-gray-200 bg-white z-50">
+<div class="flex justify-around items-center h-16 max-w-lg mx-auto">
+<a class="flex flex-col items-center gap-1 text-gray-400" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Inicio</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Ventas</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-400" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Stock</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-400" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Ajustes</span>
+</a>
+</div>
+</nav>
+<div class="h-16"></div>
+</body></html>
