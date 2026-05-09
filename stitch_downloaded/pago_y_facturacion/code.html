@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#6dfad2",
+                    "surface-bright": "#f1fbff",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed": "#161d1f",
+                    "surface-dim": "#d1dce0",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed-variant": "#7f2b00",
+                    "primary-fixed": "#ffdbce",
+                    "outline-variant": "#e1bfb3",
+                    "on-tertiary-fixed-variant": "#005140",
+                    "background": "#f1fbff",
+                    "surface-container-highest": "#d9e4e9",
+                    "surface-container-high": "#dfeaef",
+                    "surface-container": "#e4f0f4",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface-variant": "#594138",
+                    "primary-fixed-dim": "#ffb599",
+                    "primary-container": "#f26522",
+                    "primary": "#a63b00",
+                    "surface-tint": "#a63b00",
+                    "on-primary": "#ffffff",
+                    "outline": "#8d7166",
+                    "tertiary-fixed-dim": "#4bddb7",
+                    "tertiary-container": "#00a484",
+                    "surface-container-low": "#eaf5fa",
+                    "secondary-fixed-dim": "#c1c8ca",
+                    "on-secondary-fixed-variant": "#41484a",
+                    "inverse-on-surface": "#e7f3f7",
+                    "secondary-fixed": "#dde4e6",
+                    "on-secondary-container": "#5d6466",
+                    "on-tertiary-container": "#003125",
+                    "on-background": "#131d21",
+                    "on-surface": "#131d21",
+                    "surface": "#f1fbff",
+                    "on-error-container": "#93000a",
+                    "on-primary-container": "#4f1800",
+                    "on-error": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "secondary-container": "#dae1e3",
+                    "error": "#ba1a1a",
+                    "inverse-surface": "#283236",
+                    "inverse-primary": "#ffb599",
+                    "tertiary": "#006b55",
+                    "secondary": "#586062",
+                    "surface-variant": "#d9e4e9",
+                    "on-primary-fixed": "#370e00",
+                    "on-tertiary-fixed": "#002018"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "gutter": "20px",
+                    "xl": "32px",
+                    "xs": "4px",
+                    "lg": "24px",
+                    "base": "8px",
+                    "md": "16px",
+                    "container-padding": "24px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "status-badge": ["Plus Jakarta Sans"],
+                    "h1": ["Plus Jakarta Sans"],
+                    "label-caps": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "h3": ["Plus Jakarta Sans"],
+                    "h2": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "status-badge": ["12px", {"lineHeight": "1", "fontWeight": "600"}],
+                    "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "h3": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopAppBar Shell -->
+<header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-[#F26522] border-b border-slate-100 dark:border-slate-800 shadow-[0px_4px_12px_rgba(0,0,0,0.05)] fixed top-0 z-50 w-full flex justify-between items-center px-6 py-4">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-slate-900 dark:text-white p-2 hover:bg-slate-50 rounded-full transition-colors">menu</button>
+<h1 class="text-xl font-black text-[#F26522] tracking-tight">GastroGestion</h1>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-6">
+<span class="text-[#F26522] font-bold cursor-pointer font-body-md text-body-md">Facturación</span>
+<span class="text-slate-500 dark:text-slate-400 hover:text-[#F26522] cursor-pointer font-body-md text-body-md">Pedidos</span>
+<span class="text-slate-500 dark:text-slate-400 hover:text-[#F26522] cursor-pointer font-body-md text-body-md">Mesas</span>
+</nav>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-orange-100">
+<img alt="User profile" data-alt="A professional restaurant manager headshot in a bright, modern office setting. He is wearing a crisp white shirt and a charcoal vest, projecting confidence and reliability. The lighting is soft and professional, consistent with a clean, high-end corporate restaurant management UI. The background shows blurred warm interior tones of an upscale dining establishment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMk-bJd7yh-1hMXKnAx63Kj5VTLp8rjp13f8opwym8ulPZndINY8biWmGmI4mtjbGyaaKaa0XIlken1nXrI3QMd-au3CVJrXwuavNRDfGALGHmNXvpR8pzbKvp_CS3m7sAYG18fL8xaBHZ5-etFRfpATK41OCokJ93g1yLlAYw_Iw9lwgiwxJcsxi5iPMlxgxkkZyR6QCLxXM2tj1OzAF9N43WvixRAmOPCQljxihvMxPU0cYGg8OwPbI6AR8Q3FE2ux4hLcz7sDtt"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-gutter lg:px-container-padding max-w-[1440px] mx-auto">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg items-start">
+<!-- Left Column: Order Details (Account) -->
+<section class="lg:col-span-7 flex flex-col gap-md">
+<div class="flex items-center justify-between mb-2">
+<div>
+<h2 class="font-h2 text-h2 text-on-surface">Mesa 14 • Cuenta Detallada</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">4 Comensales | Atendido por: Juan R.</p>
+</div>
+<span class="bg-orange-50 text-[#F26522] px-4 py-2 rounded-full font-label-caps text-label-caps">PEDIDO #892</span>
+</div>
+<!-- Receipt Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
+<div class="p-6 border-b border-slate-100 bg-slate-50/50">
+<div class="grid grid-cols-12 font-label-caps text-label-caps text-on-surface-variant px-2">
+<div class="col-span-6">CONCEPTO</div>
+<div class="col-span-2 text-center">CANT.</div>
+<div class="col-span-2 text-right">PRECIO</div>
+<div class="col-span-2 text-right">TOTAL</div>
+</div>
+</div>
+<div class="divide-y divide-slate-50 max-h-[500px] overflow-y-auto">
+<!-- Item -->
+<div class="p-6 grid grid-cols-12 items-center hover:bg-orange-50/20 transition-colors group">
+<div class="col-span-6 flex gap-3 items-center">
+<div class="w-12 h-12 rounded-lg bg-surface-variant overflow-hidden">
+<img alt="Ensalada César" data-alt="Close-up of a vibrant and fresh garden salad in a ceramic bowl. The lighting is bright and natural, highlighting the textures of crisp lettuce, cherry tomatoes, and shaved carrots. The overall aesthetic is clean, appetizing, and fits perfectly within a high-speed professional restaurant utility UI with white-space-heavy design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAW7aJkXREzdVi-DWbu16NesGbMcugDjocvpZhu37rBE521_h35PZn0zryEKtSZE6PVB4Ry3DptTJAT4Eq1UJNPssX3Qi6smbe0VFmPASAcQFXc2r-YLoTHtp5hF4tni5C31AktNR7J8vSJyO1DGODyI9EmkiUujzF_B5cPBrNU4A1VnwgohQ6RXih7QaJoKaG-8Px7rYvme-_9nl7lQ_mLvoYpQQEMcjavUHSTxAPyr6vZk5lXgmaVveAbaqhXvZ7F1X-5MdwDZi3Y"/>
+</div>
+<div>
+<p class="font-body-lg text-body-lg text-on-surface">Ensalada César con Pollo</p>
+<p class="text-xs text-on-surface-variant">Sin croutons</p>
+</div>
+</div>
+<div class="col-span-2 text-center font-body-lg text-body-lg">2</div>
+<div class="col-span-2 text-right font-body-lg text-body-lg">14,50€</div>
+<div class="col-span-2 text-right font-h3 text-h3">29,00€</div>
+</div>
+<!-- Item -->
+<div class="p-6 grid grid-cols-12 items-center hover:bg-orange-50/20 transition-colors">
+<div class="col-span-6 flex gap-3 items-center">
+<div class="w-12 h-12 rounded-lg bg-surface-variant overflow-hidden">
+<img alt="Entrecot" data-alt="A delicious, perfectly cooked ribeye steak served on a minimalist white plate. The lighting is warm and directional, emphasizing the sear on the meat. The background is clean and slightly blurred to keep focus on the dish, adhering to a corporate modern style that balances utility and appetizing visuals." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkoSk4dfIVP8g2Z9DxW6ZKMnJ9HMYI7VwTav1IwGQ1uV9hBSLBvqXMilX6nrAQ5UoXMAUq_BlM26QwqSiEdxTOgWrwY3cZQyPx4XzJfwuTFz7n6ftq1iWtJIeSSX1hRJjBjulvMDpN1E1VEaRsf_arFDtJQ605t7y1hYWUkxFrQ-E_1swX2SL7WDVf6U3fXxuWMvZ1U9pAXXO-scWmTPWrSvPijTOVhjg7-CBDgSNb2hTTRMJCRcflLJw4Jj2KfgGd8HJoT1SlbOun"/>
+</div>
+<div>
+<p class="font-body-lg text-body-lg text-on-surface">Entrecot de Ternera Madurada</p>
+<p class="text-xs text-on-surface-variant">Punto: Al punto</p>
+</div>
+</div>
+<div class="col-span-2 text-center font-body-lg text-body-lg">1</div>
+<div class="col-span-2 text-right font-body-lg text-body-lg">24,00€</div>
+<div class="col-span-2 text-right font-h3 text-h3">24,00€</div>
+</div>
+<!-- Item -->
+<div class="p-6 grid grid-cols-12 items-center hover:bg-orange-50/20 transition-colors">
+<div class="col-span-6 flex gap-3 items-center">
+<div class="w-12 h-12 rounded-lg bg-surface-variant overflow-hidden">
+<img alt="Cerveza Artesana" data-alt="A cold craft beer in a frosted glass with a perfect head of foam. The lighting is high-key and bright, evoking a sense of freshness and reliability. The environment is clean and professional, using tonal layers and ambient shadows consistent with a corporate modern restaurant dashboard aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdoJKHmsw7u5L38hNSOPvAhUIx-m_20V8lm1S-NzPBnH6yRUxPOeqdezlvHWTQ0AEqci4WoNxGojldPoWmwqlixOCE3GjkMxgCFKBi9FevxSyomvUOeKTJGcy7B1jQdt7_xLtWvFBYasMxlJZd_FinFzZ4d1k6L01CYz9NrfZtKD1z6-hebDtd_EwlKakAdQTf_QR9pZaEyXRXc5JgZqlPUTksJu_F1dj-ARA97CJtJP7X88T3ui5wE3-2GGOuPkPcajhImXh65_tq"/>
+</div>
+<div>
+<p class="font-body-lg text-body-lg text-on-surface">Cerveza Artesana IPA</p>
+<p class="text-xs text-on-surface-variant">Caña 33cl</p>
+</div>
+</div>
+<div class="col-span-2 text-center font-body-lg text-body-lg">4</div>
+<div class="col-span-2 text-right font-body-lg text-body-lg">4,50€</div>
+<div class="col-span-2 text-right font-h3 text-h3">18,00€</div>
+</div>
+</div>
+</div>
+<!-- Discounts & Quick Actions -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-md">
+<button class="flex items-center justify-center gap-2 p-4 rounded-xl border border-[#F26522] text-[#F26522] font-semibold hover:bg-orange-50 transition-colors active:scale-95">
+<span class="material-symbols-outlined">percent</span>
+<span>Descuento %</span>
+</button>
+<button class="flex items-center justify-center gap-2 p-4 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors active:scale-95">
+<span class="material-symbols-outlined">card_giftcard</span>
+<span>Cortesia</span>
+</button>
+<button class="flex items-center justify-center gap-2 p-4 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors active:scale-95">
+<span class="material-symbols-outlined">edit</span>
+<span>Modificar</span>
+</button>
+</div>
+</section>
+<!-- Right Column: Checkout & Payment -->
+<section class="lg:col-span-5">
+<div class="bg-white rounded-2xl shadow-[0px_8px_24px_rgba(0,0,0,0.08)] border border-slate-100 p-8 sticky top-28">
+<h3 class="font-h3 text-h3 text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-[#F26522]">payments</span>
+                        Finalizar Pago
+                    </h3>
+<!-- Totals -->
+<div class="space-y-4 mb-8">
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant font-body-lg text-body-lg">Subtotal</span>
+<span class="text-on-surface font-body-lg text-body-lg">71,00€</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant font-body-lg text-body-lg">IVA (10%)</span>
+<span class="text-on-surface font-body-lg text-body-lg">7,10€</span>
+</div>
+<div class="flex justify-between items-center py-4 border-y border-dashed border-slate-200">
+<span class="text-[#F26522] font-black text-xl">TOTAL A PAGAR</span>
+<span class="text-slate-900 font-black text-3xl">78,10€</span>
+</div>
+</div>
+<!-- Payment Methods Grid -->
+<div class="mb-8">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-4">MÉTODO DE PAGO</p>
+<div class="grid grid-cols-2 gap-4">
+<label class="relative flex flex-col items-center justify-center gap-2 p-5 rounded-xl border-2 border-[#F26522] bg-orange-50/30 cursor-pointer">
+<input checked="" class="hidden" name="payment" type="radio"/>
+<span class="material-symbols-outlined text-[#F26522] text-3xl">credit_card</span>
+<span class="font-bold text-sm text-[#F26522]">Tarjeta</span>
+</label>
+<label class="relative flex flex-col items-center justify-center gap-2 p-5 rounded-xl border-2 border-slate-100 hover:border-orange-100 cursor-pointer">
+<input class="hidden" name="payment" type="radio"/>
+<span class="material-symbols-outlined text-slate-400 text-3xl">payments</span>
+<span class="font-bold text-sm text-slate-600">Efectivo</span>
+</label>
+<label class="relative flex flex-col items-center justify-center gap-2 p-5 rounded-xl border-2 border-slate-100 hover:border-orange-100 cursor-pointer">
+<input class="hidden" name="payment" type="radio"/>
+<span class="material-symbols-outlined text-slate-400 text-3xl">call_split</span>
+<span class="font-bold text-sm text-slate-600">Dividir (Split)</span>
+</label>
+<label class="relative flex flex-col items-center justify-center gap-2 p-5 rounded-xl border-2 border-slate-100 hover:border-orange-100 cursor-pointer">
+<input class="hidden" name="payment" type="radio"/>
+<span class="material-symbols-outlined text-slate-400 text-3xl">smartphone</span>
+<span class="font-bold text-sm text-slate-600">QR / Bizum</span>
+</label>
+</div>
+</div>
+<!-- Additional Options -->
+<div class="space-y-4">
+<label class="flex items-center gap-3 cursor-pointer">
+<input class="w-5 h-5 text-[#F26522] border-slate-300 rounded focus:ring-[#F26522]" type="checkbox"/>
+<span class="text-sm text-on-surface-variant">Emitir Factura Completa (con CIF)</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer">
+<input checked="" class="w-5 h-5 text-[#F26522] border-slate-300 rounded focus:ring-[#F26522]" type="checkbox"/>
+<span class="text-sm text-on-surface-variant">Enviar Ticket por Email</span>
+</label>
+</div>
+<!-- Primary Action -->
+<button class="w-full mt-8 bg-[#F26522] text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3 hover:bg-[#d1541c] transition-all shadow-lg active:scale-[0.98]">
+<span class="material-symbols-outlined">receipt_long</span>
+                        PROCESAR PAGO Y CERRAR
+                    </button>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar for Mobile -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 bg-white border-t border-slate-100 flex justify-around items-center px-4 pb-6 pt-3 shadow-[0px_-4px_16px_rgba(0,0,0,0.04)]">
+<div class="flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[12px] font-medium">Inicio</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#F26522] bg-orange-50 rounded-xl px-4 py-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[12px] font-medium">Pedidos</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined">table_restaurant</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[12px] font-medium">Mesas</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[12px] font-medium">Menú</span>
+</div>
+</nav>
+<!-- Floating Action Button (Contextual) -->
+<button class="fixed right-6 bottom-24 md:bottom-10 bg-[#F26522] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all z-40">
+<span class="material-symbols-outlined text-2xl">add</span>
+</button>
+</body></html>

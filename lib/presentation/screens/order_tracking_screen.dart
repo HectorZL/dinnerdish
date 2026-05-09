@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
+import '../theme/app_theme.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   const OrderTrackingScreen({super.key});
@@ -14,15 +15,18 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 768;
+    final isMobile = !isDesktop;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1FBFF),
+      backgroundColor: AppColors.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(72),
         child: _buildTopAppBar(isDesktop),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.containerPadding,
+            vertical: AppSpacing.xl),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1280),
@@ -30,22 +34,23 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(isDesktop),
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xl),
                 _buildFilters(),
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xl),
                 _buildOrderGrid(isDesktop),
-                const SizedBox(height: 100), // Mobile FAB padding
+                const SizedBox(height: 100),
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: !isDesktop ? _buildBottomNavBar() : null,
-      floatingActionButton: !isDesktop
+      bottomNavigationBar: isMobile ? _buildBottomNavBar() : null,
+      floatingActionButton: isMobile
           ? FloatingActionButton(
               onPressed: () {},
-              backgroundColor: const Color(0xFFF26522),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              backgroundColor: AppColors.primaryContainer,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30)),
               elevation: 8,
               child: const Icon(Icons.add, color: Colors.white),
             )
@@ -55,17 +60,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   Widget _buildTopAppBar(bool isDesktop) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerPadding),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.8),
-        border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-          ),
-        ],
+        border: const Border(
+            bottom: BorderSide(color: Color(0xFFF1F5F9))),
+        boxShadow: [AppShadows.card],
       ),
       child: SafeArea(
         child: Center(
@@ -75,17 +75,17 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.menu, color: Color(0xFFF26522)),
+                    icon: const Icon(Icons.menu,
+                        color: AppColors.primaryContainer),
                     onPressed: () {},
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.base),
                   Text(
                     'GastroGestion',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppTypography.h1(
+                      color: AppColors.primaryContainer,
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
-                      color: const Color(0xFFF26522),
-                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
@@ -94,15 +94,15 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 children: [
                   if (isDesktop) ...[
                     _buildTopNavLink('Inicio', false),
-                    const SizedBox(width: 24),
+                    const SizedBox(width: AppSpacing.lg),
                     _buildTopNavLink('Pedidos', true),
-                    const SizedBox(width: 24),
+                    const SizedBox(width: AppSpacing.lg),
                     _buildTopNavLink('Mesas', false),
-                    const SizedBox(width: 24),
+                    const SizedBox(width: AppSpacing.lg),
                     _buildTopNavLink('Menú', false),
-                    const SizedBox(width: 24),
+                    const SizedBox(width: AppSpacing.lg),
                     _buildTopNavLink('Reportes', false),
-                    const SizedBox(width: 32),
+                    const SizedBox(width: AppSpacing.xl),
                   ],
                   Container(
                     width: 40,
@@ -111,7 +111,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
+                        BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4),
                       ],
                       image: const DecorationImage(
                         image: NetworkImage(
@@ -130,11 +132,29 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 
   Widget _buildTopNavLink(String title, bool isActive) {
-    return Text(
-      title,
-      style: GoogleFonts.plusJakartaSans(
-        fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-        color: isActive ? const Color(0xFFF26522) : const Color(0xFF64748B),
+    return GestureDetector(
+      onTap: () {
+        switch (title) {
+          case 'Inicio':
+            context.go('/menu');
+          case 'Pedidos':
+            break;
+          case 'Mesas':
+            context.go('/tables');
+          case 'Menú':
+            context.go('/admin/menu');
+          case 'Reportes':
+            context.go('/admin/reports');
+        }
+      },
+      child: Text(
+        title,
+        style: AppTypography.bodyMd(
+          fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+          color: isActive
+              ? AppColors.primaryContainer
+              : const Color(0xFF64748B),
+        ),
       ),
     );
   }
@@ -142,7 +162,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   Widget _buildHeader(bool isDesktop) {
     return Flex(
       direction: isDesktop ? Axis.horizontal : Axis.vertical,
-      crossAxisAlignment: isDesktop ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          isDesktop ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
@@ -150,57 +171,49 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           children: [
             Text(
               'Seguimiento en Tiempo Real',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFA63B00),
-                letterSpacing: 1,
-              ),
+              style: AppTypography.labelCaps(color: AppColors.primary),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               'Gestión de Pedidos',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF131D21),
-                height: 1.2,
-              ),
+              style: AppTypography.h1(color: AppColors.onBackground),
             ),
           ],
         ),
-        if (!isDesktop) const SizedBox(height: 16),
+        if (!isDesktop) const SizedBox(height: AppSpacing.md),
         Row(
           children: [
-            Expanded(
-              flex: isDesktop ? 0 : 1,
-              child: SizedBox(
-                width: isDesktop ? 260 : null,
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Buscar por mesa o pedido...',
-                    hintStyle: GoogleFonts.plusJakartaSans(fontSize: 14, color: const Color(0xFF94A3B8)),
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFF94A3B8)),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
+            SizedBox(
+              width: isDesktop ? 260 : null,
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Buscar por mesa o pedido...',
+                  hintStyle: AppTypography.bodyMd(
+                      color: const Color(0xFF94A3B8)),
+                  prefixIcon: const Icon(Icons.search,
+                      color: Color(0xFF94A3B8)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                    borderSide:
+                        const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                    borderSide:
+                        const BorderSide(color: Color(0xFFE2E8F0)),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.sm),
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: IconButton(
@@ -215,20 +228,24 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 
   Widget _buildFilters() {
-    final filters = ['Todos (24)', 'Pendiente (4)', 'En Cocina (8)', 'Listo (10)', 'Servido (2)'];
+    final filters = [
+      'Todos (24)',
+      'Pendiente (4)',
+      'En Cocina (8)',
+      'Listo (10)',
+      'Servido (2)'
+    ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: List.generate(filters.length, (index) {
           final isActive = _selectedFilterIndex == index;
           return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
+            padding: const EdgeInsets.only(right: AppSpacing.base),
             child: ChoiceChip(
               label: Text(
                 filters[index],
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                style: AppTypography.statusBadge(
                   color: isActive ? Colors.white : const Color(0xFF475569),
                 ),
               ),
@@ -237,13 +254,16 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 setState(() => _selectedFilterIndex = index);
               },
               backgroundColor: Colors.white,
-              selectedColor: const Color(0xFFA63B00),
+              selectedColor: AppColors.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
-                side: BorderSide(color: isActive ? Colors.transparent : const Color(0xFFF1F5F9)),
+                side: BorderSide(
+                    color:
+                        isActive ? Colors.transparent : const Color(0xFFF1F5F9)),
               ),
               elevation: isActive ? 4 : 0,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             ),
           );
         }),
@@ -256,32 +276,32 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       crossAxisCount: isDesktop ? 3 : 1,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 24,
-      mainAxisSpacing: 24,
+      crossAxisSpacing: AppSpacing.lg,
+      mainAxisSpacing: AppSpacing.lg,
       childAspectRatio: isDesktop ? 1.1 : 1.2,
       children: [
         _buildOrderCard(
           table: 'Mesa 12',
           orderId: '#ORD-4921 • 12:45 PM',
           status: 'Pendiente',
-          statusColor: const Color(0xFF94A3B8), // slate-400
-          bgColor: const Color(0xFFF1F5F9), // slate-100
+          statusColor: AppColors.statusPending,
+          bgColor: const Color(0xFFF1F5F9),
           items: [
             {'name': '2x Burger Especial', 'price': '32,00€'},
             {'name': '1x Patatas Bravas', 'price': '8,50€'},
           ],
           actions: [
             _buildActionBtn('Cancelar', Icons.close, false),
-            _buildActionBtn('Cocina', Icons.restaurant, true, color: const Color(0xFFA63B00)),
+            _buildActionBtn('Cocina', Icons.restaurant, true),
           ],
         ),
         _buildOrderCard(
           table: 'Mesa 04',
           orderId: '#ORD-4918 • 12:30 PM',
           status: 'En Cocina',
-          statusColor: const Color(0xFFF59E0B), // amber-500
-          bgColor: const Color(0xFFFEF3C7), // amber-100
-          icon: Icons.outdoor_grill, // replacement for skillet
+          statusColor: AppColors.statusCooking,
+          bgColor: const Color(0xFFFEF3C7),
+          icon: Icons.outdoor_grill,
           warning: 'NOTA: Alergia frutos secos',
           items: [
             {'name': '1x Risotto de Setas', 'price': '18,00€'},
@@ -289,15 +309,15 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           progress: 0.65,
           timeText: 'Tiempo transcurrido: 12 min',
           actions: [
-            _buildActionBtn('Marcar como Listo', Icons.check_circle, true, color: const Color(0xFFA63B00)),
+            _buildActionBtn('Marcar como Listo', Icons.check_circle, true),
           ],
         ),
         _buildOrderCard(
           table: 'Terraza 02',
           orderId: '#ORD-4912 • 12:15 PM',
           status: 'Listo',
-          statusColor: const Color(0xFF10B981), // emerald-500
-          bgColor: const Color(0xFF10B981),
+          statusColor: AppColors.statusReady,
+          bgColor: AppColors.statusReady,
           textColor: Colors.white,
           icon: Icons.notifications_active,
           items: [
@@ -305,50 +325,52 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             {'name': '3x Cerveza Mahou', 'price': '7,50€'},
           ],
           actions: [
-            _buildActionBtn('Servir a Mesa', Icons.delivery_dining, true, color: const Color(0xFF10B981)),
+            _buildActionBtn(
+                'Servir a Mesa', Icons.delivery_dining, true),
           ],
         ),
         _buildOrderCard(
           table: 'Mesa 08',
           orderId: '#ORD-4925 • 1:05 PM',
           status: 'En Cocina',
-          statusColor: const Color(0xFFF59E0B),
+          statusColor: AppColors.statusCooking,
           bgColor: const Color(0xFFFEF3C7),
           icon: Icons.outdoor_grill,
           items: [
             {'name': '1x Solomillo al punto', 'price': '22,50€'},
           ],
           actions: [
-            _buildActionBtn('Marcar como Listo', Icons.check_circle, true, color: const Color(0xFFA63B00)),
+            _buildActionBtn('Marcar como Listo', Icons.check_circle, true),
           ],
         ),
         _buildOrderCard(
           table: 'Mesa 15',
           orderId: '#ORD-4930 • 1:12 PM',
           status: 'Listo',
-          statusColor: const Color(0xFF10B981),
-          bgColor: const Color(0xFF10B981),
+          statusColor: AppColors.statusReady,
+          bgColor: AppColors.statusReady,
           textColor: Colors.white,
           icon: Icons.notifications_active,
           items: [
             {'name': '2x Ensalada César', 'price': '24,00€'},
           ],
           actions: [
-            _buildActionBtn('Servir a Mesa', Icons.delivery_dining, true, color: const Color(0xFF10B981)),
+            _buildActionBtn(
+                'Servir a Mesa', Icons.delivery_dining, true),
           ],
         ),
         _buildOrderCard(
           table: 'Barra 03',
           orderId: '#ORD-4935 • 1:15 PM',
           status: 'Pendiente',
-          statusColor: const Color(0xFF94A3B8),
+          statusColor: AppColors.statusPending,
           bgColor: const Color(0xFFF1F5F9),
           items: [
             {'name': '1x Tapa de Jamón', 'price': '12,00€'},
           ],
           actions: [
             _buildActionBtn('Cancelar', null, false),
-            _buildActionBtn('A Cocina', null, true, color: const Color(0xFFA63B00)),
+            _buildActionBtn('A Cocina', null, true),
           ],
         ),
       ],
@@ -372,23 +394,20 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.md),
         border: Border(
           left: BorderSide(color: statusColor, width: 4),
           top: const BorderSide(color: Color(0xFFF8FAFC)),
           right: const BorderSide(color: Color(0xFFF8FAFC)),
           bottom: const BorderSide(color: Color(0xFFF8FAFC)),
         ),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 4)),
-        ],
+        boxShadow: [AppShadows.card],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.gutter),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,36 +417,40 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.table_restaurant, color: statusColor, size: 20),
-                        const SizedBox(width: 8),
+                        Icon(Icons.table_restaurant,
+                            color: statusColor, size: 20),
+                        const SizedBox(width: AppSpacing.base),
                         Text(table,
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                            style: AppTypography.h3(
+                                color: const Color(0xFF0F172A))),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(orderId,
-                        style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF94A3B8))),
+                        style: AppTypography.statusBadge(
+                            color: const Color(0xFF94A3B8))),
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: bgColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                    borderRadius: BorderRadius.circular(AppSpacing.md),
+                    border: Border.all(
+                        color: statusColor.withValues(alpha: 0.2)),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (icon != null) ...[
                         Icon(icon, size: 14, color: textColor),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: AppSpacing.xs),
                       ],
                       Text(
                         status,
-                        style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12, fontWeight: FontWeight.bold, color: textColor),
+                        style: AppTypography.statusBadge(color: textColor),
                       ),
                     ],
                   ),
@@ -436,49 +459,52 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             ),
           ),
           const Divider(height: 1, color: Color(0xFFF8FAFC)),
-          // Body
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpacing.gutter),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (warning != null) ...[
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFFBEB),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFB45309)),
-                          const SizedBox(width: 8),
+                          const Icon(Icons.warning_amber_rounded,
+                              size: 16, color: Color(0xFFB45309)),
+                          const SizedBox(width: AppSpacing.base),
                           Text(warning,
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFB45309))),
+                              style: AppTypography.statusBadge(
+                                  color: const Color(0xFFB45309),
+                                  fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.sm),
                   ],
                   ...items.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
+                        padding: const EdgeInsets.only(bottom: AppSpacing.base),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(item['name']!,
-                                style: GoogleFonts.plusJakartaSans(fontSize: 14, color: const Color(0xFF475569))),
+                                style: AppTypography.bodyMd(
+                                    color: const Color(0xFF475569))),
                             Text(item['price']!,
-                                style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                                style: AppTypography.bodyMd(
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF0F172A))),
                           ],
                         ),
                       )),
                   if (progress != null) ...[
                     const Spacer(),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
                       child: LinearProgressIndicator(
                         value: progress,
                         backgroundColor: const Color(0xFFF1F5F9),
@@ -486,26 +512,33 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                         minHeight: 8,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Align(
                       alignment: Alignment.centerRight,
                       child: Text(timeText ?? '',
-                          style: GoogleFonts.plusJakartaSans(fontSize: 10, color: const Color(0xFF94A3B8))),
+                          style: AppTypography.statusBadge(
+                              color: const Color(0xFF94A3B8))),
                     ),
                   ],
                 ],
               ),
             ),
           ),
-          // Actions
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.gutter),
             decoration: const BoxDecoration(
               color: Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+              borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(AppSpacing.md)),
             ),
             child: Row(
-              children: actions.map((a) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: a))).toList(),
+              children: actions
+                  .map((a) => Expanded(
+                      child: Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 4),
+                          child: a)))
+                  .toList(),
             ),
           ),
         ],
@@ -513,75 +546,52 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     );
   }
 
-  Widget _buildActionBtn(String text, IconData? icon, bool isPrimary, {Color? color}) {
+  Widget _buildActionBtn(
+      String text, IconData? icon, bool isPrimary) {
     return ElevatedButton(
       onPressed: () {},
       style: ElevatedButton.styleFrom(
-        backgroundColor: isPrimary ? (color ?? const Color(0xFFA63B00)) : Colors.white,
-        foregroundColor: isPrimary ? Colors.white : const Color(0xFF475569),
+        backgroundColor: isPrimary
+            ? AppColors.primaryContainer
+            : Colors.white,
+        foregroundColor:
+            isPrimary ? Colors.white : const Color(0xFF475569),
         elevation: isPrimary ? 2 : 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: isPrimary ? BorderSide.none : const BorderSide(color: Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          side: isPrimary
+              ? BorderSide.none
+              : const BorderSide(color: Color(0xFFE2E8F0)),
         ),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (icon != null) ...[Icon(icon, size: 16), const SizedBox(width: 8)],
-          Text(text, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.bold)),
+          if (icon != null) ...[Icon(icon, size: 16), const SizedBox(width: AppSpacing.base)],
+          Text(text,
+              style: AppTypography.statusBadge(
+                  fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
   Widget _buildBottomNavBar() {
-    return Container(
-      padding: const EdgeInsets.only(top: 12, bottom: 24, left: 16, right: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: const Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), offset: const Offset(0, -4), blurRadius: 16),
-        ],
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildBottomNavItem(Icons.dashboard_outlined, 'Inicio', false),
-          _buildBottomNavItem(Icons.receipt_long, 'Pedidos', true),
-          _buildBottomNavItem(Icons.table_restaurant_outlined, 'Mesas', false),
-          _buildBottomNavItem(Icons.bar_chart_outlined, 'Reportes', false), // New
-          _buildBottomNavItem(Icons.restaurant_menu_outlined, 'Menú', false),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: isActive ? 16 : 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFFFFF7ED) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: isActive ? const Color(0xFFF26522) : const Color(0xFF94A3B8)),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-            color: isActive ? const Color(0xFFF26522) : const Color(0xFF94A3B8),
-          ),
-        ),
-      ],
+    return StitchBottomNavBar(
+      currentIndex: 1,
+      onTap: (index) {
+        switch (index) {
+          case 0:
+            context.go('/menu');
+          case 2:
+            context.go('/tables');
+          case 3:
+            context.go('/admin/reports');
+          case 4:
+            context.go('/admin/menu');
+        }
+      },
     );
   }
 }

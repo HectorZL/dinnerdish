@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Arqueo de Caja - GastroGestion</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f1fbff;
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#6dfad2",
+                    "surface-bright": "#f1fbff",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed": "#161d1f",
+                    "surface-dim": "#d1dce0",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed-variant": "#7f2b00",
+                    "primary-fixed": "#ffdbce",
+                    "outline-variant": "#e1bfb3",
+                    "on-tertiary-fixed-variant": "#005140",
+                    "background": "#f1fbff",
+                    "surface-container-highest": "#d9e4e9",
+                    "surface-container-high": "#dfeaef",
+                    "surface-container": "#e4f0f4",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface-variant": "#594138",
+                    "primary-fixed-dim": "#ffb599",
+                    "primary-container": "#f26522",
+                    "primary": "#a63b00",
+                    "surface-tint": "#a63b00",
+                    "on-primary": "#ffffff",
+                    "outline": "#8d7166",
+                    "tertiary-fixed-dim": "#4bddb7",
+                    "tertiary-container": "#00a484",
+                    "surface-container-low": "#eaf5fa",
+                    "secondary-fixed-dim": "#c1c8ca",
+                    "on-secondary-fixed-variant": "#41484a",
+                    "inverse-on-surface": "#e7f3f7",
+                    "secondary-fixed": "#dde4e6",
+                    "on-secondary-container": "#5d6466",
+                    "on-tertiary-container": "#003125",
+                    "on-background": "#131d21",
+                    "on-surface": "#131d21",
+                    "surface": "#f1fbff",
+                    "on-error-container": "#93000a",
+                    "on-primary-container": "#4f1800",
+                    "on-error": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "secondary-container": "#dae1e3",
+                    "error": "#ba1a1a",
+                    "inverse-surface": "#283236",
+                    "inverse-primary": "#ffb599",
+                    "tertiary": "#006b55",
+                    "secondary": "#586062",
+                    "surface-variant": "#d9e4e9",
+                    "on-primary-fixed": "#370e00",
+                    "on-tertiary-fixed": "#002018"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "gutter": "20px",
+                    "xl": "32px",
+                    "xs": "4px",
+                    "lg": "24px",
+                    "base": "8px",
+                    "md": "16px",
+                    "container-padding": "24px"
+            },
+            "fontSize": {
+                    "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "status-badge": ["12px", {"lineHeight": "1", "fontWeight": "600"}],
+                    "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "h3": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-bright text-on-surface">
+<!-- TopAppBar Execution -->
+<header class="fixed top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-[0px_4px_12px_rgba(0,0,0,0.05)] flex justify-between items-center px-6 py-4">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-slate-900 active:scale-95 transition-transform duration-150" data-icon="menu">menu</button>
+<h1 class="text-xl font-black text-[#F26522] tracking-tight">GastroGestion</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="text-right hidden sm:block">
+<p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Cajero en Turno</p>
+<p class="text-sm font-semibold text-slate-900">Admin Principal</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a restaurant manager in a clean white shirt, smiling confidently. The lighting is bright and warm, reflecting a modern corporate hospitality environment with a soft-focus restaurant interior in the background. The style is sharp, high-resolution, and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1wlXmKVIZk9_oYCPVPV4w1-QNqy7azwh87a0KNEHDPGiObvZIlpx93MIkz1CnpKLfhKQxIAj5bPSbGgWUAEXDwUnQIIhvo7QPTD4YGKIxtVptqyDh-FRRibLADRGUW6tQf1edQPg58RD2H6WuVV4aEB3rPO2VPqUBRPDjXBiDB9zCo0oSyw0umx_P7HPs8eIjo4a0s8fCjXF1QXVKR43Xa3uHhgfRGugcsK2Vq99YcSd1qE7YlTnM5PcEUyQDDxNG0tSZYMNMezI4"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-container-padding max-w-7xl mx-auto">
+<!-- Header Section -->
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<span class="text-primary font-label-caps tracking-widest bg-primary-fixed/30 px-3 py-1 rounded-full mb-2 inline-block">FIN DE TURNO</span>
+<h2 class="font-h1 text-h1 text-on-surface">Resumen de Arqueo</h2>
+<p class="text-body-lg text-secondary mt-1">Turno Mañana • 14 Mayo, 2024</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg border border-outline text-secondary font-semibold hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="print">print</span>
+                    Imprimir Pre-cierre
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Totals and Breakdown -->
+<div class="lg:col-span-8 space-y-gutter">
+<!-- Main Totals Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-primary-container p-6 rounded-xl shadow-[0px_4px_12px_rgba(0,0,0,0.05)] text-white relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-white/80 font-medium">Ventas Totales Brutas</p>
+<h3 class="text-4xl font-bold mt-2">€2,482.50</h3>
+<div class="mt-4 flex items-center gap-2 bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="trending_up">trending_up</span>
+                                +12% vs. Ayer
+                            </div>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-white/10 text-9xl font-bold" data-icon="payments">payments</span>
+</div>
+<div class="bg-white p-6 rounded-xl shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50 flex flex-col justify-between">
+<div>
+<p class="text-secondary font-medium">Total Propinas</p>
+<h3 class="text-3xl font-bold text-on-surface mt-1">€145.00</h3>
+</div>
+<div class="flex items-center gap-3 mt-4 pt-4 border-t border-slate-100">
+<div class="flex items-center gap-1 text-tertiary font-bold">
+<span class="material-symbols-outlined text-[18px]" data-icon="group">group</span>
+<span class="text-sm">4 Mozos</span>
+</div>
+<div class="text-xs text-slate-400">•</div>
+<div class="text-sm text-secondary">€36.25 prom. por persona</div>
+</div>
+</div>
+</div>
+<!-- Payment Methods Table-like Card -->
+<div class="bg-white rounded-xl shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50 overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-50 flex justify-between items-center">
+<h4 class="font-h3 text-h3 text-on-surface">Desglose por Métodos</h4>
+<span class="text-xs font-bold text-secondary-container bg-slate-100 px-2 py-1 rounded">124 Operaciones</span>
+</div>
+<div class="divide-y divide-slate-50">
+<!-- Cash -->
+<div class="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Efectivo</p>
+<p class="text-xs text-secondary">38 transacciones</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold text-on-surface">€842.00</p>
+<div class="w-24 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+<div class="bg-green-500 h-full w-[34%]"></div>
+</div>
+</div>
+</div>
+<!-- Credit Card -->
+<div class="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="credit_card">credit_card</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Tarjeta Crédito/Débito</p>
+<p class="text-xs text-secondary">72 transacciones</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold text-on-surface">€1,420.50</p>
+<div class="w-24 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+<div class="bg-blue-500 h-full w-[57%]"></div>
+</div>
+</div>
+</div>
+<!-- Delivery Apps -->
+<div class="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="delivery_dining">delivery_dining</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Plataformas Delivery</p>
+<p class="text-xs text-secondary">14 transacciones</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold text-on-surface">€220.00</p>
+<div class="w-24 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+<div class="bg-orange-500 h-full w-[9%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Visual Chart Placeholder (Report Style) -->
+<div class="bg-white p-6 rounded-xl shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50">
+<h4 class="font-h3 text-h3 text-on-surface mb-6">Actividad de Ventas (Turno)</h4>
+<div class="h-48 flex items-end justify-between gap-2 px-2">
+<div class="w-full bg-slate-100 rounded-t-lg relative group h-[20%] hover:bg-primary-container transition-colors">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-secondary opacity-0 group-hover:opacity-100">09h</span>
+</div>
+<div class="w-full bg-slate-100 rounded-t-lg relative group h-[45%] hover:bg-primary-container transition-colors">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-secondary opacity-0 group-hover:opacity-100">10h</span>
+</div>
+<div class="w-full bg-slate-100 rounded-t-lg relative group h-[70%] hover:bg-primary-container transition-colors">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-secondary opacity-0 group-hover:opacity-100">11h</span>
+</div>
+<div class="w-full bg-slate-100 rounded-t-lg relative group h-[95%] hover:bg-primary-container transition-colors">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-secondary opacity-0 group-hover:opacity-100">12h</span>
+</div>
+<div class="w-full bg-slate-100 rounded-t-lg relative group h-[85%] hover:bg-primary-container transition-colors">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-secondary opacity-0 group-hover:opacity-100">13h</span>
+</div>
+<div class="w-full bg-slate-100 rounded-t-lg relative group h-[60%] hover:bg-primary-container transition-colors">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-secondary opacity-0 group-hover:opacity-100">14h</span>
+</div>
+</div>
+<div class="flex justify-between mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+<span>Inicio Turno</span>
+<span>Pico de Venta</span>
+<span>Cierre</span>
+</div>
+</div>
+</div>
+<!-- Right Column: Confirmation & Actions -->
+<div class="lg:col-span-4 space-y-gutter">
+<!-- Cash Reconciliation Card -->
+<div class="bg-white p-8 rounded-xl shadow-[0px_4px_16px_rgba(0,0,0,0.08)] border-2 border-primary-fixed ring-4 ring-primary-fixed/20">
+<h4 class="font-h2 text-h2 text-on-surface mb-6">Conciliación Final</h4>
+<div class="space-y-6">
+<div>
+<label class="block text-sm font-bold text-slate-700 mb-2">Efectivo Esperado (Sistema)</label>
+<div class="text-2xl font-bold text-slate-400 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                €842.00
+                            </div>
+</div>
+<div>
+<label class="block text-sm font-bold text-slate-700 mb-2">Efectivo Real en Caja</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-on-surface">€</span>
+<input class="w-full pl-10 pr-4 py-4 text-2xl font-bold rounded-lg border-2 border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none" placeholder="0.00" step="0.01" type="number"/>
+</div>
+</div>
+<div class="p-4 bg-orange-50 rounded-lg border border-orange-100 flex gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="info">info</span>
+<p class="text-sm text-on-primary-container leading-snug">
+                                Recuerde descontar el fondo de caja inicial de <strong>€150.00</strong> antes de ingresar el total.
+                            </p>
+</div>
+<div class="pt-4 space-y-4">
+<div class="flex items-center gap-2">
+<input class="rounded text-primary focus:ring-primary" id="check1" type="checkbox"/>
+<label class="text-sm text-secondary font-medium" for="check1">He verificado los tickets de tarjeta</label>
+</div>
+<div class="flex items-center gap-2">
+<input class="rounded text-primary focus:ring-primary" id="check2" type="checkbox"/>
+<label class="text-sm text-secondary font-medium" for="check2">Propinas separadas y contabilizadas</label>
+</div>
+</div>
+<button class="w-full py-5 bg-[#F26522] text-white rounded-xl font-bold text-lg shadow-lg shadow-orange-500/30 hover:bg-primary transition-all active:scale-[0.98]">
+                            Confirmar Cierre de Caja
+                        </button>
+<p class="text-center text-xs text-slate-400 px-4">
+                            Al confirmar, se generará un reporte inalterable que será enviado a la administración.
+                        </p>
+</div>
+</div>
+<!-- Recent Orders Summary Card -->
+<div class="bg-white p-6 rounded-xl shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50">
+<h4 class="font-h3 text-h3 text-on-surface mb-4">Últimas 3 Ventas</h4>
+<div class="space-y-4">
+<div class="flex justify-between items-center text-sm p-3 bg-slate-50 rounded-lg">
+<div class="flex flex-col">
+<span class="font-bold text-on-surface">Mesa 14 • Ticket #482</span>
+<span class="text-xs text-slate-500">14:42 • Efectivo</span>
+</div>
+<span class="font-bold text-on-surface">€42.50</span>
+</div>
+<div class="flex justify-between items-center text-sm p-3 bg-slate-50 rounded-lg">
+<div class="flex flex-col">
+<span class="font-bold text-on-surface">Barra • Ticket #481</span>
+<span class="text-xs text-slate-500">14:35 • Tarjeta</span>
+</div>
+<span class="font-bold text-on-surface">€12.00</span>
+</div>
+<div class="flex justify-between items-center text-sm p-3 bg-slate-50 rounded-lg">
+<div class="flex flex-col">
+<span class="font-bold text-on-surface">Mesa 02 • Ticket #480</span>
+<span class="text-xs text-slate-500">14:20 • Tarjeta</span>
+</div>
+<span class="font-bold text-on-surface">€108.90</span>
+</div>
+</div>
+<button class="w-full mt-4 py-2 text-primary text-sm font-bold hover:bg-orange-50 rounded-lg transition-colors">
+                        Ver todo el historial
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Suppression for Task-Focused Screens Logic -->
+<!-- However, since the cashier might need quick access back to the Dashboard, we provide a minimal Floating Action Button for return -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+</button>
+</body></html>

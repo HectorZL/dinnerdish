@@ -1,21 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'presentation/screens/create_order_screen.dart';
-import 'presentation/screens/main_menu_dashboard.dart';
-import 'presentation/screens/order_tracking_screen.dart';
-import 'presentation/screens/table_management_screen.dart';
+import 'models/user.dart';
+import 'providers/providers.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _rememberMe = false;
   bool _obscurePassword = true;
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingrese usuario y contraseña')),
+      );
+      return;
+    }
+
+    try {
+      await ref.read(currentUserProvider.notifier).login(username, password);
+      if (!mounted) return;
+      context.go('/menu');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleTestUserLogin(User user) async {
+    try {
+      await ref.read(currentUserProvider.notifier).loginWithTestUser(user);
+      if (!mounted) return;
+      context.go('/menu');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
               width: 500,
               height: 500,
               decoration: BoxDecoration(
-                color: const Color(0xFFF26522).withOpacity(0.05),
+                color: const Color(0xFFF26522).withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
             ),
@@ -46,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                color: const Color(0xFF00A484).withOpacity(0.05),
+                color: const Color(0xFF00A484).withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
             ),
@@ -58,15 +104,14 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.all(24.0),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1024),
-                child: IntrinsicHeight(
-                  child: Container(
+                child: Container(
                     constraints: const BoxConstraints(minHeight: 640),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
+                          color: Colors.black.withValues(alpha: 0.06),
                           blurRadius: 32,
                           offset: const Offset(0, 4),
                         ),
@@ -140,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           Text(
                                             'Gestione pedidos, inventario y personal con la eficiencia de un sistema diseñado para la alta cocina.',
                                             style: GoogleFonts.plusJakartaSans(
-                                              color: Colors.white.withOpacity(0.9),
+                                              color: Colors.white.withValues(alpha: 0.9),
                                               fontSize: 16,
                                               height: 1.6,
                                             ),
@@ -175,7 +220,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-        ),
         ],
       ),
     );
@@ -239,11 +283,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 4),
                               TextFormField(
+                                controller: _usernameController,
                                 decoration: InputDecoration(
                                   prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF586062)),
                                   hintText: 'nombre.apellido',
                                   hintStyle: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF586062).withOpacity(0.5),
+                                    color: const Color(0xFF586062).withValues(alpha: 0.5),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16),
                                   border: OutlineInputBorder(
@@ -293,6 +338,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 4),
                               TextFormField(
+                                controller: _passwordController,
                                 obscureText: _obscurePassword,
                                 decoration: InputDecoration(
                                   prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF586062)),
@@ -309,7 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   hintText: '••••••••',
                                   hintStyle: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF586062).withOpacity(0.5),
+                                    color: const Color(0xFF586062).withValues(alpha: 0.5),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16),
                                   border: OutlineInputBorder(
@@ -360,12 +406,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               // Login Button
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: _handleLogin,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFF26522),
                                   foregroundColor: Colors.white,
                                   elevation: 8,
-                                  shadowColor: const Color(0xFFF26522).withOpacity(0.5),
+                                  shadowColor: const Color(0xFFF26522).withValues(alpha: 0.5),
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
@@ -429,7 +475,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
 
                               const SizedBox(height: 32),
-                              // Debug navigation for testing screens
+                              // Role Selector for Testing
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
@@ -441,7 +487,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
                                     Text(
-                                      'Test Screens (Debug)',
+                                      'Acceso Rápido (Testing)',
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.plusJakartaSans(
                                         fontWeight: FontWeight.bold,
@@ -449,44 +495,67 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 12),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => const MainMenuDashboardScreen()),
-                                        );
-                                      },
-                                      child: const Text('Dashboard'),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => const CreateOrderScreen()),
-                                        );
-                                      },
-                                      child: const Text('Create Order'),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => const OrderTrackingScreen()),
-                                        );
-                                      },
-                                      child: const Text('Order Tracking'),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => const TableManagementScreen()),
-                                        );
-                                      },
-                                      child: const Text('Table Management'),
+                                    GridView.count(
+                                      crossAxisCount: 2,
+                                      shrinkWrap: true,
+                                      mainAxisSpacing: 8,
+                                      crossAxisSpacing: 8,
+                                      childAspectRatio: 3.5,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      children: [
+                                        _buildTestUserCard(
+                                          label: 'Mesero',
+                                          name: 'Juan Pérez',
+                                          icon: Icons.person_outline,
+                                          color: Colors.orange,
+                                          user: const User(
+                                            id: 'user-mesero-1',
+                                            username: 'mesero',
+                                            name: 'Juan Pérez',
+                                            role: Role.mesero,
+                                            token: 'mock-token-mesero',
+                                          ),
+                                        ),
+                                        _buildTestUserCard(
+                                          label: 'Cajero',
+                                          name: 'María García',
+                                          icon: Icons.attach_money,
+                                          color: Colors.green,
+                                          user: const User(
+                                            id: 'user-cajero-1',
+                                            username: 'cajero',
+                                            name: 'María García',
+                                            role: Role.cajero,
+                                            token: 'mock-token-cajero',
+                                          ),
+                                        ),
+                                        _buildTestUserCard(
+                                          label: 'Cocina/Chef',
+                                          name: 'Carlos López',
+                                          icon: Icons.soup_kitchen_outlined,
+                                          color: Colors.blue,
+                                          user: const User(
+                                            id: 'user-cocinero-1',
+                                            username: 'cocinero',
+                                            name: 'Carlos López',
+                                            role: Role.cocinero,
+                                            token: 'mock-token-cocinero',
+                                          ),
+                                        ),
+                                        _buildTestUserCard(
+                                          label: 'Admin',
+                                          name: 'Ana Martínez',
+                                          icon: Icons.admin_panel_settings_outlined,
+                                          color: Colors.purple,
+                                          user: const User(
+                                            id: 'user-admin-1',
+                                            username: 'admin',
+                                            name: 'Ana Martínez',
+                                            role: Role.admin,
+                                            token: 'mock-token-admin',
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -496,12 +565,67 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Widget _buildTestUserCard({
+    required String label,
+    required String name,
+    required IconData icon,
+    required Color color,
+    required User user,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _handleTestUserLogin(user),
+        borderRadius: BorderRadius.circular(8),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: color),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                      Text(
+                        name,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFeatureBadge(String value, String label) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        color: Colors.white.withValues(alpha: 0.1),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -518,7 +642,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.6,

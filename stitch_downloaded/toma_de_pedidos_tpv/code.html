@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-error-container": "#93000a",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "primary": "#a63b00",
+                      "surface-variant": "#d9e4e9",
+                      "secondary-container": "#dae1e3",
+                      "on-secondary-container": "#5d6466",
+                      "surface-dim": "#d1dce0",
+                      "on-tertiary-container": "#003125",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-high": "#dfeaef",
+                      "on-secondary-fixed-variant": "#41484a",
+                      "outline-variant": "#e1bfb3",
+                      "tertiary-fixed": "#6dfad2",
+                      "inverse-surface": "#283236",
+                      "surface-tint": "#a63b00",
+                      "outline": "#8d7166",
+                      "tertiary": "#006b55",
+                      "tertiary-container": "#00a484",
+                      "secondary-fixed-dim": "#c1c8ca",
+                      "on-secondary": "#ffffff",
+                      "background": "#f1fbff",
+                      "primary-fixed": "#ffdbce",
+                      "surface-bright": "#f1fbff",
+                      "primary-fixed-dim": "#ffb599",
+                      "surface-container-highest": "#d9e4e9",
+                      "secondary-fixed": "#dde4e6",
+                      "on-tertiary-fixed": "#002018",
+                      "inverse-primary": "#ffb599",
+                      "on-background": "#131d21",
+                      "on-surface": "#131d21",
+                      "on-primary-container": "#4f1800",
+                      "on-surface-variant": "#594138",
+                      "secondary": "#586062",
+                      "inverse-on-surface": "#e7f3f7",
+                      "tertiary-fixed-dim": "#4bddb7",
+                      "on-secondary-fixed": "#161d1f",
+                      "surface-container": "#e4f0f4",
+                      "on-tertiary-fixed-variant": "#005140",
+                      "on-primary-fixed": "#370e00",
+                      "surface-container-low": "#eaf5fa",
+                      "on-primary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "on-primary-fixed-variant": "#7f2b00",
+                      "on-error": "#ffffff",
+                      "primary-container": "#f26522",
+                      "surface": "#f1fbff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "base": "8px",
+                      "md": "16px",
+                      "gutter": "20px",
+                      "lg": "24px",
+                      "sm": "12px",
+                      "container-padding": "24px",
+                      "xl": "32px"
+              },
+              "fontFamily": {
+                      "h3": ["Plus Jakarta Sans"],
+                      "body-md": ["Plus Jakarta Sans"],
+                      "label-caps": ["Plus Jakarta Sans"],
+                      "h1": ["Plus Jakarta Sans"],
+                      "status-badge": ["Plus Jakarta Sans"],
+                      "h2": ["Plus Jakarta Sans"],
+                      "body-lg": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "h3": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "status-badge": ["12px", {"lineHeight": "1", "fontWeight": "600"}],
+                      "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen text-on-background">
+<!-- TopAppBar Shell -->
+<nav class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100 shadow-[0px_4px_12px_rgba(0,0,0,0.05)] flex justify-between items-center w-full px-6 py-4">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform duration-150 p-2 hover:bg-slate-50 rounded-full">
+<span class="material-symbols-outlined text-slate-900" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<span class="font-h3 text-h3 text-slate-900">Mesa 14</span>
+<span class="text-[12px] text-[#F26522] font-semibold uppercase tracking-wider">Servicio Activo</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container shadow-sm">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A professional studio headshot of a friendly restaurant server wearing a clean white uniform. The lighting is soft and even, suggesting a bright and welcoming high-end restaurant atmosphere. The server has a warm, professional expression, and the background is a soft, out-of-focus dining room with orange and wood accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwlJyRUytgNUtSy1ACnp9jgsFrf3sxLFeD4a3O8FmMc1R5s2o7AQIcyI5tnEsSSrs2j_wtdYri1dGbRFmSFsuIBCtQT9EqZmB1-BFReegVtMCVBV4kOUJk4-TuYvm5SqLSk9Bfp3va46GC7Wf1lRzPsd4o1oq4d2D0EXYMmz2hRW_8Wti6ZKGZcrdThb-3TdZ8o6s3srnUy90A_jFwsSQXwMz41JEXrT6sbDfo_AgvyqwTK2DeFNjc_1qRM-ykAYBLGfitiIA_WdXN"/>
+</div>
+</nav>
+<main class="px-6 py-6 pb-32">
+<!-- Search & Filter Bar -->
+<section class="mb-lg">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#F26522] transition-colors" data-icon="search">search</span>
+<input class="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-[#F26522]/20 focus:border-[#F26522] shadow-sm transition-all" placeholder="Buscar plato o ingrediente..." type="text"/>
+</div>
+</section>
+<!-- Category Tabs -->
+<section class="mb-lg overflow-x-auto no-scrollbar -mx-6 px-6">
+<div class="flex space-x-3 whitespace-nowrap">
+<button class="px-6 py-2.5 bg-primary-container text-white rounded-full font-label-caps text-label-caps shadow-md shadow-[#F26522]/20">Entrantes</button>
+<button class="px-6 py-2.5 bg-white text-slate-500 border border-slate-100 rounded-full font-label-caps text-label-caps hover:bg-slate-50 transition-colors">Principales</button>
+<button class="px-6 py-2.5 bg-white text-slate-500 border border-slate-100 rounded-full font-label-caps text-label-caps hover:bg-slate-50 transition-colors">Bebidas</button>
+<button class="px-6 py-2.5 bg-white text-slate-500 border border-slate-100 rounded-full font-label-caps text-label-caps hover:bg-slate-50 transition-colors">Postres</button>
+<button class="px-6 py-2.5 bg-white text-slate-500 border border-slate-100 rounded-full font-label-caps text-label-caps hover:bg-slate-50 transition-colors">Vinos</button>
+</div>
+</section>
+<!-- Product Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Item 1 -->
+<div class="bg-white rounded-xl overflow-hidden shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50 group hover:shadow-lg transition-shadow">
+<div class="aspect-square w-full relative">
+<img alt="Product 1" class="w-full h-full object-cover" data-alt="A gourmet close-up of a vibrant healthy poke bowl featuring fresh salmon cubes, edamame, shredded carrots, and avocado over seasoned rice. The lighting is bright and natural, highlighting the textures of the fresh ingredients. The plate is minimalist ceramic white, set against a clean, light wooden table background, evoking a fresh and professional culinary aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkTItdaeJaiCe1aznPku9mS1cXN5fKppwUCBYqCG0gcTpkOV-XdD0WrGlKvPlzbOqs7GMasH8YxhxdZEJ0Js2C_ZEFDQPfx5xcFVtBNwJ0DOS0FVeGSRU9R291RZEPQr8wpHEz1dil7Q7z73__BiSuc-3U9Ymbi4T0PITdXTnpFoIfoGg6LLlaxC9wLgyevHT-I4gql4KnhZg-vVwgX4rreuHpfr0Y4Kv0qMN92GyPZrNTF-E-cVqa90DH9-3OHhvF87muuBNqa3Eb"/>
+<div class="absolute top-3 right-3">
+<span class="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[#F26522] font-bold text-sm shadow-sm">12.50€</span>
+</div>
+</div>
+<div class="p-4 flex flex-col h-full">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-h3 text-slate-900 text-lg leading-tight">Bowl Salmón &amp; Aguacate</h4>
+<button class="bg-[#F26522] text-white w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-[#F26522]/20">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+<p class="text-slate-500 font-body-md text-sm line-clamp-2">Arroz sushi, edamame, zanahoria, pepino y salsa ponzu artesanal.</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-white rounded-xl overflow-hidden shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50 group hover:shadow-lg transition-shadow">
+<div class="aspect-square w-full relative">
+<img alt="Product 2" class="w-full h-full object-cover" data-alt="Exquisite plate of hand-made beef carpaccio topped with arugula, pine nuts, and shavings of aged parmesan cheese. Drizzled with high-quality olive oil. The presentation is sophisticated and artistic, shot from a high-angle macro perspective. Warm ambient lighting creates an inviting and high-end dining atmosphere consistent with premium restaurant branding." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrt3Uhz_Mtdorgjkip9hFD901LFMfhl_MhgqVP-ADyujdytOh0SRKYlgCacz4HK_0t23QruyTuqCwBuxM5ntPlO_xsDaLSA2LgjhDZUb7M-c2Q5Zqk4UB-3W0_cYE6JMc9oWtvNu-erDJmpQV6pVx-UyW-0dqcs39zEf41_03B_3BJWCbGcgFo6HaeAsfM4_rhOAmM7vk-oLdNw_e60Cv0sx38TXUx7T7NhpGjL2iYZe0sCMkLfXqzabNK_vsRGPHo3UNiuu_yO2z6"/>
+<div class="absolute top-3 right-3">
+<span class="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[#F26522] font-bold text-sm shadow-sm">14.00€</span>
+</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-h3 text-slate-900 text-lg leading-tight">Carpaccio de Ternera</h4>
+<button class="bg-[#F26522] text-white w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-[#F26522]/20">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+<p class="text-slate-500 font-body-md text-sm line-clamp-2">Con lascas de Parmigiano Reggiano, rúcula selvática y piñones tostados.</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="bg-white rounded-xl overflow-hidden shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50 group hover:shadow-lg transition-shadow">
+<div class="aspect-square w-full relative">
+<img alt="Product 3" class="w-full h-full object-cover" data-alt="Traditional Spanish potato croquettes served on a rustic slate platter with a dollop of creamy garlic aioli. The lighting is warm and directional, accentuating the crispy breadcrumb texture. The scene is cozy and professional, highlighting a popular appetizer in a modern Mediterranean restaurant setting with subtle orange highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1ZyeTJkmVgvFXEm2LhoISE8OXXRrX-xuNd3TYvzpMz82zkXOHW6bOuyHYBpR7XJVhb-5iPhdIVwQ4wFpbWYgZF5AiLBiKQBEzgq1DhDlbMEQwp7OOpFnRsk_Z3uJ6DL3T3yZS0MkEULgXLlzkTGmuaV92xvkoWoWRAxKYY1h8QZuJ2zAkX7F3GB0DK_-I7R1kGnSxwg6VQ2Nsuurj3qtzz_868-io-nLq_0tdkRtA5-EgvmTGgA8IEt53hMJTJORBDiM5GkDGIOcI"/>
+<div class="absolute top-3 right-3">
+<span class="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[#F26522] font-bold text-sm shadow-sm">9.80€</span>
+</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-h3 text-slate-900 text-lg leading-tight">Croquetas de Jamón</h4>
+<button class="bg-[#F26522] text-white w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-[#F26522]/20">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+<p class="text-slate-500 font-body-md text-sm line-clamp-2">Nuestra receta clásica con bechamel cremosa infusionada 24h.</p>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="bg-white rounded-xl overflow-hidden shadow-[0px_4px_12px_rgba(0,0,0,0.05)] border border-slate-50 group hover:shadow-lg transition-shadow">
+<div class="aspect-square w-full relative">
+<img alt="Product 4" class="w-full h-full object-cover" data-alt="Crispy tempura prawns served with a spicy mayo dipping sauce in a small black bowl. The prawns are beautifully arranged, showing a light and airy golden batter. The lighting is crisp and modern, focusing on the texture of the tempura. The overall aesthetic is professional, clean, and appetizing for a high-end gastro-bar menu." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBItkEfqv9IzFHZfegXT25xgQxc9ALnAkxXaotuZw9qSx8qWIQBv5nkNacpVh_LNUaVHPUJvOwH8iOgDfBovjkdS8zVi36khuEyY1BMBm2D-wtXGPN_q_HfqBZN2mVAL1ZKEweooPUNYIfXFGMM1V56nc2DVBq3tYp9_XwvQLh9hfjwuL5IcLvayjYXfPOp2WUSfkrTBv1wmKcnZZlBHcYDlG_DAK_OZTpqWpMTTpVZ0WQosOyTRJ-8eHPngP8ulyBOtvkSedk0sNk2"/>
+<div class="absolute top-3 right-3">
+<span class="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[#F26522] font-bold text-sm shadow-sm">11.20€</span>
+</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-h3 text-slate-900 text-lg leading-tight">Tempura de Gambón</h4>
+<button class="bg-[#F26522] text-white w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-[#F26522]/20">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+<p class="text-slate-500 font-body-md text-sm line-clamp-2">Gambón salvaje en tempura ligera con mayonesa de sriracha suave.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Order Summary Button -->
+<div class="fixed bottom-0 left-0 w-full px-6 pb-8 pt-4 bg-gradient-to-t from-background via-background/90 to-transparent z-40 pointer-events-none">
+<button class="pointer-events-auto w-full bg-[#F26522] text-white py-5 px-6 rounded-2xl shadow-[0px_12px_32px_rgba(242,101,34,0.3)] flex justify-between items-center active:scale-[0.98] transition-all">
+<div class="flex items-center gap-3">
+<div class="bg-white/20 w-8 h-8 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-sm" data-icon="receipt_long">receipt_long</span>
+</div>
+<div class="text-left">
+<span class="block font-label-caps text-[10px] opacity-80 uppercase tracking-widest">Ver Comanda</span>
+<span class="block font-bold text-lg">4 Items Seleccionados</span>
+</div>
+</div>
+<div class="text-right">
+<span class="block font-h2 text-h2">45.00€</span>
+</div>
+</button>
+</div>
+<!-- Bottom Navigation Shell (Minimized for POS flow) -->
+<nav class="fixed bottom-0 left-0 w-full z-30 flex justify-around items-center px-4 pb-4 pt-3 bg-white border-t border-slate-100 hidden">
+<!-- Hidden as per UX goal of suppressing global nav in task-focused screen -->
+</nav>
+</body></html>

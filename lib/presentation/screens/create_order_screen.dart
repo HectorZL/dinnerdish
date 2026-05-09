@@ -1,145 +1,343 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:dinnerhome/providers/providers.dart';
+import 'package:dinnerhome/models/menu_item.dart';
+import 'package:dinnerhome/models/order.dart';
+import 'package:dinnerhome/models/order_item.dart' as order_item;
+import '../theme/app_theme.dart';
 
-class CreateOrderScreen extends StatefulWidget {
+class CreateOrderScreen extends ConsumerStatefulWidget {
   const CreateOrderScreen({super.key});
 
   @override
-  State<CreateOrderScreen> createState() => _CreateOrderScreenState();
+  ConsumerState<CreateOrderScreen> createState() => _CreateOrderScreenState();
 }
 
-class _CreateOrderScreenState extends State<CreateOrderScreen> {
+class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   int _selectedCategoryIndex = 0;
-  final List<String> _categories = ['Favoritos', 'Entradas', 'Fuertes', 'Bebidas', 'Postres'];
+  final List<String> _categories = [
+    'Entrantes',
+    'Principales',
+    'Bebidas',
+    'Postres',
+    'Vinos',
+  ];
+
+  Order? _currentOrder;
+  List<MenuItem> _menuItems = [];
+  final Map<String, int> _selectedQuantities = {};
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final menuService = ref.read(menuServiceProvider);
+      final menu = await menuService.fetchMenu();
+
+      final currentUser = ref.read(currentUserProvider).value;
+      Order? order;
+      if (currentUser != null) {
+        final orderService = ref.read(orderServiceProvider);
+        order = await orderService.createDraft(waiterId: currentUser.id);
+      }
+
+      setState(() {
+        _menuItems = menu;
+        _currentOrder = order;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  int get _totalSelectedItems {
+    return _selectedQuantities.values.fold(0, (sum, qty) => sum + qty);
+  }
+
+  int get _totalSelectedCents {
+    var total = 0;
+    for (final entry in _selectedQuantities.entries) {
+      if (entry.value > 0) {
+        final item = _menuItems.firstWhere((m) => m.id == entry.key);
+        total += item.priceCents * entry.value;
+      }
+    }
+    return total;
+  }
+
+  bool get _hasSelections => _selectedQuantities.values.any((q) => q > 0);
+
+  Future<void> _sendToKitchen() async {
+    if (_currentOrder == null) return;
+    final currentUser = ref.read(currentUserProvider).value;
+    if (currentUser == null) return;
+
+    if (!_hasSelections) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Seleccione al menos un plato para enviar')),
+        );
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enviar a Cocina'),
+        content: const Text(
+          '¿Enviar a cocina? No podrá editarse sin autorización.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryContainer,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final orderService = ref.read(orderServiceProvider);
+
+      for (final entry in _selectedQuantities.entries) {
+        if (entry.value <= 0) continue;
+        final item = _menuItems.firstWhere((m) => m.id == entry.key);
+        final orderItem = order_item.OrderItem(
+          id: 'item-${DateTime.now().millisecondsSinceEpoch}-${entry.key}',
+          menuItemId: item.id,
+          quantity: entry.value,
+          priceCents: item.priceCents,
+          status: order_item.OrderStatus.pending,
+          modifierIds: [],
+        );
+        await orderService.addItem(
+          orderId: _currentOrder!.id,
+          item: orderItem,
+        );
+      }
+
+      final sentOrder = await orderService.sendToKitchen(
+        orderId: _currentOrder!.id,
+        byUserId: currentUser.id,
+      );
+
+      setState(() => _currentOrder = sentOrder);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pedido enviado a cocina')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al enviar: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _requestPayment() async {
+    if (_currentOrder == null) return;
+    final currentUser = ref.read(currentUserProvider).value;
+    if (currentUser == null) return;
+
+    try {
+      final paymentService = ref.read(paymentServiceProvider);
+
+      await paymentService.requestPayment(
+        orderId: _currentOrder!.id,
+        requestedBy: currentUser.id,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pago solicitado al cajero')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showNoteDialog() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nota del Pedido'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'Escriba una nota para cocina...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryContainer,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result != null && result.isNotEmpty && _currentOrder != null) {
+      setState(() {
+        _currentOrder = _currentOrder!.copyWith(notes: result);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F6F6),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800), // Adapted for Web/Desktop
-          child: Container(
-            color: Colors.white,
-            child: Column(
-              children: [
-                _buildHeader(),
-                _buildSearchAndCategories(),
-                Expanded(
-                  child: _buildDishList(),
-                ),
-                _buildOrderSummary(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
           children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
-              onPressed: () => Navigator.pop(context),
-            ),
-            const SizedBox(width: 8),
+            // TopAppBar
+            _buildTopAppBar(),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Mesa 05 - Nuevo Pedido',
-                    style: GoogleFonts.publicSans(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF111827)),
-                  ),
-                  Text(
-                    'Mesero: Juan Pérez',
-                    style: GoogleFonts.publicSans(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF6B7280)),
-                  ),
-                ],
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                      ? Center(
+                          child: Text(
+                            'Error: $_errorMessage',
+                            style: GoogleFonts.plusJakartaSans(color: Colors.red),
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            // Search & Filter Bar
+                            _buildSearchBar(),
+                            // Category Tabs
+                            _buildCategoryTabs(),
+                            // Product Grid
+                            Expanded(
+                              child: _buildDishGrid(),
+                            ),
+                          ],
+                        ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEC5B13).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                'EN PROCESO',
-                style: GoogleFonts.publicSans(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFFEC5B13)),
-              ),
-            ),
+            // Floating Order Summary
+            if (!_isLoading && _errorMessage == null)
+              _buildOrderSummary(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSearchAndCategories() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
+  Widget _buildTopAppBar() {
+    final currentUser = ref.read(currentUserProvider).value;
+    final displayName = currentUser?.name ?? 'Mesero';
+    final tableInfo = _currentOrder != null && _currentOrder!.tableId.isNotEmpty
+        ? 'Mesa ${_currentOrder!.tableId}'
+        : 'Nuevo Pedido';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.8),
+        border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+        boxShadow: [AppShadows.card],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Buscar plato o código...',
-              hintStyle: GoogleFonts.publicSans(fontSize: 14, color: const Color(0xFF9CA3AF)),
-              prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
-              filled: true,
-              fillColor: const Color(0xFFF9FAFB),
-              contentPadding: const EdgeInsets.symmetric(vertical: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF131D21)),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/menu');
+                  }
+                },
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFEC5B13)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 40,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final isActive = _selectedCategoryIndex == index;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() => _selectedCategoryIndex = index);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isActive ? const Color(0xFFEC5B13) : const Color(0xFFF3F4F6),
-                      foregroundColor: isActive ? Colors.white : const Color(0xFF4B5563),
-                      elevation: isActive ? 2 : 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                    child: Text(
-                      _categories[index],
-                      style: GoogleFonts.publicSans(fontSize: 14, fontWeight: FontWeight.w600),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tableInfo,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurface,
                     ),
                   ),
-                );
-              },
+                  Text(
+                    'Servicio Activo • $displayName',
+                    style: AppTypography.statusBadge(color: AppColors.primaryContainer),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primaryContainer, width: 2),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
+              ],
+              image: const DecorationImage(
+                image: NetworkImage(
+                  'https://lh3.googleusercontent.com/aida-public/AB6AXuDwlJyRUytgNUtSy1ACnp9jgsFrf3sxLFeD4a3O8FmMc1R5s2o7AQIcyI5tnEsSSrs2j_wtdYri1dGbRFmSFsuIBCtQT9EqZmB1-BFReegVtMCVBV4kOUJk4-TuYvm5SqLSk9Bfp3va46GC7Wf1lRzPsd4o1oq4d2D0EXYMmz2hRW_8Wti6ZKGZcrdThb-3TdZ8o6s3srnUy90A_jFwsSQXwMz41JEXrT6sbDfo_AgvyqwTK2DeFNjc_1qRM-ykAYBLGfitiIA_WdXN',
+                ),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ],
@@ -147,301 +345,385 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  Widget _buildDishList() {
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: Text(
-            'PLATOS SUGERIDOS',
-            style: GoogleFonts.publicSans(
-                fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF6B7280), letterSpacing: 1),
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Buscar plato o ingrediente...',
+          hintStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 14,
+            color: const Color(0xFF94A3B8),
+          ),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFF94A3B8)),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderSide: const BorderSide(color: AppColors.primaryContainer, width: 2),
           ),
         ),
-        _buildDishCard(
-          title: 'Bowl Mediterráneo',
-          price: '\$12.50',
-          desc: 'Mix de verdes, quinua, pollo grillé y aderezo cítrico.',
-          image:
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuD6HREAVrazqkVWn8MzPcvxfOvKPtn9XX8XJu7ZAPVBNTjbwqOmrXB-mbgoflgJmxQ12g-o6C3usYmtoErwrLWPht_kWZVplNvec47S-XwzzdBtFujtveNhw485PSPMoK6szCNIaHuEADB89fAjscNhyOmdD9wsxVGvzDMlbcFHtiYhmsCb3sk2AuQmuHQ2EUd0DHXDMCQWP212VJVDhtBaMxdygk1UoHXqf_f4pXZynF2myzIXZelDbjM92xF6BoIUY4Nnxp8X-7pS',
-          quantity: 1,
-          hasVariants: true,
-        ),
-        const SizedBox(height: 12),
-        _buildDishCard(
-          title: 'Pizza Artesanal',
-          price: '\$15.00',
-          desc: 'Masa madre, 33cm, ingredientes a elección.',
-          image:
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuAo_FaUQx_OGj63dMFaKdmKxgqGb2remZy_-pDU4G6k2jlqDwDFfPutnLqT2JROEmeEpEc3ioUEarqYGabrJwgW9FCpGnnIFdJpcruLVWLxAp49U3jhHUYSuCsaLHFTL5qag7qyCFM8CF74FlcJrfNMynZkeQLOaxCczs_8mlstwI9rSV8W5YkP_dyKUt4OmOF98t8WQrDmKJpo0x6hffqkVPBKccpv_TrbpWNRK4GqA4qatDbQGxN1K3BNfPckOq8wsr6PE7VULFzV',
-          quantity: 0,
-          showVariantsInline: true,
-        ),
-        const SizedBox(height: 12),
-        _buildDishCard(
-          title: 'Limonada Hierbabuena',
-          price: '\$4.50',
-          desc: 'Natural, 400ml, con hielo frappé.',
-          image:
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuD_QOpGd3Ly_TCzNZuk1Qpu-mA4Umd7MvFiU31jRaUoTrH35K0D-cWUj_-UqDrUsU-xl5xHtHmNPxVsqLY_MzlA4BESHE8J2MX-QzCIWrzyFzppaVFslfhE1YxJfPh9RbO2WwiWfX9plCxFElRKCtkBIM766SLFIhgPzGZoloxrA_UAGjYRwP-l2ZwkI37AmRFN1XejFC1Xkd-NoMlTWQNki5qP1NGV3hqNeNkPmIB7u24JCsrSBnWoLhDCHqaOmpXTBZhnkyE47C41',
-          quantity: 2,
-        ),
-        const SizedBox(height: 32),
-      ],
+        onChanged: (_) => setState(() {}),
+      ),
     );
   }
 
-  Widget _buildDishCard({
-    required String title,
-    required String price,
-    required String desc,
-    required String image,
-    required int quantity,
-    bool hasVariants = false,
-    bool showVariantsInline = false,
-  }) {
+  Widget _buildCategoryTabs() {
+    return Container(
+      height: 56,
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        children: List.generate(_categories.length, (index) {
+          final isActive = _selectedCategoryIndex == index;
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: ElevatedButton(
+              onPressed: () {
+                setState(() => _selectedCategoryIndex = index);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    isActive ? AppColors.primaryContainer : Colors.white,
+                foregroundColor:
+                    isActive ? Colors.white : const Color(0xFF64748B),
+                elevation: isActive ? 4 : 0,
+                shadowColor: isActive ? AppColors.primaryContainer.withValues(alpha: 0.3) : null,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  side: isActive
+                      ? BorderSide.none
+                      : const BorderSide(color: Color(0xFFF1F5F9)),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text(
+                _categories[index],
+                style: AppTypography.labelCaps(
+                  color: isActive ? Colors.white : const Color(0xFF64748B),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildDishGrid() {
+    if (_menuItems.isEmpty) {
+      return Center(
+        child: Text(
+          'No hay platos disponibles',
+          style: GoogleFonts.plusJakartaSans(color: const Color(0xFF94A3B8)),
+        ),
+      );
+    }
+
+    final query = _searchController.text.toLowerCase();
+    final filteredItems = query.isEmpty
+        ? _menuItems
+        : _menuItems
+            .where((item) =>
+                item.name.toLowerCase().contains(query) ||
+                item.id.toLowerCase().contains(query))
+            .toList();
+
+    if (filteredItems.isEmpty) {
+      return Center(
+        child: Text(
+          'No se encontraron platos',
+          style: GoogleFonts.plusJakartaSans(color: const Color(0xFF94A3B8)),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth > 900
+            ? 3
+            : constraints.maxWidth > 600
+                ? 2
+                : 1;
+        return GridView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: AppSpacing.gutter,
+            mainAxisSpacing: AppSpacing.gutter,
+            childAspectRatio: crossAxisCount > 1 ? 0.85 : 1.2,
+          ),
+          itemCount: filteredItems.length,
+          itemBuilder: (ctx, idx) => _buildDishCard(filteredItems[idx]),
+        );
+      },
+    );
+  }
+
+  Widget _buildDishCard(MenuItem item) {
+    final quantity = _selectedQuantities[item.id] ?? 0;
+    final hasVariants = item.modifiers.isNotEmpty;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: showVariantsInline ? const Color(0xFFEC5B13).withValues(alpha: 0.3) : const Color(0xFFF3F4F6)),
-        boxShadow: showVariantsInline
-            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]
-            : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))],
+        borderRadius: BorderRadius.circular(AppRadius.xl * 2), // rounded-xl with overflow hidden
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [AppShadows.card],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // Image area
+          Container(
+            height: 140,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Stack(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(image, width: 96, height: 96, fit: BoxFit.cover),
+                Center(
+                  child: Icon(Icons.restaurant, color: const Color(0xFF94A3B8), size: 48),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(title,
-                                style: GoogleFonts.publicSans(
-                                    fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF111827))),
-                          ),
-                          Text(price,
-                              style: GoogleFonts.publicSans(
-                                  fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFFEC5B13))),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(desc,
-                          style: GoogleFonts.publicSans(fontSize: 12, color: const Color(0xFF6B7280)),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              _buildCounterBtn(Icons.remove, quantity > 0, false),
-                              SizedBox(
-                                width: 32,
-                                child: Text(
-                                  quantity.toString(),
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.publicSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: quantity > 0 ? const Color(0xFF111827) : const Color(0xFF9CA3AF),
-                                  ),
-                                ),
-                              ),
-                              _buildCounterBtn(Icons.add, true, quantity > 0),
-                            ],
-                          ),
-                          if (hasVariants)
-                            TextButton(
-                              onPressed: () {},
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Text(
-                                'Variantes',
-                                style: GoogleFonts.publicSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFFEC5B13),
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)],
+                    ),
+                    child: Text(
+                      '\$${(item.priceCents / 100).toStringAsFixed(2)}',
+                      style: AppTypography.statusBadge(color: AppColors.primaryContainer).copyWith(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          if (showVariantsInline)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
-              ),
+          // Body
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'TÉRMINO DE MASA',
-                    style: GoogleFonts.publicSans(
-                        fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF9CA3AF), letterSpacing: 1),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildVariantBtn('Delgada', true),
-                      _buildVariantBtn('Gruesa', false),
-                      _buildVariantBtn('Rellena (+\$2)', false),
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          style: AppTypography.h3(color: AppColors.onSurface),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => setState(
+                          () => _selectedQuantities[item.id] = (quantity) + 1,
+                        ),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryContainer,
+                            borderRadius: BorderRadius.circular(AppRadius.xl),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primaryContainer.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.add, color: Colors.white, size: 20),
+                        ),
+                      ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    hasVariants
+                        ? '${item.modifiers.length} variante${item.modifiers.length > 1 ? 's' : ''} disponible${item.modifiers.length > 1 ? 's' : ''}'
+                        : 'Sin variantes',
+                    style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (quantity > 0) ...[
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(
+                            () => _selectedQuantities[item.id] = quantity - 1,
+                          ),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primaryContainer,
+                            ),
+                            child: const Icon(Icons.remove, color: Colors.white, size: 18),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            '$quantity',
+                            style: AppTypography.h3(color: AppColors.onSurface),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(
+                            () => _selectedQuantities[item.id] = quantity + 1,
+                          ),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primaryContainer,
+                            ),
+                            child: const Icon(Icons.add, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCounterBtn(IconData icon, bool enabled, bool isPrimary) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isPrimary ? const Color(0xFFEC5B13) : Colors.white,
-        border: Border.all(color: isPrimary ? const Color(0xFFEC5B13) : const Color(0xFFE5E7EB)),
-        boxShadow: isPrimary
-            ? [BoxShadow(color: const Color(0xFFEC5B13).withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))]
-            : [],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: enabled ? () {} : null,
-          customBorder: const CircleBorder(),
-          child: Icon(
-            icon,
-            size: 18,
-            color: isPrimary ? Colors.white : (enabled ? const Color(0xFF374151) : const Color(0xFFD1D5DB)),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVariantBtn(String text, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFEC5B13).withValues(alpha: 0.05) : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isSelected ? const Color(0xFFEC5B13) : const Color(0xFFE5E7EB)),
-      ),
-      child: Text(
-        text,
-        style: GoogleFonts.publicSans(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: isSelected ? const Color(0xFFEC5B13) : const Color(0xFF4B5563),
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildOrderSummary() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: const Border(top: BorderSide(color: Color(0xFFF3F4F6))),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -4)),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('RESUMEN DEL PEDIDO',
-                        style: GoogleFonts.publicSans(
-                            fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF9CA3AF), letterSpacing: 1)),
-                    Text('3 Ítems seleccionados',
-                        style: GoogleFonts.publicSans(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF374151))),
-                  ],
-                ),
-                Text('\$21.50',
-                    style: GoogleFonts.publicSans(fontSize: 24, fontWeight: FontWeight.w900, color: const Color(0xFF111827))),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.description_outlined, size: 20),
-                    label: const Text('Nota'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF3F4F6),
-                      foregroundColor: const Color(0xFF374151),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.restaurant, size: 20),
-                    label: const Text('Enviar a Cocina'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEC5B13),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 8,
-                      shadowColor: const Color(0xFFEC5B13).withValues(alpha: 0.3),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.background.withValues(alpha: 0),
+            AppColors.background.withValues(alpha: 0.95),
           ],
         ),
+      ),
+      child: StitchPrimaryButton(
+        onPressed: _totalSelectedItems > 0
+            ? () {
+                showModalBottomSheet(
+                  context: context,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(24)),
+                  ),
+                  builder: (ctx) => SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.stretch,
+                        children: [
+                          Text('Resumen del Pedido',
+                              style: AppTypography.h2()),
+                          const SizedBox(height: 8),
+                          Text(
+                            '$_totalSelectedItems ítems • \$${(_totalSelectedCents / 100).toStringAsFixed(2)}',
+                            style: AppTypography.bodyMd(
+                                color:
+                                    AppColors.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 24),
+                          StitchPrimaryButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _sendToKitchen();
+                            },
+                            icon: Icons.restaurant,
+                            label: 'Enviar a Cocina',
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _showNoteDialog();
+                            },
+                            icon: const Icon(Icons
+                                .description_outlined),
+                            label: const Text('Añadir Nota'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor:
+                                  AppColors.primaryContainer,
+                              side: const BorderSide(
+                                  color:
+                                      AppColors.primaryContainer),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(
+                                        AppRadius.xl),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _requestPayment();
+                            },
+                            icon: const Icon(Icons.payments),
+                            label: const Text(
+                                'Solicitar Pago'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor:
+                                  AppColors.primaryContainer,
+                              side: const BorderSide(
+                                  color:
+                                      AppColors.primaryContainer),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(
+                                        AppRadius.xl),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+            : null,
+        icon: Icons.receipt_long,
+        label:
+            '$_totalSelectedItems Items — \$${(_totalSelectedCents / 100).toStringAsFixed(2)}',
       ),
     );
   }
