@@ -179,6 +179,8 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width > 768;
+    final isMobile = !isDesktop;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -189,16 +191,6 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
               showBack: true,
               onBack: () => context.go('/menu'),
               actions: [
-                TextButton.icon(
-                  onPressed: _showCreateDialog,
-                  icon: const Icon(Icons.add,
-                      color: AppColors.primaryContainer),
-                  label: Text(
-                    'Nuevo Item',
-                    style: AppTypography.statusBadge(
-                        color: AppColors.primaryContainer),
-                  ),
-                ),
                 const SizedBox(width: 8),
               ],
             ),
@@ -206,6 +198,16 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
           ],
         ),
       ),
+            floatingActionButton: isMobile
+          ? FloatingActionButton(
+              onPressed: _showCreateDialog,
+              backgroundColor: AppColors.primaryContainer,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30)),
+              elevation: 8,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 
@@ -325,7 +327,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
   Widget _buildCategoryChip(
       String label, bool isSelected, VoidCallback onTap) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       child: Material(
         color: isSelected
             ? AppColors.primaryContainer

@@ -82,7 +82,7 @@ class _MainMenuDashboardScreenState
         context.go('/menu');
         break;
       case 1:
-        context.go('/orders/create');
+        context.go('/orders/tracking');
         break;
       case 2:
         // Tables - route added later
@@ -91,7 +91,7 @@ class _MainMenuDashboardScreenState
         );
         break;
       case 3:
-        context.go('/menu');
+        context.go('/admin/reports');
         break;
       case 4:
         context.go('/admin/menu');
@@ -117,14 +117,11 @@ class _MainMenuDashboardScreenState
                 Text(
                   'Servicio de Almuerzo • 14:30 PM',
                   style: AppTypography.bodyMd(color: AppColors.secondary),
-                ),
-              ],
-            ),
-            ElevatedButton.icon(
+                ),            ElevatedButton.icon(
               onPressed: () => context.go('/orders/create'),
               icon: const Icon(Icons.add, size: 18),
               label: Text(
-                'NUEVA VENTA',
+                'NUEVO PEDIDO',
                 style: AppTypography.statusBadge(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
@@ -137,6 +134,8 @@ class _MainMenuDashboardScreenState
                 elevation: 8,
                 shadowColor: AppColors.primaryContainer.withValues(alpha: 0.3),
               ),
+            ),
+              ],
             ),
           ],
         ),

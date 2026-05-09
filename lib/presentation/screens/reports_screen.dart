@@ -187,6 +187,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       children: [
         Expanded(
           child: Column(
+            spacing: 10.0,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Panel de Reportes',
@@ -195,10 +196,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Text(
                   'Visualiza el rendimiento de tu negocio en tiempo real.',
                   style: AppTypography.bodyMd(color: AppColors.secondary)),
-            ],
-          ),
-        ),
-        Row(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             OutlinedButton.icon(
               onPressed: () {},
@@ -211,7 +210,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 side: const BorderSide(color: Color(0xFFE1BFB3)),
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm),
+                    vertical: AppSpacing.sm+5),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.xl)),
               ),
@@ -220,11 +219,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
             StitchPrimaryButton(
               label: 'Exportar PDF',
               icon: Icons.download,
+              height: 50,
               width: 160,
               onPressed: () {},
             ),
           ],
         ),
+            ],
+          ),
+        ),
+        
       ],
     );
   }
@@ -319,7 +323,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     color: bgColor,
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
-                  child: Icon(icon, color: iconColor, size: 22),
+                  child: Icon(icon, color: iconColor, size: 18),
                 ),
               ],
             ),
@@ -327,7 +331,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             Row(
               children: [
                 Text(value,
-                    style: AppTypography.h1(
+                    style: AppTypography.h3(
                         color: AppColors.onBackground)),
                 const SizedBox(width: AppSpacing.base),
                 Container(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dinnerhome/providers/providers.dart';
@@ -127,7 +128,13 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
             // TopAppBar
             StitchTopAppBar(
               showBack: true,
-              onBack: () => Navigator.of(context).maybePop(),
+              onBack: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/menu');
+                  }
+                },
               actions: [
                 Padding(
                   padding: const EdgeInsets.only(right: 16),

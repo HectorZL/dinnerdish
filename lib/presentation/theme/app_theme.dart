@@ -410,6 +410,7 @@ class StitchPrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isLoading;
   final double? width;
+  final double? height;
 
   const StitchPrimaryButton({
     super.key,
@@ -418,11 +419,13 @@ class StitchPrimaryButton extends StatelessWidget {
     this.onPressed,
     this.isLoading = false,
     this.width,
+    this.height,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
+      height: height ?? 50,
       width: width ?? double.infinity,
       child: ElevatedButton.icon(
         onPressed: isLoading ? null : onPressed,
@@ -439,7 +442,7 @@ class StitchPrimaryButton extends StatelessWidget {
         label: Text(
           isLoading ? 'Procesando...' : label,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
         ),

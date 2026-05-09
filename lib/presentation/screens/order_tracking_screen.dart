@@ -47,7 +47,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       bottomNavigationBar: isMobile ? _buildBottomNavBar() : null,
       floatingActionButton: isMobile
           ? FloatingActionButton(
-              onPressed: () {},
+              onPressed: () {context.go('/orders/create');},
               backgroundColor: AppColors.primaryContainer,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30)),
@@ -184,7 +184,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         Row(
           children: [
             SizedBox(
-              width: isDesktop ? 260 : null,
+              width: isDesktop ? 260 : 240,
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Buscar por mesa o pedido...',
@@ -396,7 +396,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppSpacing.md),
         border: Border(
-          left: BorderSide(color: statusColor, width: 4),
+          left: const BorderSide(color: Color(0xFFF8FAFC)),
           top: const BorderSide(color: Color(0xFFF8FAFC)),
           right: const BorderSide(color: Color(0xFFF8FAFC)),
           bottom: const BorderSide(color: Color(0xFFF8FAFC)),
