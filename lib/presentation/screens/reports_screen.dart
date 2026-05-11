@@ -323,7 +323,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     color: bgColor,
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
-                  child: Icon(icon, color: iconColor, size: 18),
+                  child: Icon(icon, color: iconColor, size: 14),
                 ),
               ],
             ),
@@ -425,7 +425,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: Align(
                 alignment: Alignment.bottomCenter,
                 child: Container(
-                  height: (fillHeight / bgHeight).clamp(0.0, 1.0) *
+                  height: (bgHeight).clamp(0.0, 1.0) *
                       200, // relative fill
                   decoration: BoxDecoration(
                     color: AppColors.primaryContainer
@@ -557,28 +557,36 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Consumo Crítico de Ingredientes',
+                  Text('Consumo crítico de Ingredientes',
                       style: AppTypography.h3(
                           color: AppColors.onSurface)),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
+                  Container(width: 300,
+                  child: Text(
                       'Ingredientes con mayor rotación en las últimas 24 horas.',
                       style: AppTypography.bodyMd(
                           color: AppColors.secondary)),
-                ],
-              ),
-              TextButton(
+                  ),
+                               TextButton(
                 onPressed: () => context.go('/admin/inventory'),
                 child: Text('Ver Inventario Completo',
                     style: AppTypography.labelCaps(
                         color: AppColors.primaryContainer)),
               ),
+                ],
+                 
+              ),
             ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
+          ),        
+          
+          const SizedBox(height: AppSpacing.md), SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              spacing: 10.0,
             children: [
-              _buildHeatmapCard(
+              Container(
+                height: 200,
+                width: 125,
+                child: _buildHeatmapCard(
                 'Salmón Noruego',
                 'Quedan: 2.5 kg',
                 0.15,
@@ -587,8 +595,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Icons.warning,
                 'Crítico',
               ),
-              const SizedBox(width: AppSpacing.sm),
-              _buildHeatmapCard(
+              ),
+              Container(
+                height: 200,
+                width: 125,
+                child: _buildHeatmapCard(
                 'Aguacate Hass',
                 'Quedan: 15 unidades',
                 0.35,
@@ -597,8 +608,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Icons.inventory_2,
                 'Bajo',
               ),
-              const SizedBox(width: AppSpacing.sm),
-              _buildHeatmapCard(
+              ),
+              Container(
+                height: 200,
+                width: 125,
+                child: _buildHeatmapCard(
                 'Harina de Trigo',
                 'Quedan: 45 kg',
                 0.80,
@@ -607,8 +621,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Icons.check_circle,
                 'Óptimo',
               ),
-              const SizedBox(width: AppSpacing.sm),
-              _buildHeatmapCard(
+              ),
+              Container(
+                height: 200,
+                width: 125,
+                child: _buildHeatmapCard(
                 'Queso Mozzarella',
                 'Quedan: 12 kg',
                 0.65,
@@ -617,7 +634,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Icons.check_circle,
                 'Óptimo',
               ),
+              ),
+
             ],
+          ),
           ),
         ],
       ),

@@ -261,20 +261,6 @@ class _MainMenuDashboardScreenState
                   _buildAdminModule(isLoggedIn, currentUser),
                 ],
               ),
-            if (!isWide) ...[
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildInventoryModule(isLoggedIn, currentUser),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: _buildAdminModule(isLoggedIn, currentUser),
-                  ),
-                ],
-              ),
-            ],
           ],
         );
       },
@@ -736,6 +722,7 @@ class _MainMenuDashboardScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
+        spacing: 10,
         children: [
           Expanded(
             flex: 3,
@@ -754,7 +741,7 @@ class _MainMenuDashboardScreenState
           Expanded(
             flex: 3,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppRadius.full),

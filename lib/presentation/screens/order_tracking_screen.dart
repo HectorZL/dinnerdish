@@ -184,7 +184,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         Row(
           children: [
             SizedBox(
-              width: isDesktop ? 260 : 240,
+              width: isDesktop ? 260 : 280,
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Buscar por mesa o pedido...',

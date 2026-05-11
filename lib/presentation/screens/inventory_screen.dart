@@ -199,6 +199,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   Widget _buildHeader() {
     return Row(
+      spacing: 10,
       children: [
         Expanded(
           child: Column(
@@ -210,15 +211,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
               Text(
                   'Supervisa el stock actual y controla los costes de tus insumos.',
                   style: AppTypography.bodyMd(color: AppColors.secondary)),
-            ],
-          ),
-        ),
-        StitchPrimaryButton(
+                          StitchPrimaryButton(
           label: 'Nuevo Ingrediente',
           icon: Icons.add,
           width: 200,
           onPressed: () {},
         ),
+            ],
+          ),
+        ),
+
       ],
     );
   }
@@ -226,7 +228,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
   Widget _buildOverview() {
     return Row(
       children: [
-        Expanded(
+        Container(
+          width: 360,
+          height: 450,
+          child:
+        Column( 
+          spacing: 10,
+          children: [
+          Flexible(
+          flex:3,
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
@@ -239,9 +249,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
@@ -265,9 +274,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
                               fontWeight: FontWeight.bold,
                               fontSize: 10)),
                     ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
+                  ]),
+
+                const SizedBox(height: AppSpacing.base),
                 Text('12',
                     style: AppTypography.h2(
                         color: AppColors.onBackground)),
@@ -278,9 +287,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
         ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
+                Flexible(
+          flex:3,
           child: Container(
+            width: 360,
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -312,8 +322,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
         ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
+        
+        Flexible(
           flex: 2,
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -363,7 +373,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: AppSpacing.base),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -382,14 +392,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
         ),
+        ]),
+        )
       ],
     );
   }
 
   Widget _buildFilters() {
-    return Row(
+    return Column(
+      spacing: 10,
       children: [
-        Expanded(
+        Container(
           child: TextField(
             decoration: InputDecoration(
               hintText: 'Buscar ingrediente por nombre o categoría...',
@@ -414,10 +427,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
+        Row(
+          spacing: 10,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
         _buildFilterButton(Icons.filter_list, 'Categoría'),
-        const SizedBox(width: AppSpacing.sm),
-        _buildFilterButton(Icons.sort, 'Precio'),
+        _buildFilterButton(Icons.sort, 'Precio'),],)
       ],
     );
   }
@@ -500,38 +515,73 @@ class _InventoryScreenState extends State<InventoryScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Mostrando 1-10 de 84 ingredientes',
+                Container(
+                  
+                  width: 90,
+                  child: Text('Mostrando 1-10 de 84 ingredientes',
                     style: AppTypography.bodyMd(
                         color: const Color(0xFF64748B))),
-                Row(
+                ),
+                Expanded(
+                  flex: 2,
+                  child:               Row(
+                    spacing: 10,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton(
+                    Container(
+                      width: 70,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        border: Border.all(color: const Color(0xFF64748B)),
+                        ),
+                      child: TextButton(
                         onPressed: null,
                         child: Text('Anterior',
                             style: AppTypography.bodyMd(
+                                fontSize: 10,
                                 color: const Color(0xFF94A3B8)))),
-                    TextButton(
+                    ),
+                    Container(
+                      width: 5,
+                      child:TextButton(
                         onPressed: null,
                         child: Text('1',
                             style: AppTypography.bodyMd(
                                 fontWeight: FontWeight.bold))),
-                    TextButton(
+                    ),
+                    Container(
+                      width: 5,
+                      child:TextButton(
                         onPressed: null,
                         child: Text('2',
                             style: AppTypography.bodyMd(
                                 color: const Color(0xFF64748B)))),
-                    TextButton(
+                    ),
+                    Container(
+                      width: 5,
+                      child:TextButton(
                         onPressed: null,
                         child: Text('3',
                             style: AppTypography.bodyMd(
                                 color: const Color(0xFF64748B)))),
-                    TextButton(
+                    ),
+                    Container(
+                      width: 70,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        border: Border.all(color: const Color(0xFF64748B)),
+                        ),
+                      child:TextButton(
                         onPressed: null,
                         child: Text('Siguiente',
                             style: AppTypography.bodyMd(
+                                fontSize: 10,
                                 color: const Color(0xFF64748B)))),
+                    ),
                   ],
                 ),
+                ),
+ 
               ],
             ),
           ),

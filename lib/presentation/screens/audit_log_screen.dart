@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dinnerhome/providers/providers.dart';
+import 'package:go_router/go_router.dart';
 import 'package:dinnerhome/models/audit_entry.dart';
 import '../theme/app_theme.dart';
 
@@ -88,7 +89,13 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
             StitchTopAppBar(
               title: 'Registro de Auditoría',
               showBack: true,
-              onBack: () => Navigator.of(context).maybePop(),
+              onBack: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/menu');
+                  }
+                },
               actions: [
                 IconButton(
                   icon: const Icon(Icons.refresh,

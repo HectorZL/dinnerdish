@@ -486,7 +486,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 160,
+        width: 130,
         height: 200,
         decoration: BoxDecoration(
           color: Colors.white,
