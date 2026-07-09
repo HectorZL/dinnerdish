@@ -13,6 +13,7 @@ import '../presentation/screens/cashier_screen.dart';
 import '../presentation/screens/payment_processing_screen.dart';
 import '../presentation/screens/cash_drawer_screen.dart';
 import '../presentation/screens/menu_management_screen.dart';
+import '../presentation/screens/cashier_pending_screen.dart';
 import '../presentation/screens/table_management_screen.dart';
 import '../presentation/screens/order_tracking_screen.dart';
 import '../presentation/screens/user_management_screen.dart';
@@ -74,6 +75,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/kds', builder: (ctx, state) => const KdsScreen()),
       GoRoute(path: '/audit', builder: (ctx, state) => const AuditLogScreen()),
       GoRoute(path: '/cashier/payments', builder: (ctx, state) => const CashierScreen()),
+      GoRoute(path: '/cashier/pending', builder: (ctx, state) => const CashierPendingScreen()),
       GoRoute(
         path: '/orders/:id/payment',
         builder: (ctx, state) => PaymentProcessingScreen(

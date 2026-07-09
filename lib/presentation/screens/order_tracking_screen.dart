@@ -26,135 +26,53 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(72),
-        child: _buildTopAppBar(isDesktop),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.containerPadding,
-            vertical: AppSpacing.xl),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1280),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(isDesktop),
-                const SizedBox(height: AppSpacing.xl),
-                _buildFilters(activeOrdersAsync),
-                const SizedBox(height: AppSpacing.xl),
-                _buildOrderGrid(isDesktop, activeOrdersAsync, menuItemsAsync.value ?? []),
-                const SizedBox(height: 100),
-              ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            StitchTopAppBar(
+              title: 'Pedidos',
+              navLinks: isDesktop
+                  ? [
+                      const NavLink('Inicio', false),
+                      const NavLink('Pedidos', true),
+                      const NavLink('Mesas', false),
+                    ]
+                  : null,
             ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: isMobile ? _buildBottomNavBar(currentUser) : null,
-    );
-  }
-
-  Widget _buildTopAppBar(bool isDesktop) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerPadding),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
-        border: const Border(
-            bottom: BorderSide(color: Color(0xFFF1F5F9))),
-        boxShadow: [AppShadows.card],
-      ),
-      child: SafeArea(
-        child: Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.menu,
-                        color: AppColors.primaryContainer),
-                    onPressed: () {},
-                  ),
-                  const SizedBox(width: AppSpacing.base),
-                  Text(
-                    'GastroGestion',
-                    style: AppTypography.h1(
-                      color: AppColors.primaryContainer,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  if (isDesktop) ...[
-                    _buildTopNavLink('Inicio', false),
-                    const SizedBox(width: AppSpacing.lg),
-                    _buildTopNavLink('Pedidos', true),
-                    const SizedBox(width: AppSpacing.lg),
-                    _buildTopNavLink('Mesas', false),
-                    const SizedBox(width: AppSpacing.lg),
-                    _buildTopNavLink('Menú', false),
-                    const SizedBox(width: AppSpacing.lg),
-                    _buildTopNavLink('Reportes', false),
-                    const SizedBox(width: AppSpacing.xl),
-                  ],
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.containerPadding,
+                    vertical: AppSpacing.xl),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1280),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(isDesktop),
+                        const SizedBox(height: AppSpacing.xl),
+                        _buildFilters(activeOrdersAsync),
+                        const SizedBox(height: AppSpacing.xl),
+                        _buildOrderGrid(isDesktop, activeOrdersAsync, menuItemsAsync.value ?? []),
+                        const SizedBox(height: 100),
                       ],
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                            'https://lh3.googleusercontent.com/aida-public/AB6AXuD8d7ngkMgWVncC79zU-uEc8WKmqqRICRSvYOR6knzSglKle6fiCp9RNgHrioxh_JowosYBe7TwHJgYTM2pWDMoBmvSTArIS5HnuZa5AHWo2CvPgs8Oi4KryxJsTy7swqJbZolob3f55fPe_Y4ajiShyixlOf-1YXEgQzthJcW_Mehq5WAk1Rzx0qIvVT1VAxxsAl-nyqNHsuSPQKgKJT5FWBd_7oxotfbcaB65CnnCz10DJVbXp_WTwXT-Yho3VrxrTM2RrccHuLdy'),
-                        fit: BoxFit.cover,
-                      ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ],
-          ),
+            ),
+            if (isMobile && currentUser != null)
+              StitchBottomNavBar(
+                currentRoute: '/orders/tracking',
+                currentUser: currentUser,
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTopNavLink(String title, bool isActive) {
-    return GestureDetector(
-      onTap: () {
-        switch (title) {
-          case 'Inicio':
-            context.go('/menu');
-          case 'Pedidos':
-            break;
-          case 'Mesas':
-            context.go('/tables');
-          case 'Menú':
-            context.go('/admin/menu');
-          case 'Reportes':
-            context.go('/admin/reports');
-        }
-      },
-      child: Text(
-        title,
-        style: AppTypography.bodyMd(
-          fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-          color: isActive
-              ? AppColors.primaryContainer
-              : const Color(0xFF64748B),
-        ),
-      ),
-    );
-  }
 
   Widget _buildHeader(bool isDesktop) {
     return Flex(
@@ -530,13 +448,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   fontWeight: FontWeight.bold)),
         ],
       ),
-    );
-  }
-
-  Widget _buildBottomNavBar(dynamic currentUser) {
-    return StitchBottomNavBar(
-      currentRoute: '/orders/tracking',
-      currentUser: currentUser,
     );
   }
 }

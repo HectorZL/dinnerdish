@@ -40,7 +40,16 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
               children: [
                 Column(
                   children: [
-                    _buildTopAppBar(isMobile),
+                    StitchTopAppBar(
+                      title: 'Mesas',
+                      navLinks: isDesktop
+                          ? [
+                              const NavLink('Inicio', false),
+                              const NavLink('Pedidos', false),
+                              const NavLink('Mesas', true),
+                            ]
+                          : null,
+                    ),
                     Expanded(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(
@@ -69,83 +78,6 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
     );
   }
 
-  Widget _buildTopAppBar(bool isMobile) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.containerPadding, vertical: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
-        border: const Border(
-            bottom: BorderSide(color: Color(0xFFF1F5F9))),
-        boxShadow: [AppShadows.card],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              if (isMobile)
-                IconButton(
-                  icon: const Icon(Icons.menu,
-                      color: AppColors.primaryContainer),
-                  onPressed: () {},
-                ),
-              if (isMobile) const SizedBox(width: AppSpacing.base),
-              Text(
-                'GastroGestion',
-                style: AppTypography.h1(
-                  color: AppColors.primaryContainer,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              if (!isMobile)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'SALÓN PRINCIPAL',
-                      style: AppTypography.labelCaps(
-                          color: const Color(0xFF64748B)),
-                    ),
-                    Text(
-                      '12/24 Mesas Libres',
-                      style: AppTypography.bodyMd(
-                        color: AppColors.primaryContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              const SizedBox(width: AppSpacing.md),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 4),
-                  ],
-                  image: const DecorationImage(
-                    image: NetworkImage(
-                        'https://lh3.googleusercontent.com/aida-public/AB6AXuDqi9W_iAlZGSRGBAPUtUY6V_Z0P-g4uKUgnAOui92UixNda83uNO4Ma8gx_jM7807GqxqYZA6TUfAjqS_5sAC3ZFA4aFbDM-I2gw1rBpYo_V8SBaiH0dy-UqF1rNf3PaR1nJMj6ulfCH4A5z7qLsRHQeUvk4qCryjj6XFTqzMy2IYvOTaYb67GQ_kx91JCcjKBk1PEraZZSGWs-9H6lskZ_dkinRCibJSYnQE9M5D5bIw-YOu_kHwqPQy-y4jXLfNAw7lYlYRWOxLX'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildSidebar(bool isDesktop) {
     return SizedBox(

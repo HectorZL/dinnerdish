@@ -423,6 +423,9 @@ class StitchBottomNavBar extends StatelessWidget {
     if (route == '/orders/tracking' && currentRoute.startsWith('/orders/')) {
         isActive = true;
     }
+    if (route == '/cashier/pending' && currentRoute.startsWith('/cashier/')) {
+        isActive = true;
+    }
 
     return GestureDetector(
       onTap: () {
