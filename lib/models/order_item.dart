@@ -39,6 +39,9 @@ class OrderItem {
   @HiveField(6)
   final int priceCents;
 
+  @HiveField(7)
+  final String? name;
+
   const OrderItem({
     required this.id,
     required this.menuItemId,
@@ -47,6 +50,7 @@ class OrderItem {
     required this.status,
     required this.modifierIds,
     this.priceCents = 0,
+    this.name,
   }) : assert(quantity > 0, 'quantity must be > 0'),
        assert(priceCents >= 0, 'priceCents must be >= 0');
 
@@ -73,6 +77,7 @@ class OrderItem {
       throw ArgumentError('Missing required field: modifierIds');
     }
     final priceCents = json['priceCents'] as int? ?? 0;
+    final name = json['name'] as String?;
 
     return OrderItem(
       id: id,
@@ -82,6 +87,7 @@ class OrderItem {
       status: OrderStatus.values.byName(statusRaw),
       modifierIds: modifierIdsRaw.map((e) => e as String).toList(),
       priceCents: priceCents,
+      name: name,
     );
   }
 
@@ -93,6 +99,7 @@ class OrderItem {
         'status': status.name,
         'modifierIds': modifierIds,
         'priceCents': priceCents,
+        'name': name,
       };
 
   OrderItem copyWith({
@@ -103,6 +110,7 @@ class OrderItem {
     OrderStatus? status,
     List<String>? modifierIds,
     int? priceCents,
+    String? name,
   }) {
     return OrderItem(
       id: id ?? this.id,
@@ -112,6 +120,7 @@ class OrderItem {
       status: status ?? this.status,
       modifierIds: modifierIds ?? this.modifierIds,
       priceCents: priceCents ?? this.priceCents,
+      name: name ?? this.name,
     );
   }
 }

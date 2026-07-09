@@ -135,6 +135,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         final orderItem = order_item.OrderItem(
           id: 'item-${DateTime.now().millisecondsSinceEpoch}-${entry.key}',
           menuItemId: item.id,
+          name: item.name,
           quantity: entry.value,
           priceCents: item.priceCents,
           status: order_item.OrderStatus.pending,

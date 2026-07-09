@@ -123,7 +123,7 @@ class KdsTicket extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Item ${item.menuItemId}',
+                            item.name ?? item.menuItemId,
                             style: const TextStyle(color: Colors.white, fontSize: 13),
                           ),
                         ),

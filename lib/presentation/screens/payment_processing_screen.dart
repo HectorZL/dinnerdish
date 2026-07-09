@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/providers.dart';
 import '../../models/order.dart';
+import '../../models/table.dart';
 import '../../models/payment_method.dart';
 import '../theme/app_theme.dart';
 
@@ -61,6 +62,8 @@ class _PaymentProcessingScreenState
 
     try {
       final paymentService = ref.read(paymentServiceProvider);
+      final orderService = ref.read(orderServiceProvider);
+      final tableService = ref.read(tableServiceProvider);
       final currentUser = ref.read(currentUserProvider).value;
 
       if (currentUser == null) {
@@ -85,6 +88,30 @@ class _PaymentProcessingScreenState
           method: _selectedMethod,
           processedBy: currentUser.id,
         );
+      }
+
+      // Close the order lifecycle: ready → billed → closed
+      await orderService.updateStatus(
+        orderId: widget.orderId,
+        status: OrderStatus.billed,
+        byUserId: currentUser.id,
+      );
+      await orderService.updateStatus(
+        orderId: widget.orderId,
+        status: OrderStatus.closed,
+        byUserId: currentUser.id,
+      );
+
+      // Free the table
+      if (_order!.tableId.isNotEmpty) {
+        try {
+          await tableService.updateTableStatus(
+            _order!.tableId,
+            TableStatus.available,
+          );
+        } catch (_) {
+          // Table might not exist (edge case), ignore
+        }
       }
 
       if (!mounted) return;

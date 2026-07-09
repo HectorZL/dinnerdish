@@ -15,46 +15,6 @@ class KdsScreen extends ConsumerStatefulWidget {
 }
 
 class _KdsScreenState extends ConsumerState<KdsScreen> {
-  final List<Order> _pendingTickets = [];
-  final List<Order> _preppingTickets = [];
-  final List<Order> _readyTickets = [];
-  StreamSubscription? _subscription;
-  bool _isConnected = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _subscribeToOrders();
-  }
-
-  void _subscribeToOrders() {
-    final socketService = ref.read(socketServiceProvider);
-    _subscription = socketService.orderEvents.listen((event) {
-      if (!mounted) return;
-      setState(() {
-        _isConnected = true;
-        _sortTicket(event.order);
-      });
-    });
-  }
-
-  void _sortTicket(Order order) {
-    _pendingTickets.removeWhere((o) => o.id == order.id);
-    _preppingTickets.removeWhere((o) => o.id == order.id);
-    _readyTickets.removeWhere((o) => o.id == order.id);
-
-    switch (order.status) {
-      case OrderStatus.sentToKitchen:
-        _pendingTickets.add(order);
-      case OrderStatus.prepping:
-        _preppingTickets.add(order);
-      case OrderStatus.ready:
-        _readyTickets.add(order);
-      default:
-        break;
-    }
-  }
-
   String? _getCurrentUserId() {
     return ref.read(currentUserProvider).value?.id;
   }
@@ -110,16 +70,17 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
   }
 
   @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final hasTickets = _pendingTickets.isNotEmpty ||
-        _preppingTickets.isNotEmpty ||
-        _readyTickets.isNotEmpty;
+    final activeOrdersAsync = ref.watch(activeOrdersProvider);
+    final activeOrders = activeOrdersAsync.value ?? [];
+    
+    final pendingTickets = activeOrders.where((o) => o.status == OrderStatus.sentToKitchen).toList();
+    final preppingTickets = activeOrders.where((o) => o.status == OrderStatus.prepping).toList();
+    final readyTickets = activeOrders.where((o) => o.status == OrderStatus.ready).toList();
+
+    final hasTickets = pendingTickets.isNotEmpty || preppingTickets.isNotEmpty || readyTickets.isNotEmpty;
+    final isConnected = !activeOrdersAsync.hasError;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -143,13 +104,13 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
                       Icon(
                         Icons.circle,
                         size: 10,
-                        color: _isConnected ? AppColors.statusReady : AppColors.error,
+                        color: isConnected ? AppColors.statusReady : AppColors.error,
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        _isConnected ? 'Conectado' : 'Desconectado',
+                        isConnected ? 'Conectado' : 'Desconectado',
                         style: AppTypography.statusBadge(
-                          color: _isConnected ? AppColors.statusReady : AppColors.error,
+                          color: isConnected ? AppColors.statusReady : AppColors.error,
                         ),
                       ),
                     ],
@@ -192,23 +153,23 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
                               tabs: [
                                 Tab(
                                     text:
-                                        'Pendientes (${_pendingTickets.length})'),
+                                        'Pendientes (${pendingTickets.length})'),
                                 Tab(
                                     text:
-                                        'Preparando (${_preppingTickets.length})'),
+                                        'Preparando (${preppingTickets.length})'),
                                 Tab(
                                     text:
-                                        'Listos (${_readyTickets.length})'),
+                                        'Listos (${readyTickets.length})'),
                               ],
                             ),
                           ),
                           Expanded(
                             child: TabBarView(
                               children: [
-                                _buildTicketGrid(_pendingTickets,
+                                _buildTicketGrid(pendingTickets,
                                     isPending: true),
-                                _buildTicketGrid(_preppingTickets),
-                                _buildTicketGrid(_readyTickets,
+                                _buildTicketGrid(preppingTickets),
+                                _buildTicketGrid(readyTickets,
                                     isReady: true),
                               ],
                             ),
