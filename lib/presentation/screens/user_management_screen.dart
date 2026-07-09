@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dinnerhome/providers/providers.dart';
 import '../theme/app_theme.dart';
 
-class UserManagementScreen extends StatefulWidget {
+class UserManagementScreen extends ConsumerStatefulWidget {
   const UserManagementScreen({super.key});
 
   @override
-  State<UserManagementScreen> createState() => _UserManagementScreenState();
+  ConsumerState<UserManagementScreen> createState() => _UserManagementScreenState();
 }
 
-class _UserManagementScreenState extends State<UserManagementScreen> {
+class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(currentUserProvider).value;
     final isDesktop = MediaQuery.of(context).size.width > 1024;
     final isMobile = !isDesktop;
 
@@ -61,7 +64,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: isMobile ? _buildBottomNavBar() : null,
+      bottomNavigationBar: isMobile ? _buildBottomNavBar(currentUser) : null,
     );
   }
 
@@ -161,23 +164,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  Widget _buildBottomNavBar() {
+  Widget _buildBottomNavBar(dynamic currentUser) {
     return StitchBottomNavBar(
-      currentIndex: 2,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/menu');
-          case 1:
-            context.go('/orders/tracking');
-          case 2:
-            context.go('/tables');
-          case 3:
-            context.go('/admin/reports');
-          case 4:
-            context.go('/admin/menu');
-        }
-      },
+      currentRoute: '/admin/users',
+      currentUser: currentUser,
     );
   }
 

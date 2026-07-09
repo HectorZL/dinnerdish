@@ -20,6 +20,7 @@ class RouteGuard {
     if (user == null) return false;
     return user.role == Role.mesero ||
         user.role == Role.cajero ||
+        user.role == Role.cocinero ||
         user.role == Role.admin;
   }
 

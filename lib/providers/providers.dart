@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:dinnerhome/models/user.dart';
 import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/models/audit_entry.dart';
+import 'package:dinnerhome/models/menu_item.dart';
 import 'package:dinnerhome/services/auth_service.dart';
 import 'package:dinnerhome/services/menu_service.dart';
 import 'package:dinnerhome/services/order_service.dart';
@@ -34,6 +35,11 @@ final authServiceProvider = Provider<AuthService>((ref) {
 
 final menuServiceProvider = Provider<MenuService>((ref) {
   return InMemoryMenuService();
+});
+
+final menuItemsProvider = FutureProvider<List<MenuItem>>((ref) async {
+  final menuService = ref.watch(menuServiceProvider);
+  return menuService.fetchMenu();
 });
 
 final orderServiceProvider = Provider<OrderService>((ref) {

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:dinnerhome/providers/providers.dart';
+import 'package:dinnerhome/router/route_guards.dart';
 
 // ──────────────────────────────────────────────
 // Stitch Design System — Shared Constants
@@ -268,22 +272,74 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                         )),
                   ],
                   if (actions != null) ...actions!,
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
-                      ],
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                          'https://lh3.googleusercontent.com/aida-public/AB6AXuDqi9W_iAlZGSRGBAPUtUY6V_Z0P-g4uKUgnAOui92UixNda83uNO4Ma8gx_jM7807GqxqYZA6TUfAjqS_5sAC3ZFA4aFbDM-I2gw1rBpYo_V8SBaiH0dy-UqF1rNf3PaR1nJMj6ulfCH4A5z7qLsRHQeUvk4qCryjj6XFTqzMy2IYvOTaYb67GQ_kx91JCcjKBk1PEraZZSGWs-9H6lskZ_dkinRCibJSYnQE9M5D5bIw-YOu_kHwqPQy-y4jXLfNAw7lYlYRWOxLX',
+                  Consumer(
+                    builder: (context, ref, child) {
+                      return PopupMenuButton<String>(
+                        offset: const Offset(0, 50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onSelected: (value) async {
+                          if (value == 'logout') {
+                            await ref.read(currentUserProvider.notifier).logout();
+                            if (context.mounted) {
+                              context.go('/login');
+                            }
+                          } else if (value == 'profile') {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Perfil'),
+                                content: const Text('Detalles del usuario irán aquí.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('Cerrar'),
+                                  )
+                                ],
+                              ),
+                            );
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'profile',
+                            child: Row(
+                              children: [
+                                Icon(Icons.person, color: Color(0xFF64748B), size: 20),
+                                SizedBox(width: 8),
+                                Text('Detalles del Usuario'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'logout',
+                            child: Row(
+                              children: [
+                                Icon(Icons.logout, color: Colors.red, size: 20),
+                                SizedBox(width: 8),
+                                Text('Salir', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        ],
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
+                            ],
+                            image: const DecorationImage(
+                              image: NetworkImage(
+                                'https://lh3.googleusercontent.com/aida-public/AB6AXuDqi9W_iAlZGSRGBAPUtUY6V_Z0P-g4uKUgnAOui92UixNda83uNO4Ma8gx_jM7807GqxqYZA6TUfAjqS_5sAC3ZFA4aFbDM-I2gw1rBpYo_V8SBaiH0dy-UqF1rNf3PaR1nJMj6ulfCH4A5z7qLsRHQeUvk4qCryjj6XFTqzMy2IYvOTaYb67GQ_kx91JCcjKBk1PEraZZSGWs-9H6lskZ_dkinRCibJSYnQE9M5D5bIw-YOu_kHwqPQy-y4jXLfNAw7lYlYRWOxLX',
+                              ),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -302,20 +358,46 @@ class NavLink {
 }
 
 /// Bottom Navigation Bar matching Stitch mobile pattern.
+class _NavItem {
+  final IconData icon;
+  final String label;
+  final String route;
+  _NavItem(this.icon, this.label, this.route);
+}
+
 class StitchBottomNavBar extends StatelessWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTap;
+  final String currentRoute;
   final dynamic currentUser;
 
   const StitchBottomNavBar({
     super.key,
-    required this.currentIndex,
-    required this.onTap,
+    required this.currentRoute,
     this.currentUser,
   });
 
   @override
   Widget build(BuildContext context) {
+    final items = <_NavItem>[
+      _NavItem(Icons.dashboard_outlined, 'Inicio', '/menu'),
+    ];
+
+    if (RouteGuard.canAccessOrders(currentUser)) {
+      items.add(_NavItem(Icons.receipt_long_outlined, 'Pedidos', '/orders/tracking'));
+    }
+    if (RouteGuard.canAccessTables(currentUser)) {
+      items.add(_NavItem(Icons.table_restaurant_outlined, 'Mesas', '/tables'));
+    }
+    if (RouteGuard.canAccessKds(currentUser)) {
+      items.add(_NavItem(Icons.kitchen_outlined, 'Cocina', '/kds'));
+    }
+    if (RouteGuard.canAccessPayment(currentUser)) {
+      items.add(_NavItem(Icons.point_of_sale_outlined, 'Caja', '/cashier/pending'));
+    }
+    if (currentUser != null && currentUser.role.toString() == 'Role.admin') {
+      items.add(_NavItem(Icons.bar_chart_outlined, 'Reportes', '/admin/reports'));
+      items.add(_NavItem(Icons.restaurant_menu_outlined, 'Menú', '/admin/menu'));
+    }
+
     return Container(
       padding: const EdgeInsets.only(top: 12, bottom: 24, left: 16, right: 16),
       decoration: BoxDecoration(
@@ -324,49 +406,55 @@ class StitchBottomNavBar extends StatelessWidget {
         boxShadow: [AppShadows.bottomNav],
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildItem(Icons.dashboard_outlined, 'Inicio', 0),
-          _buildItem(Icons.receipt_long_outlined, 'Pedidos', 1),
-          _buildItem(Icons.table_restaurant_outlined, 'Mesas', 2),
-          if (currentUser != null && currentUser.role.toString() == 'Role.admin') ...[
-            _buildItem(Icons.bar_chart_outlined, 'Reportes', 3),
-            _buildItem(Icons.restaurant_menu_outlined, 'Menú', 4),
-          ],
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: items.map((item) => _buildItem(context, item.icon, item.label, item.route)).toList(),
+        ),
       ),
     );
   }
 
-  Widget _buildItem(IconData icon, String label, int index) {
-    final isActive = currentIndex == index;
+  Widget _buildItem(BuildContext context, IconData icon, String label, String route) {
+    bool isActive = currentRoute == route;
+    if (route != '/menu' && currentRoute.startsWith(route)) {
+        isActive = true;
+    }
+    if (route == '/orders/tracking' && currentRoute.startsWith('/orders/')) {
+        isActive = true;
+    }
+
     return GestureDetector(
-      onTap: () => onTap(index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: isActive ? 16 : 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isActive ? const Color(0xFFFFF7ED) : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        if (!isActive) context.go(route);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: isActive ? 16 : 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isActive ? const Color(0xFFFFF7ED) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isActive ? AppColors.primaryContainer : const Color(0xFF94A3B8),
+              ),
             ),
-            child: Icon(
-              icon,
-              color: isActive ? AppColors.primaryContainer : const Color(0xFF94A3B8),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                color: isActive ? AppColors.primaryContainer : const Color(0xFF94A3B8),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-              color: isActive ? AppColors.primaryContainer : const Color(0xFF94A3B8),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -17,7 +17,6 @@ class MainMenuDashboardScreen extends ConsumerStatefulWidget {
 
 class _MainMenuDashboardScreenState
     extends ConsumerState<MainMenuDashboardScreen> {
-  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -72,33 +71,10 @@ class _MainMenuDashboardScreenState
         ),
       ),
       bottomNavigationBar: !isDesktop ? StitchBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-          _handleBottomNavTap(index);
-        },
+        currentRoute: '/menu',
+        currentUser: currentUser,
       ) : null,
     );
-  }
-
-  void _handleBottomNavTap(int index) {
-    switch (index) {
-      case 0:
-        context.go('/menu');
-        break;
-      case 1:
-        context.go('/orders/tracking');
-        break;
-      case 2:
-        context.go('/tables');
-        break;
-      case 3:
-        context.go('/admin/reports');
-        break;
-      case 4:
-        context.go('/admin/menu');
-        break;
-    }
   }
 
   Widget _buildQuickSummary(List<Order> activeOrders, WidgetRef ref) {
@@ -160,7 +136,7 @@ class _MainMenuDashboardScreenState
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: AppSpacing.md,
               mainAxisSpacing: AppSpacing.md,
-              childAspectRatio: isWide ? 2.5 : 1.5,
+              childAspectRatio: isWide ? 2.5 : 1.3,
               children: [
                 _buildStatCard('PEDIDOS ACTIVOS', '$activeCount', '+${todayOrders.length} hoy', AppColors.primaryContainer),
                 _buildStatCard('MESAS OCUPADAS', '$occupiedTables/$totalTables', null, AppColors.tertiaryContainer,
@@ -230,6 +206,33 @@ class _MainMenuDashboardScreenState
   }
 
   Widget _buildModuleGrid(bool isLoggedIn, dynamic currentUser) {
+    final modules = <Widget>[];
+    
+    if (RouteGuard.canAccessOrders(currentUser)) {
+      modules.add(_buildOrdersModule(isLoggedIn, currentUser));
+    }
+    
+    if (RouteGuard.canAccessKds(currentUser)) {
+      modules.add(_buildKdsModule(isLoggedIn, currentUser));
+    }
+    
+    if (RouteGuard.canAccessPayment(currentUser)) {
+      modules.add(_buildCashierModule(isLoggedIn, currentUser));
+    }
+    
+    if (RouteGuard.canAccessAdmin(currentUser)) {
+      modules.add(_buildInventoryModule(isLoggedIn, currentUser));
+      modules.add(_buildAdminModule(isLoggedIn, currentUser));
+    }
+
+    final spacedModules = <Widget>[];
+    for (int i = 0; i < modules.length; i++) {
+      spacedModules.add(modules[i]);
+      if (i < modules.length - 1) {
+        spacedModules.add(const SizedBox(height: AppSpacing.lg));
+      }
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 768;
@@ -239,36 +242,15 @@ class _MainMenuDashboardScreenState
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Left column - 8 cols
                   Expanded(
-                    flex: 8,
-                    child: _buildOrdersModule(isLoggedIn, currentUser),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  // Right column - 4 cols
-                  Expanded(
-                    flex: 4,
-                    child: Column(
-                      children: [
-                        _buildTablesModule(isLoggedIn, currentUser),
-                      ],
-                    ),
+                    flex: 12,
+                    child: Column(children: spacedModules),
                   ),
                 ],
               )
             else
               Column(
-                children: [
-                  _buildOrdersModule(isLoggedIn, currentUser),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildTablesModule(isLoggedIn, currentUser),
-                  if (RouteGuard.canAccessAdmin(currentUser)) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildInventoryModule(isLoggedIn, currentUser),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildAdminModule(isLoggedIn, currentUser),
-                  ],
-                ],
+                children: spacedModules,
               ),
           ],
         );
@@ -327,7 +309,6 @@ class _MainMenuDashboardScreenState
                     ),
                   ],
                 ),
-                Icon(Icons.receipt_long, color: AppColors.primaryContainer, size: 40),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
@@ -344,15 +325,21 @@ class _MainMenuDashboardScreenState
                       children: [
                         Icon(Icons.outdoor_grill, color: AppColors.primaryContainer, size: 20),
                         const SizedBox(width: AppSpacing.base),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('EN COCINA',
-                                style: AppTypography.statusBadge(
-                                    color: const Color(0xFF94A3B8))),
-                            Text('$inKitchenOrders Pedidos',
-                                style: AppTypography.h3(color: AppColors.onSurface)),
-                          ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('EN COCINA',
+                                  style: AppTypography.statusBadge(
+                                      color: const Color(0xFF94A3B8))),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text('$inKitchenOrders Pedidos',
+                                    style: AppTypography.h3(color: AppColors.onSurface)),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -370,15 +357,21 @@ class _MainMenuDashboardScreenState
                       children: [
                         Icon(Icons.check_circle, color: AppColors.tertiary, size: 20),
                         const SizedBox(width: AppSpacing.base),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('POR SERVIR',
-                                style: AppTypography.statusBadge(
-                                    color: const Color(0xFF94A3B8))),
-                            Text('$readyOrders Listos',
-                                style: AppTypography.h3(color: AppColors.onSurface)),
-                          ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('POR SERVIR',
+                                  style: AppTypography.statusBadge(
+                                      color: const Color(0xFF94A3B8))),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text('$readyOrders Listos',
+                                    style: AppTypography.h3(color: AppColors.onSurface)),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -392,18 +385,23 @@ class _MainMenuDashboardScreenState
     );
   }
 
-  Widget _buildTablesModule(bool isLoggedIn, dynamic currentUser) {
-    final canAccess = isLoggedIn && RouteGuard.canAccessTables(currentUser);
+  Widget _buildKdsModule(bool isLoggedIn, dynamic currentUser) {
+    final canAccess = isLoggedIn && RouteGuard.canAccessKds(currentUser);
+    final activeOrdersAsync = ref.watch(activeOrdersProvider);
+    final activeOrders = activeOrdersAsync.value ?? [];
+    
+    final inKitchenOrders = activeOrders.where((o) => o.status == OrderStatus.sentToKitchen || o.status == OrderStatus.prepping).length;
+
     return GestureDetector(
-      onTap: canAccess ? () => context.go('/tables') : null,
+      onTap: canAccess ? () => context.go('/kds') : null,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.primaryContainer,
+          color: const Color(0xFFFACC15), // Yellow for kitchen
           borderRadius: BorderRadius.circular(AppRadius.xl * 2),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryContainer.withValues(alpha: 0.3),
+              color: const Color(0xFFFACC15).withValues(alpha: 0.3),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),
@@ -415,33 +413,71 @@ class _MainMenuDashboardScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Mapa de Mesas', style: AppTypography.h2(color: Colors.white)),
-                Icon(Icons.table_restaurant, color: Colors.white.withValues(alpha: 0.8), size: 32),
+                Text('Pantalla KDS - Cocina', style: AppTypography.h2(color: Colors.black87)),
+                const Icon(Icons.kitchen, color: Colors.black87, size: 32),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
+            Text(
+              '$inKitchenOrders pedidos pendientes de preparación',
+              style: AppTypography.bodyMd(color: Colors.black54),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: Text(
+                'Entrar a Cocina',
+                textAlign: TextAlign.center,
+                style: AppTypography.statusBadge(color: Colors.black87),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCashierModule(bool isLoggedIn, dynamic currentUser) {
+    final canAccess = isLoggedIn && RouteGuard.canAccessPayment(currentUser);
+    final activeOrdersAsync = ref.watch(activeOrdersProvider);
+    final activeOrders = activeOrdersAsync.value ?? [];
+    
+    final pendingPaymentOrders = activeOrders.where((o) => o.status == OrderStatus.ready).length;
+
+    return GestureDetector(
+      onTap: canAccess ? () => context.go('/cashier/pending') : null,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: const Color(0xFF10B981), // Green for money
+          borderRadius: BorderRadius.circular(AppRadius.xl * 2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF10B981).withValues(alpha: 0.3),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildAvatar('JP'),
-                _buildAvatar('MG'),
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.2),
-                  ),
-                  child: Center(
-                    child: Text('+3',
-                        style: AppTypography.statusBadge(color: Colors.white)),
-                  ),
-                ),
+                Text('Caja y Cobros', style: AppTypography.h2(color: Colors.white)),
+                const Icon(Icons.point_of_sale, color: Colors.white, size: 32),
               ],
             ),
-            const SizedBox(height: AppSpacing.base),
+            const SizedBox(height: AppSpacing.md),
             Text(
-              '3 Reservas para la próxima hora',
-              style: AppTypography.bodyMd(color: Colors.white.withValues(alpha: 0.9)),
+              '$pendingPaymentOrders pedidos listos para cobro',
+              style: AppTypography.bodyMd(color: Colors.white70),
             ),
             const SizedBox(height: AppSpacing.sm),
             Container(
@@ -452,30 +488,13 @@ class _MainMenuDashboardScreenState
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
               child: Text(
-                'Ver Plano',
+                'Abrir Caja',
                 textAlign: TextAlign.center,
                 style: AppTypography.statusBadge(color: Colors.white),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAvatar(String initials) {
-    return Container(
-      width: 32,
-      height: 32,
-      margin: const EdgeInsets.only(right: 4),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.primaryContainer,
-        border: Border.all(color: Colors.white, width: 2),
-      ),
-      child: Center(
-        child: Text(initials,
-            style: AppTypography.statusBadge(color: Colors.white).copyWith(fontSize: 10)),
       ),
     );
   }
@@ -695,9 +714,11 @@ class _MainMenuDashboardScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(tableName,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.bodyMd(
                         color: AppColors.onSurface).copyWith(fontWeight: FontWeight.bold)),
                 Text(location,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.statusBadge(
                         color: const Color(0xFF94A3B8))),
               ],
@@ -723,8 +744,11 @@ class _MainMenuDashboardScreenState
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Text(status,
-                      style: AppTypography.statusBadge(color: statusColor)),
+                  Expanded(
+                    child: Text(status,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.statusBadge(color: statusColor)),
+                  ),
                 ],
               ),
             ),
@@ -732,6 +756,7 @@ class _MainMenuDashboardScreenState
           Expanded(
             flex: 2,
             child: Text(total,
+                overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodyMd(
                     color: AppColors.onSurface).copyWith(fontWeight: FontWeight.bold)),
           ),

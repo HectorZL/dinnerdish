@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dinnerhome/providers/providers.dart';
 import '../theme/app_theme.dart';
 
-class ReportsScreen extends StatefulWidget {
+class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
   @override
-  State<ReportsScreen> createState() => _ReportsScreenState();
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
 }
 
-class _ReportsScreenState extends State<ReportsScreen> {
+class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(currentUserProvider).value;
     final isDesktop = MediaQuery.of(context).size.width > 1024;
     final isMobile = !isDesktop;
 
@@ -58,7 +61,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: isMobile ? _buildBottomNavBar() : null,
+      bottomNavigationBar: isMobile ? _buildBottomNavBar(currentUser) : null,
     );
   }
 
@@ -164,21 +167,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildBottomNavBar() {
+  Widget _buildBottomNavBar(dynamic currentUser) {
     return StitchBottomNavBar(
-      currentIndex: 3,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/menu');
-          case 1:
-            context.go('/orders/tracking');
-          case 2:
-            context.go('/tables');
-          case 4:
-            context.go('/admin/menu');
-        }
-      },
+      currentRoute: '/admin/reports',
+      currentUser: currentUser,
     );
   }
 

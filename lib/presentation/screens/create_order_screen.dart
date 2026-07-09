@@ -59,6 +59,11 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
       
       if (widget.existingOrderId != null) {
         order = await orderService.getOrder(widget.existingOrderId!);
+        if (order != null) {
+          for (var item in order.items) {
+            _selectedQuantities[item.menuItemId] = (_selectedQuantities[item.menuItemId] ?? 0) + item.quantity;
+          }
+        }
       } else if (currentUser != null) {
         order = await orderService.createDraft(waiterId: currentUser.id);
       }
@@ -101,11 +106,27 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
       final orderService = ref.read(orderServiceProvider);
 
       // Update Table
-      if (tableId.isNotEmpty && tableId != _currentOrder!.tableId) {
-        await orderService.updateTable(
-          orderId: _currentOrder!.id,
-          tableId: tableId,
+      if (tableId.isNotEmpty) {
+        if (tableId != _currentOrder!.tableId) {
+          await orderService.updateTable(
+            orderId: _currentOrder!.id,
+            tableId: tableId,
+          );
+        }
+        await ref.read(tableServiceProvider).updateTableStatus(
+          tableId,
+          table_model.TableStatus.occupied,
         );
+      }
+
+      if (widget.existingOrderId != null) {
+        for (var existing in _currentOrder!.items.toList()) {
+          await orderService.removeItem(
+            orderId: _currentOrder!.id,
+            itemId: existing.id,
+            byUserId: currentUser.id,
+          );
+        }
       }
 
       for (final entry in _selectedQuantities.entries) {
@@ -563,8 +584,10 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                   // Fallback just in case
                   availableTables.addAll(['01', '02', '03', '04']);
                 }
-                if (selectedTableId.isEmpty || !availableTables.contains(selectedTableId)) {
-                  selectedTableId = availableTables.isNotEmpty ? availableTables.first : '';
+                if (widget.existingOrderId == null) {
+                  if (selectedTableId.isEmpty || !availableTables.contains(selectedTableId)) {
+                    selectedTableId = availableTables.isNotEmpty ? availableTables.first : '';
+                  }
                 }
                 showModalBottomSheet(
                   context: context,
@@ -627,19 +650,25 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                 ),
                               ),
                               const Divider(height: 32),
-                              DropdownButtonFormField<String>(
-                                initialValue: availableTables.contains(selectedTableId) ? selectedTableId : null,
-                                decoration: InputDecoration(
-                                  labelText: 'Seleccionar Mesa',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              if (widget.existingOrderId == null)
+                                DropdownButtonFormField<String>(
+                                  initialValue: availableTables.contains(selectedTableId) ? selectedTableId : null,
+                                  decoration: InputDecoration(
+                                    labelText: 'Seleccionar Mesa',
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  items: availableTables.map((table) {
+                                    return DropdownMenuItem<String>(value: table, child: Text('Mesa $table'));
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) setModalState(() => selectedTableId = val);
+                                  },
+                                )
+                              else
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Text('Mesa seleccionada: $selectedTableId', style: AppTypography.h3()),
                                 ),
-                                items: availableTables.map((table) {
-                                  return DropdownMenuItem<String>(value: table, child: Text('Mesa $table'));
-                                }).toList(),
-                                onChanged: (val) {
-                                  if (val != null) setModalState(() => selectedTableId = val);
-                                },
-                              ),
                               const SizedBox(height: 24),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -650,7 +679,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                               ),
                               const SizedBox(height: 24),
                               StitchPrimaryButton(
-                                onPressed: availableTables.isEmpty ? null : () {
+                                onPressed: (widget.existingOrderId == null && availableTables.isEmpty) ? null : () {
                                   Navigator.pop(ctx);
                                   _sendToKitchen(selectedTableId);
                                 },

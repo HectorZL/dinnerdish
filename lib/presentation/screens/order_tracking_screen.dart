@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dinnerhome/models/order.dart';
+import 'package:dinnerhome/models/menu_item.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import '../theme/app_theme.dart';
 
@@ -18,6 +19,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
+    final menuItemsAsync = ref.watch(menuItemsProvider);
+    final currentUser = ref.watch(currentUserProvider).value;
     final isDesktop = MediaQuery.of(context).size.width > 768;
     final isMobile = !isDesktop;
 
@@ -41,24 +44,14 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 const SizedBox(height: AppSpacing.xl),
                 _buildFilters(activeOrdersAsync),
                 const SizedBox(height: AppSpacing.xl),
-                _buildOrderGrid(isDesktop, activeOrdersAsync),
+                _buildOrderGrid(isDesktop, activeOrdersAsync, menuItemsAsync.value ?? []),
                 const SizedBox(height: 100),
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: isMobile ? _buildBottomNavBar() : null,
-      floatingActionButton: isMobile
-          ? FloatingActionButton(
-              onPressed: () {context.go('/orders/create');},
-              backgroundColor: AppColors.primaryContainer,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30)),
-              elevation: 8,
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
+      bottomNavigationBar: isMobile ? _buildBottomNavBar(currentUser) : null,
     );
   }
 
@@ -184,49 +177,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             ),
           ],
         ),
-        if (!isDesktop) const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            SizedBox(
-              width: isDesktop ? 260 : 280,
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Buscar por mesa o pedido...',
-                  hintStyle: AppTypography.bodyMd(
-                      color: const Color(0xFF94A3B8)),
-                  prefixIcon: const Icon(Icons.search,
-                      color: Color(0xFF94A3B8)),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    borderSide:
-                        const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    borderSide:
-                        const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.tune, color: Color(0xFF475569)),
-                onPressed: () {},
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -246,42 +196,38 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       'Listo ($readyCount)',
       'Servido ($billedCount)'
     ];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(filters.length, (index) {
-          final isActive = _selectedFilterIndex == index;
-          return Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.base),
-            child: ChoiceChip(
-              label: Text(
-                filters[index],
-                style: AppTypography.statusBadge(
-                  color: isActive ? Colors.white : const Color(0xFF475569),
-                ),
-              ),
-              selected: isActive,
-              onSelected: (selected) {
-                setState(() => _selectedFilterIndex = index);
-              },
-              backgroundColor: Colors.white,
-              selectedColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: BorderSide(
-                    color:
-                        isActive ? Colors.transparent : const Color(0xFFF1F5F9)),
-              ),
-              elevation: isActive ? 4 : 0,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+    return Wrap(
+      spacing: AppSpacing.base,
+      runSpacing: AppSpacing.sm,
+      children: List.generate(filters.length, (index) {
+        final isActive = _selectedFilterIndex == index;
+        return ChoiceChip(
+          label: Text(
+            filters[index],
+            style: AppTypography.statusBadge(
+              color: isActive ? Colors.white : const Color(0xFF475569),
             ),
-          );
-        }),
-      ),
+          ),
+          selected: isActive,
+          onSelected: (selected) {
+            setState(() => _selectedFilterIndex = index);
+          },
+          backgroundColor: Colors.white,
+          selectedColor: AppColors.primary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+                color:
+                    isActive ? Colors.transparent : const Color(0xFFF1F5F9)),
+          ),
+          elevation: isActive ? 4 : 0,
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        );
+      }),
     );
   }
-  Widget _buildOrderGrid(bool isDesktop, AsyncValue<List<Order>> activeOrdersAsync) {
+  Widget _buildOrderGrid(bool isDesktop, AsyncValue<List<Order>> activeOrdersAsync, List<MenuItem> menuItems) {
     return activeOrdersAsync.when(
       data: (orders) {
         final filteredOrders = orders.where((order) {
@@ -352,8 +298,9 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             }
 
             final items = order.items.map((item) {
+              final menuItem = menuItems.firstWhere((m) => m.id == item.menuItemId, orElse: () => MenuItem(id: '', name: 'Artículo ${item.menuItemId}', priceCents: item.priceCents, category: '', available: true, modifiers: []));
               return {
-                'name': '${item.quantity}x Artículo ${item.menuItemId.length > 5 ? item.menuItemId.substring(0, 5) : item.menuItemId}',
+                'name': '${item.quantity}x ${menuItem.name}',
                 'price': '${(item.priceCents * item.quantity / 100).toStringAsFixed(2)}€'
               };
             }).toList();
@@ -366,6 +313,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               bgColor: bgColor,
               items: items,
               actions: [
+                if (order.status == OrderStatus.sentToKitchen)
+                  _buildActionBtn('Editar', Icons.edit, false, onTap: () => context.go('/orders/${order.id}/edit')),
                 if (order.status == OrderStatus.sentToKitchen)
                   _buildActionBtn('Cancelar', Icons.close, false),
                 if (order.status == OrderStatus.sentToKitchen)
@@ -467,7 +416,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
           ),
           const Divider(height: 1, color: Color(0xFFF8FAFC)),
           Expanded(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.gutter),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,9 +503,9 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   }
 
   Widget _buildActionBtn(
-      String text, IconData? icon, bool isPrimary) {
+      String text, IconData? icon, bool isPrimary, {VoidCallback? onTap}) {
     return ElevatedButton(
-      onPressed: () {},
+      onPressed: onTap ?? () {},
       style: ElevatedButton.styleFrom(
         backgroundColor: isPrimary
             ? AppColors.primaryContainer
@@ -584,21 +533,10 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     );
   }
 
-  Widget _buildBottomNavBar() {
+  Widget _buildBottomNavBar(dynamic currentUser) {
     return StitchBottomNavBar(
-      currentIndex: 1,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/menu');
-          case 2:
-            context.go('/tables');
-          case 3:
-            context.go('/admin/reports');
-          case 4:
-            context.go('/admin/menu');
-        }
-      },
+      currentRoute: '/orders/tracking',
+      currentUser: currentUser,
     );
   }
 }

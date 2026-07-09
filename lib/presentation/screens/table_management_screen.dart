@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dinnerhome/models/table.dart' as table_model;
+import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import '../theme/app_theme.dart';
 
@@ -18,6 +19,8 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final tablesAsync = ref.watch(tablesProvider);
+    final activeOrdersAsync = ref.watch(activeOrdersProvider);
+    final currentUser = ref.watch(currentUserProvider).value;
     final size = MediaQuery.of(context).size;
     final bool isDesktop = size.width > 1024;
     final bool isTablet = size.width > 768 && size.width <= 1024;
@@ -48,7 +51,7 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
                           children: [
                             _buildToolbarLegend(isDesktop),
                             const SizedBox(height: AppSpacing.xl),
-                            _buildTableGrid(tablesAsync),
+                            _buildTableGrid(tablesAsync, activeOrdersAsync),
                             const SizedBox(height: 80),
                           ],
                         ),
@@ -62,16 +65,7 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: isMobile ? _buildBottomNavBar() : null,
-      floatingActionButton: isMobile
-          ? FloatingActionButton(
-              onPressed: () {},
-              backgroundColor: AppColors.primaryContainer,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30)),
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
+      bottomNavigationBar: isMobile ? _buildBottomNavBar(currentUser) : null,
     );
   }
 
@@ -299,21 +293,10 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
     }
   }
 
-  Widget _buildBottomNavBar() {
+  Widget _buildBottomNavBar(dynamic currentUser) {
     return StitchBottomNavBar(
-      currentIndex: 2,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/menu');
-          case 1:
-            context.go('/orders/tracking');
-          case 3:
-            context.go('/admin/reports');
-          case 4:
-            context.go('/admin/menu');
-        }
-      },
+      currentRoute: '/tables',
+      currentUser: currentUser,
     );
   }
 
@@ -382,7 +365,7 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
     );
   }
 
-  Widget _buildTableGrid(AsyncValue<List<table_model.Table>> tablesAsync) {
+  Widget _buildTableGrid(AsyncValue<List<table_model.Table>> tablesAsync, AsyncValue<List<Order>> activeOrdersAsync) {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 600),
@@ -427,6 +410,13 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
                 statusColor,
                 null,
                 index,
+                onTap: table.status == table_model.TableStatus.occupied ? () {
+                  final activeOrders = activeOrdersAsync.value ?? [];
+                  final order = activeOrders.where((o) => o.tableId == table.id).firstOrNull;
+                  if (order != null) {
+                    context.go('/orders/${order.id}');
+                  }
+                } : null,
               );
             }).toList(),
           );
@@ -438,9 +428,9 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
   }
 
   Widget _buildTableCard(String id, String capacity, String statusText,
-      Color color, String? badgeTag, int index) {
+      Color color, String? badgeTag, int index, {VoidCallback? onTap}) {
     return GestureDetector(
-      onTap: () {
+      onTap: onTap ?? () {
         setState(() {
           _selectedTableIndex = _selectedTableIndex == index ? -1 : index;
         });
