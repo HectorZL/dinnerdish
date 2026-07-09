@@ -60,6 +60,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (ctx, state) => const LoginScreen()),
       GoRoute(path: '/menu', builder: (ctx, state) => const MainMenuDashboardScreen()),
       GoRoute(path: '/orders/create', builder: (ctx, state) => const CreateOrderScreen()),
+      GoRoute(
+        path: '/orders/:id/edit',
+        builder: (ctx, state) => CreateOrderScreen(
+          existingOrderId: state.pathParameters['id'],
+        ),
+      ),
       GoRoute(path: '/orders/tracking', builder: (ctx, state) => const OrderTrackingScreen()),
       GoRoute(path: '/orders/:id', builder: (ctx, state) => OrderDetailScreen(
         orderId: state.pathParameters['id']!,

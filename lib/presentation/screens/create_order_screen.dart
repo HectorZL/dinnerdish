@@ -9,7 +9,8 @@ import 'package:dinnerhome/models/order_item.dart' as order_item;
 import '../theme/app_theme.dart';
 
 class CreateOrderScreen extends ConsumerStatefulWidget {
-  const CreateOrderScreen({super.key});
+  final String? existingOrderId;
+  const CreateOrderScreen({this.existingOrderId, super.key});
 
   @override
   ConsumerState<CreateOrderScreen> createState() => _CreateOrderScreenState();
@@ -52,8 +53,11 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
 
       final currentUser = ref.read(currentUserProvider).value;
       Order? order;
-      if (currentUser != null) {
-        final orderService = ref.read(orderServiceProvider);
+      final orderService = ref.read(orderServiceProvider);
+      
+      if (widget.existingOrderId != null) {
+        order = await orderService.getOrder(widget.existingOrderId!);
+      } else if (currentUser != null) {
         order = await orderService.createDraft(waiterId: currentUser.id);
       }
 
@@ -168,32 +172,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     }
   }
 
-  Future<void> _requestPayment() async {
-    if (_currentOrder == null) return;
-    final currentUser = ref.read(currentUserProvider).value;
-    if (currentUser == null) return;
 
-    try {
-      final paymentService = ref.read(paymentServiceProvider);
-
-      await paymentService.requestPayment(
-        orderId: _currentOrder!.id,
-        requestedBy: currentUser.id,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pago solicitado al cajero')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
-  }
 
   Future<void> _showNoteDialog() async {
     final controller = TextEditingController();
@@ -675,30 +654,6 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                             icon: const Icon(Icons
                                 .description_outlined),
                             label: const Text('Añadir Nota'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor:
-                                  AppColors.primaryContainer,
-                              side: const BorderSide(
-                                  color:
-                                      AppColors.primaryContainer),
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(
-                                        AppRadius.xl),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              _requestPayment();
-                            },
-                            icon: const Icon(Icons.payments),
-                            label: const Text(
-                                'Solicitar Pago'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor:
                                   AppColors.primaryContainer,

@@ -560,7 +560,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   Text('Consumo crítico de Ingredientes',
                       style: AppTypography.h3(
                           color: AppColors.onSurface)),
-                  Container(width: 300,
+                  SizedBox(width: 300,
                   child: Text(
                       'Ingredientes con mayor rotación en las últimas 24 horas.',
                       style: AppTypography.bodyMd(
@@ -583,7 +583,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             child: Row(
               spacing: 10.0,
             children: [
-              Container(
+              SizedBox(
                 height: 200,
                 width: 125,
                 child: _buildHeatmapCard(
@@ -596,7 +596,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 'Crítico',
               ),
               ),
-              Container(
+              SizedBox(
                 height: 200,
                 width: 125,
                 child: _buildHeatmapCard(
@@ -609,7 +609,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 'Bajo',
               ),
               ),
-              Container(
+              SizedBox(
                 height: 200,
                 width: 125,
                 child: _buildHeatmapCard(
@@ -622,7 +622,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 'Óptimo',
               ),
               ),
-              Container(
+              SizedBox(
                 height: 200,
                 width: 125,
                 child: _buildHeatmapCard(

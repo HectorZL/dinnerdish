@@ -228,7 +228,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   Widget _buildOverview() {
     return Row(
       children: [
-        Container(
+        SizedBox(
           width: 360,
           height: 450,
           child:
@@ -402,28 +402,26 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return Column(
       spacing: 10,
       children: [
-        Container(
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Buscar ingrediente por nombre o categoría...',
-              hintStyle: AppTypography.bodyMd(
-                  color: const Color(0xFF94A3B8)),
-              prefixIcon: const Icon(Icons.search,
-                  color: Color(0xFF94A3B8)),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                  vertical: AppSpacing.sm, horizontal: AppSpacing.md),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                borderSide:
-                    const BorderSide(color: Color(0xFFE2E8F0)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                borderSide:
-                    const BorderSide(color: Color(0xFFE2E8F0)),
-              ),
+        TextField(
+          decoration: InputDecoration(
+            hintText: 'Buscar ingrediente por nombre o categoría...',
+            hintStyle: AppTypography.bodyMd(
+                color: const Color(0xFF94A3B8)),
+            prefixIcon: const Icon(Icons.search,
+                color: Color(0xFF94A3B8)),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.sm, horizontal: AppSpacing.md),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              borderSide:
+                  const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              borderSide:
+                  const BorderSide(color: Color(0xFFE2E8F0)),
             ),
           ),
         ),
@@ -515,7 +513,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
+                SizedBox(
                   
                   width: 90,
                   child: Text('Mostrando 1-10 de 84 ingredientes',
@@ -541,7 +539,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                 fontSize: 10,
                                 color: const Color(0xFF94A3B8)))),
                     ),
-                    Container(
+                    SizedBox(
                       width: 5,
                       child:TextButton(
                         onPressed: null,
@@ -549,7 +547,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                             style: AppTypography.bodyMd(
                                 fontWeight: FontWeight.bold))),
                     ),
-                    Container(
+                    SizedBox(
                       width: 5,
                       child:TextButton(
                         onPressed: null,
@@ -557,7 +555,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                             style: AppTypography.bodyMd(
                                 color: const Color(0xFF64748B)))),
                     ),
-                    Container(
+                    SizedBox(
                       width: 5,
                       child:TextButton(
                         onPressed: null,

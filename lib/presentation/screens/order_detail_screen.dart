@@ -268,45 +268,65 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           ),
                           const SizedBox(height: AppSpacing.lg),
                           // Action Buttons
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () =>
-                                      context.go('/orders/${widget.orderId}/payment'),
-                                  icon: const Icon(Icons.payments, size: 20),
-                                  label: const Text('Ir a Pago'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryContainer,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                                    ),
-                                    elevation: 8,
-                                    shadowColor:
-                                        AppColors.primaryContainer.withValues(alpha: 0.3),
+                          if (_order!.status != OrderStatus.closed && _order!.status != OrderStatus.billed)
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () => context.push('/orders/${widget.orderId}/edit'),
+                                icon: const Icon(Icons.add_circle_outline, size: 20),
+                                label: const Text('Añadir Platos'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primaryContainer,
+                                  side: const BorderSide(color: AppColors.primaryContainer),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppRadius.xl),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: _requestPayment,
-                                  icon: const Icon(Icons.receipt, size: 20),
-                                  label: const Text('Solicitar Pago'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.primaryContainer,
-                                    side: const BorderSide(color: AppColors.primaryContainer),
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                            ),
+                          if (_order!.status != OrderStatus.closed && _order!.status != OrderStatus.billed)
+                            const SizedBox(height: AppSpacing.sm),
+                          if (_order!.status == OrderStatus.ready || _order!.status == OrderStatus.billed)
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () =>
+                                        context.go('/orders/${widget.orderId}/payment'),
+                                    icon: const Icon(Icons.payments, size: 20),
+                                    label: const Text('Ir a Pago'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primaryContainer,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                                      ),
+                                      elevation: 8,
+                                      shadowColor:
+                                          AppColors.primaryContainer.withValues(alpha: 0.3),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: _requestPayment,
+                                    icon: const Icon(Icons.receipt, size: 20),
+                                    label: const Text('Solicitar Pago'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.primaryContainer,
+                                      side: const BorderSide(color: AppColors.primaryContainer),
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                         ],
                       ),
                     ),
