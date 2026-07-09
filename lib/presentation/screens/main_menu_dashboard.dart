@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../providers/providers.dart';
 import '../../router/route_guards.dart';
 import '../theme/app_theme.dart';
+import 'package:dinnerhome/models/order.dart';
+import 'package:dinnerhome/models/table.dart' as table_model;
 
 class MainMenuDashboardScreen extends ConsumerStatefulWidget {
   const MainMenuDashboardScreen({super.key});
@@ -22,6 +24,8 @@ class _MainMenuDashboardScreenState
     final currentUser = ref.read(currentUserProvider).value;
     final isLoggedIn = currentUser != null;
     final isDesktop = MediaQuery.of(context).size.width > 768;
+    final activeOrdersAsync = ref.watch(activeOrdersProvider);
+    final activeOrders = activeOrdersAsync.value ?? [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -35,7 +39,8 @@ class _MainMenuDashboardScreenState
                       const NavLink('Inicio', true),
                       const NavLink('Pedidos', false),
                       const NavLink('Mesas', false),
-                      const NavLink('Menú', false),
+                      if (RouteGuard.canAccessAdmin(currentUser))
+                        const NavLink('Menú', false),
                     ]
                   : null,
             ),
@@ -50,13 +55,13 @@ class _MainMenuDashboardScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Quick Summary Section
-                        _buildQuickSummary(),
+                        _buildQuickSummary(activeOrders, ref),
                         const SizedBox(height: AppSpacing.lg),
                         // Bento Style Module Grid
                         _buildModuleGrid(isLoggedIn, currentUser),
                         const SizedBox(height: AppSpacing.xl),
                         // Recent Orders Table
-                        _buildRecentOrders(),
+                        _buildRecentOrders(activeOrders),
                       ],
                     ),
                   ),
@@ -85,10 +90,7 @@ class _MainMenuDashboardScreenState
         context.go('/orders/tracking');
         break;
       case 2:
-        // Tables - route added later
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Próximamente')),
-        );
+        context.go('/tables');
         break;
       case 3:
         context.go('/admin/reports');
@@ -99,25 +101,36 @@ class _MainMenuDashboardScreenState
     }
   }
 
-  Widget _buildQuickSummary() {
+  Widget _buildQuickSummary(List<Order> activeOrders, WidgetRef ref) {
+    final activeCount = activeOrders.length;
+    final todayOrders = activeOrders.where((o) => o.createdAt.day == DateTime.now().day).toList();
+    final revenue = todayOrders.fold<int>(0, (sum, o) => sum + o.totalCents) / 100;
+
+    final tablesAsync = ref.watch(tablesProvider);
+    final tables = tablesAsync.value ?? [];
+    final totalTables = tables.length;
+    final occupiedTables = tables.where((t) => t.status != table_model.TableStatus.available).length;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Resumen del Turno',
-                  style: AppTypography.h1(),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Servicio de Almuerzo • 14:30 PM',
-                  style: AppTypography.bodyMd(color: AppColors.secondary),
-                ),            ElevatedButton.icon(
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Vista General', style: AppTypography.h2()),
+                  Text(
+                    'Métricas clave de la operación actual.',
+                    style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton.icon(
               onPressed: () => context.go('/orders/create'),
               icon: const Icon(Icons.add, size: 18),
               label: Text(
@@ -135,8 +148,6 @@ class _MainMenuDashboardScreenState
                 shadowColor: AppColors.primaryContainer.withValues(alpha: 0.3),
               ),
             ),
-              ],
-            ),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
@@ -149,14 +160,14 @@ class _MainMenuDashboardScreenState
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: AppSpacing.md,
               mainAxisSpacing: AppSpacing.md,
-              childAspectRatio: isWide ? 2.2 : 1.8,
+              childAspectRatio: isWide ? 2.5 : 1.5,
               children: [
-                _buildStatCard('PEDIDOS ACTIVOS', '12', '+3 hoy', AppColors.primaryContainer),
-                _buildStatCard('MESAS OCUPADAS', '8/15', null, AppColors.tertiaryContainer,
-                    showProgress: true, progressValue: 0.53),
-                _buildStatCard('FACTURACIÓN', '1.240€', null, AppColors.tertiary,
+                _buildStatCard('PEDIDOS ACTIVOS', '$activeCount', '+${todayOrders.length} hoy', AppColors.primaryContainer),
+                _buildStatCard('MESAS OCUPADAS', '$occupiedTables/$totalTables', null, AppColors.tertiaryContainer,
+                    showProgress: true, progressValue: totalTables > 0 ? occupiedTables / totalTables : 0),
+                _buildStatCard('FACTURACIÓN', '${revenue.toStringAsFixed(2)}€', null, AppColors.tertiary,
                     showIcon: Icons.trending_up),
-                _buildStatCard('TIEMPO MEDIO', '18 min', null, AppColors.error,
+                _buildStatCard('TIEMPO MEDIO', '12 min', null, AppColors.error,
                     showIcon: Icons.timer),
               ],
             );
@@ -186,7 +197,7 @@ class _MainMenuDashboardScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(value, style: AppTypography.h2()),
+              Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(value, style: AppTypography.h2()))),
               if (badge != null)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -240,8 +251,6 @@ class _MainMenuDashboardScreenState
                     child: Column(
                       children: [
                         _buildTablesModule(isLoggedIn, currentUser),
-                        const SizedBox(height: AppSpacing.lg),
-                        _buildKitchenModule(isLoggedIn, currentUser),
                       ],
                     ),
                   ),
@@ -253,12 +262,12 @@ class _MainMenuDashboardScreenState
                   _buildOrdersModule(isLoggedIn, currentUser),
                   const SizedBox(height: AppSpacing.lg),
                   _buildTablesModule(isLoggedIn, currentUser),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildKitchenModule(isLoggedIn, currentUser),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildInventoryModule(isLoggedIn, currentUser),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildAdminModule(isLoggedIn, currentUser),
+                  if (RouteGuard.canAccessAdmin(currentUser)) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildInventoryModule(isLoggedIn, currentUser),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildAdminModule(isLoggedIn, currentUser),
+                  ],
                 ],
               ),
           ],
@@ -269,6 +278,12 @@ class _MainMenuDashboardScreenState
 
   Widget _buildOrdersModule(bool isLoggedIn, dynamic currentUser) {
     final canAccess = isLoggedIn && RouteGuard.canAccessOrders(currentUser);
+    final activeOrdersAsync = ref.watch(activeOrdersProvider);
+    final activeOrders = activeOrdersAsync.value ?? [];
+    
+    final inKitchenOrders = activeOrders.where((o) => o.status == OrderStatus.prepping).length;
+    final readyOrders = activeOrders.where((o) => o.status == OrderStatus.ready).length;
+
     return GestureDetector(
       onTap: canAccess ? () => context.go('/orders/create') : null,
       child: Container(
@@ -335,7 +350,7 @@ class _MainMenuDashboardScreenState
                             Text('EN COCINA',
                                 style: AppTypography.statusBadge(
                                     color: const Color(0xFF94A3B8))),
-                            Text('5 Platos',
+                            Text('$inKitchenOrders Pedidos',
                                 style: AppTypography.h3(color: AppColors.onSurface)),
                           ],
                         ),
@@ -361,7 +376,7 @@ class _MainMenuDashboardScreenState
                             Text('POR SERVIR',
                                 style: AppTypography.statusBadge(
                                     color: const Color(0xFF94A3B8))),
-                            Text('2 Listos',
+                            Text('$readyOrders Listos',
                                 style: AppTypography.h3(color: AppColors.onSurface)),
                           ],
                         ),
@@ -380,7 +395,7 @@ class _MainMenuDashboardScreenState
   Widget _buildTablesModule(bool isLoggedIn, dynamic currentUser) {
     final canAccess = isLoggedIn && RouteGuard.canAccessTables(currentUser);
     return GestureDetector(
-      onTap: canAccess ? () => context.go('/menu') : null,
+      onTap: canAccess ? () => context.go('/tables') : null,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
@@ -465,75 +480,7 @@ class _MainMenuDashboardScreenState
     );
   }
 
-  Widget _buildKitchenModule(bool isLoggedIn, dynamic currentUser) {
-    final canAccess = isLoggedIn && RouteGuard.canAccessKds(currentUser);
-    return GestureDetector(
-      onTap: canAccess ? () => context.go('/kds') : null,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.xl * 2),
-          boxShadow: [AppShadows.card],
-          border: Border.all(color: const Color(0xFFF1F5F9)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.tertiaryContainer.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                  ),
-                  child: Icon(Icons.restaurant, color: AppColors.tertiary, size: 24),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.tertiaryContainer.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: Text('ON-LINE',
-                      style: AppTypography.statusBadge(color: AppColors.tertiary)),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text('Cocina', style: AppTypography.h3()),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Control de producción y escandallos en tiempo real.',
-              style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                    child: LinearProgressIndicator(
-                      value: 0.75,
-                      backgroundColor: const Color(0xFFF1F5F9),
-                      color: AppColors.tertiary,
-                      minHeight: 6,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.base),
-                Text('75% Cap.',
-                    style: AppTypography.statusBadge(color: const Color(0xFF94A3B8))),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildInventoryModule(bool isLoggedIn, dynamic currentUser) {
     return Container(
@@ -659,7 +606,7 @@ class _MainMenuDashboardScreenState
     );
   }
 
-  Widget _buildRecentOrders() {
+  Widget _buildRecentOrders(List<Order> activeOrders) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -699,11 +646,29 @@ class _MainMenuDashboardScreenState
                 ),
               ),
               // Table Rows
-              _buildOrderRow('Mesa 4', 'Terraza', 'En Cocina', AppColors.primaryContainer, '42.50€', Icons.visibility),
-              const Divider(height: 1, color: Color(0xFFF8FAFC)),
-              _buildOrderRow('Mesa 12', 'Salón Principal', 'Pagado', AppColors.tertiary, '89.20€', Icons.print),
-              const Divider(height: 1, color: Color(0xFFF8FAFC)),
-              _buildOrderRow('Mesa 2', 'Barra', 'Pendiente', const Color(0xFF94A3B8), '12.00€', Icons.edit),
+              if (activeOrders.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: Center(
+                    child: Text('No hay pedidos recientes', style: TextStyle(color: Color(0xFF64748B))),
+                  ),
+                )
+              else
+                ...activeOrders.take(5).map((order) {
+                  return Column(
+                    children: [
+                      _buildOrderRow(
+                        'Mesa ${order.tableId.isEmpty ? 'S/A' : order.tableId}', 
+                        'Salón', 
+                        order.status.name, 
+                        AppColors.primaryContainer, 
+                        '${(order.totalCents / 100).toStringAsFixed(2)}€', 
+                        Icons.visibility
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF8FAFC)),
+                    ],
+                  );
+                }),
             ],
           ),
         ),

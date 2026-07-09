@@ -54,7 +54,17 @@ class MockPaymentProcOrderService implements OrderService {
   }
 
   @override
+  Future<List<Order>> getActiveOrders() async {
+    return order != null ? [order!] : [];
+  }
+
+  @override
   Future<Order> createDraft({required String waiterId, String? tableId}) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Order> updateTable({required String orderId, required String tableId}) async {
     throw UnimplementedError();
   }
 

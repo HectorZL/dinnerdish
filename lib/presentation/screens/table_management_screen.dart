@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dinnerhome/models/table.dart' as table_model;
+import 'package:dinnerhome/providers/providers.dart';
 import '../theme/app_theme.dart';
 
-class TableManagementScreen extends StatefulWidget {
+class TableManagementScreen extends ConsumerStatefulWidget {
   const TableManagementScreen({super.key});
 
   @override
-  State<TableManagementScreen> createState() => _TableManagementScreenState();
+  ConsumerState<TableManagementScreen> createState() => _TableManagementScreenState();
 }
 
-class _TableManagementScreenState extends State<TableManagementScreen> {
+class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
   int _selectedTableIndex = -1;
 
   @override
   Widget build(BuildContext context) {
+    final tablesAsync = ref.watch(tablesProvider);
     final size = MediaQuery.of(context).size;
     final bool isDesktop = size.width > 1024;
     final bool isTablet = size.width > 768 && size.width <= 1024;
@@ -44,7 +48,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                           children: [
                             _buildToolbarLegend(isDesktop),
                             const SizedBox(height: AppSpacing.xl),
-                            _buildTableGrid(),
+                            _buildTableGrid(tablesAsync),
                             const SizedBox(height: 80),
                           ],
                         ),
@@ -378,7 +382,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     );
   }
 
-  Widget _buildTableGrid() {
+  Widget _buildTableGrid(AsyncValue<List<table_model.Table>> tablesAsync) {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 600),
@@ -389,89 +393,46 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
         border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [AppShadows.card],
       ),
-      child: Wrap(
-        spacing: AppSpacing.xl,
-        runSpacing: AppSpacing.xl,
-        children: [
-          _buildTableCard('01', '4 Personas', 'SOPA, FILETE, VINO',
-              AppColors.primaryContainer, '35 MIN', 0),
-          _buildTableCard('02', '2 Personas', 'DISPONIBLE',
-              AppColors.tertiaryContainer, null, 1),
-          _buildTableCard('03', '6 Personas', 'RESERVADA (GARCÍA)',
-              const Color(0xFF3B82F6), '20:30', 2),
-          _buildTableCard('04', '4 Personas', 'DISPONIBLE',
-              AppColors.tertiaryContainer, null, 3),
-          _buildTableCard('05', '2 Personas', 'CUENTA PEDIDA',
-              AppColors.primaryContainer, '12 MIN', 4),
-          // Large Table
-          _buildLargeTableCard(),
-          _buildTableCard('07', '4 Personas', 'DISPONIBLE',
-              AppColors.tertiaryContainer, null, 6),
-          _buildTableCard('08', '2 Personas', 'DISPONIBLE',
-              AppColors.tertiaryContainer, null, 7),
-          _buildTableCard('09', '4 Personas', 'RESERVADA (SOTO)',
-              const Color(0xFF3B82F6), '21:00', 8),
-          _buildTableCard('10', '2 Personas', 'DISPONIBLE',
-              AppColors.tertiaryContainer, null, 9),
-          // Bar Zone
-          _buildBarZone(),
-        ],
-      ),
-    );
-  }
+      child: tablesAsync.when(
+        data: (tables) {
+          return Wrap(
+            spacing: AppSpacing.xl,
+            runSpacing: AppSpacing.xl,
+            children: tables.asMap().entries.map((entry) {
+              final index = entry.key;
+              final table = entry.value;
+              
+              String statusText = '';
+              Color statusColor = AppColors.primaryContainer;
+              
+              switch (table.status) {
+                case table_model.TableStatus.available:
+                  statusText = 'DISPONIBLE';
+                  statusColor = AppColors.tertiaryContainer;
+                  break;
+                case table_model.TableStatus.occupied:
+                  statusText = 'OCUPADA';
+                  statusColor = AppColors.primaryContainer;
+                  break;
+                case table_model.TableStatus.reserved:
+                  statusText = 'RESERVADA';
+                  statusColor = const Color(0xFF3B82F6);
+                  break;
+              }
 
-  Widget _buildLargeTableCard() {
-    return Container(
-      width: 300,
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 2),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
-              borderRadius: BorderRadius.circular(AppSpacing.md),
-              border: Border.all(
-                  color: AppColors.tertiaryContainer, width: 4),
-            ),
-            child: Center(
-              child: Text('T6',
-                  style: AppTypography.h2(
-                      color: AppColors.tertiaryContainer)),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('Mesa Imperial',
-                  style: AppTypography.h3(
-                      color: const Color(0xFF334155))),
-              Text('12 Personas Max.',
-                  style: AppTypography.bodyMd(
-                      color: const Color(0xFF64748B))),
-              Container(
-                margin: const EdgeInsets.only(top: AppSpacing.base),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                ),
-                child: Text('OPTIMAL STOCK',
-                    style: AppTypography.statusBadge(
-                        color: AppColors.tertiaryContainer)),
-              ),
-            ],
-          ),
-        ],
+              return _buildTableCard(
+                table.id,
+                '${table.seats} Personas',
+                statusText,
+                statusColor,
+                null,
+                index,
+              );
+            }).toList(),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error: $error')),
       ),
     );
   }
@@ -560,55 +521,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     );
   }
 
-  Widget _buildBarZone() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(48),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Column(
-        children: [
-          Text('ZONA DE BARRA',
-              style: AppTypography.labelCaps(
-                  color: const Color(0xFF94A3B8))),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            children: [
-              _buildBarStool('B1', AppColors.primaryContainer),
-              _buildBarStool('B2', AppColors.tertiaryContainer),
-              _buildBarStool('B3', AppColors.tertiaryContainer),
-              _buildBarStool('B4', AppColors.primaryContainer),
-              _buildBarStool('B5', AppColors.tertiaryContainer),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildBarStool(String id, Color color) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(color: color, width: 4),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4),
-        ],
-      ),
-      child: Center(
-        child: Text(id,
-            style: AppTypography.statusBadge(
-                color: color, fontWeight: FontWeight.w900)),
-      ),
-    );
-  }
 
   Widget _buildDetailsSidebar() {
     return Positioned(

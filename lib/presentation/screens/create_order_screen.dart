@@ -6,6 +6,7 @@ import 'package:dinnerhome/providers/providers.dart';
 import 'package:dinnerhome/models/menu_item.dart';
 import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/models/order_item.dart' as order_item;
+import 'package:dinnerhome/models/table.dart' as table_model;
 import '../theme/app_theme.dart';
 
 class CreateOrderScreen extends ConsumerStatefulWidget {
@@ -19,8 +20,9 @@ class CreateOrderScreen extends ConsumerStatefulWidget {
 class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   int _selectedCategoryIndex = 0;
   final List<String> _categories = [
+    'Todos',
     'Entrantes',
-    'Principales',
+    'Platos Principales',
     'Bebidas',
     'Postres',
     'Vinos',
@@ -89,50 +91,22 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     return total;
   }
 
-  bool get _hasSelections => _selectedQuantities.values.any((q) => q > 0);
 
-  Future<void> _sendToKitchen() async {
+  Future<void> _sendToKitchen(String tableId) async {
     if (_currentOrder == null) return;
     final currentUser = ref.read(currentUserProvider).value;
     if (currentUser == null) return;
 
-    if (!_hasSelections) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Seleccione al menos un plato para enviar')),
-        );
-      }
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Enviar a Cocina'),
-        content: const Text(
-          '¿Enviar a cocina? No podrá editarse sin autorización.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryContainer,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
     try {
       final orderService = ref.read(orderServiceProvider);
+
+      // Update Table
+      if (tableId.isNotEmpty && tableId != _currentOrder!.tableId) {
+        await orderService.updateTable(
+          orderId: _currentOrder!.id,
+          tableId: tableId,
+        );
+      }
 
       for (final entry in _selectedQuantities.entries) {
         if (entry.value <= 0) continue;
@@ -162,6 +136,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Pedido enviado a cocina')),
         );
+        context.go('/orders/tracking');
       }
     } catch (e) {
       if (mounted) {
@@ -174,46 +149,9 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
 
 
 
-  Future<void> _showNoteDialog() async {
-    final controller = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nota del Pedido'),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Escriba una nota para cocina...',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryContainer,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    if (result != null && result.isNotEmpty && _currentOrder != null) {
-      setState(() {
-        _currentOrder = _currentOrder!.copyWith(notes: result);
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final tablesAsync = ref.watch(tablesProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -246,7 +184,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
             ),
             // Floating Order Summary
             if (!_isLoading && _errorMessage == null)
-              _buildOrderSummary(),
+              _buildOrderSummary(tablesAsync),
           ],
         ),
       ),
@@ -286,13 +224,17 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    tableInfo,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.onSurface,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        tableInfo,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.onSurface,
+                        ),
+                      ),
+                    ],
                   ),
                   Text(
                     'Servicio Activo • $displayName',
@@ -411,13 +353,14 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     }
 
     final query = _searchController.text.toLowerCase();
-    final filteredItems = query.isEmpty
-        ? _menuItems
-        : _menuItems
-            .where((item) =>
-                item.name.toLowerCase().contains(query) ||
-                item.id.toLowerCase().contains(query))
-            .toList();
+    final selectedCat = _categories[_selectedCategoryIndex];
+    final filteredItems = _menuItems.where((item) {
+      final matchesSearch = query.isEmpty ||
+          item.name.toLowerCase().contains(query) ||
+          item.id.toLowerCase().contains(query);
+      final matchesCat = selectedCat == 'Todos' || item.category == selectedCat;
+      return matchesSearch && matchesCat;
+    }).toList();
 
     if (filteredItems.isEmpty) {
       return Center(
@@ -597,7 +540,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     );
   }
 
-  Widget _buildOrderSummary() {
+  Widget _buildOrderSummary(AsyncValue<List<table_model.Table>> tablesAsync) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       decoration: BoxDecoration(
@@ -613,65 +556,112 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
       child: StitchPrimaryButton(
         onPressed: _totalSelectedItems > 0
             ? () {
+                String selectedTableId = _currentOrder?.tableId ?? '';
+                final availableTables = tablesAsync.value?.where((t) => t.status == table_model.TableStatus.available).map((t) => t.id).toList() ?? [];
+                final allTables = tablesAsync.value ?? [];
+                if (allTables.isEmpty) {
+                  // Fallback just in case
+                  availableTables.addAll(['01', '02', '03', '04']);
+                }
+                if (selectedTableId.isEmpty || !availableTables.contains(selectedTableId)) {
+                  selectedTableId = availableTables.isNotEmpty ? availableTables.first : '';
+                }
                 showModalBottomSheet(
                   context: context,
+                  isScrollControlled: true,
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(24)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   ),
-                  builder: (ctx) => SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment:
-                            CrossAxisAlignment.stretch,
-                        children: [
-                          Text('Resumen del Pedido',
-                              style: AppTypography.h2()),
-                          const SizedBox(height: 8),
-                          Text(
-                            '$_totalSelectedItems ítems • \$${(_totalSelectedCents / 100).toStringAsFixed(2)}',
-                            style: AppTypography.bodyMd(
-                                color:
-                                    AppColors.onSurfaceVariant),
-                          ),
-                          const SizedBox(height: 24),
-                          StitchPrimaryButton(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              _sendToKitchen();
-                            },
-                            icon: Icons.restaurant,
-                            label: 'Enviar a Cocina',
-                          ),
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              _showNoteDialog();
-                            },
-                            icon: const Icon(Icons
-                                .description_outlined),
-                            label: const Text('Añadir Nota'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor:
-                                  AppColors.primaryContainer,
-                              side: const BorderSide(
-                                  color:
-                                      AppColors.primaryContainer),
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(
-                                        AppRadius.xl),
+                  builder: (ctx) => StatefulBuilder(
+                    builder: (context, setModalState) {
+                      final selectedItems = _selectedQuantities.entries.where((e) => e.value > 0).toList();
+                      return SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text('Revisar Pedido', style: AppTypography.h2()),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                height: 250,
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: selectedItems.length,
+                                  itemBuilder: (context, index) {
+                                    final entry = selectedItems[index];
+                                    final item = _menuItems.firstWhere((m) => m.id == entry.key);
+                                    return ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      subtitle: Text('\$${(item.priceCents / 100).toStringAsFixed(2)} c/u'),
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.remove_circle_outline, color: AppColors.primaryContainer),
+                                            onPressed: () {
+                                              if (entry.value > 1) {
+                                                setModalState(() => _selectedQuantities[item.id] = entry.value - 1);
+                                                setState(() => _selectedQuantities[item.id] = entry.value - 1);
+                                              } else {
+                                                setModalState(() => _selectedQuantities.remove(item.id));
+                                                setState(() => _selectedQuantities.remove(item.id));
+                                              }
+                                              if (_selectedQuantities.isEmpty) Navigator.pop(ctx);
+                                            },
+                                          ),
+                                          Text('${_selectedQuantities[item.id] ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                          IconButton(
+                                            icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryContainer),
+                                            onPressed: () {
+                                              setModalState(() => _selectedQuantities[item.id] = entry.value + 1);
+                                              setState(() => _selectedQuantities[item.id] = entry.value + 1);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
+                              const Divider(height: 32),
+                              DropdownButtonFormField<String>(
+                                initialValue: availableTables.contains(selectedTableId) ? selectedTableId : null,
+                                decoration: InputDecoration(
+                                  labelText: 'Seleccionar Mesa',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                items: availableTables.map((table) {
+                                  return DropdownMenuItem<String>(value: table, child: Text('Mesa $table'));
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) setModalState(() => selectedTableId = val);
+                                },
+                              ),
+                              const SizedBox(height: 24),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Total:', style: AppTypography.h3()),
+                                  Text('\$${(_totalSelectedCents / 100).toStringAsFixed(2)}', style: AppTypography.h2(color: AppColors.primaryContainer)),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              StitchPrimaryButton(
+                                onPressed: availableTables.isEmpty ? null : () {
+                                  Navigator.pop(ctx);
+                                  _sendToKitchen(selectedTableId);
+                                },
+                                icon: Icons.restaurant,
+                                label: 'Confirmar y Enviar a Cocina',
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 );
               }

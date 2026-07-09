@@ -41,6 +41,23 @@ class InMemoryOrderService implements OrderService {
   }
 
   @override
+  Future<Order> updateTable({required String orderId, required String tableId}) async {
+    final order = _orders[orderId];
+    if (order == null) {
+      throw OrderNotFoundException(orderId);
+    }
+    final updatedOrder = order.copyWith(tableId: tableId);
+    _orders[orderId] = updatedOrder;
+    _emitEvent(updatedOrder, 'updated');
+    auditService?.record(
+      action: 'order.table_updated',
+      userId: order.waiterId,
+      metadata: {'orderId': orderId, 'tableId': tableId},
+    );
+    return updatedOrder;
+  }
+
+  @override
   Future<Order> addItem({required String orderId, required OrderItem item}) async {
     final order = _orders[orderId];
     if (order == null) {
@@ -181,6 +198,13 @@ class InMemoryOrderService implements OrderService {
   @override
   Future<Order?> getOrder(String orderId) async {
     return _orders[orderId];
+  }
+
+  @override
+  Future<List<Order>> getActiveOrders() async {
+    return _orders.values.where((o) => 
+      o.status != OrderStatus.closed && o.status != OrderStatus.draft
+    ).toList();
   }
 
   @override

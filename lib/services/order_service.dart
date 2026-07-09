@@ -15,6 +15,7 @@ class OrderEvent {
 
 abstract class OrderService {
   Future<Order> createDraft({required String waiterId, String? tableId});
+  Future<Order> updateTable({required String orderId, required String tableId});
   Future<Order> addItem({required String orderId, required OrderItem item});
   Future<Order> updateItem({
     required String orderId,
@@ -33,5 +34,6 @@ abstract class OrderService {
     required String byUserId,
   });
   Future<Order?> getOrder(String orderId);
+  Future<List<Order>> getActiveOrders();
   Stream<OrderEvent> watchOrders();
 }

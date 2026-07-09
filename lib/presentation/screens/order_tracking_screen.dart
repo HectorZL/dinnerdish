@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dinnerhome/models/order.dart';
+import 'package:dinnerhome/providers/providers.dart';
 import '../theme/app_theme.dart';
 
-class OrderTrackingScreen extends StatefulWidget {
+class OrderTrackingScreen extends ConsumerStatefulWidget {
   const OrderTrackingScreen({super.key});
 
   @override
-  State<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
+  ConsumerState<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
 }
 
-class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
+class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   int _selectedFilterIndex = 0;
 
   @override
   Widget build(BuildContext context) {
+    final activeOrdersAsync = ref.watch(activeOrdersProvider);
     final isDesktop = MediaQuery.of(context).size.width > 768;
     final isMobile = !isDesktop;
 
@@ -35,9 +39,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               children: [
                 _buildHeader(isDesktop),
                 const SizedBox(height: AppSpacing.xl),
-                _buildFilters(),
+                _buildFilters(activeOrdersAsync),
                 const SizedBox(height: AppSpacing.xl),
-                _buildOrderGrid(isDesktop),
+                _buildOrderGrid(isDesktop, activeOrdersAsync),
                 const SizedBox(height: 100),
               ],
             ),
@@ -227,13 +231,20 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildFilters(AsyncValue<List<Order>> activeOrdersAsync) {
+    final orders = activeOrdersAsync.value ?? [];
+    int allCount = orders.length;
+    int pendingCount = orders.where((o) => o.status == OrderStatus.sentToKitchen).length;
+    int preppingCount = orders.where((o) => o.status == OrderStatus.prepping).length;
+    int readyCount = orders.where((o) => o.status == OrderStatus.ready).length;
+    int billedCount = orders.where((o) => o.status == OrderStatus.billed).length;
+
     final filters = [
-      'Todos (24)',
-      'Pendiente (4)',
-      'En Cocina (8)',
-      'Listo (10)',
-      'Servido (2)'
+      'Todos ($allCount)',
+      'Pendiente ($pendingCount)',
+      'En Cocina ($preppingCount)',
+      'Listo ($readyCount)',
+      'Servido ($billedCount)'
     ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -270,110 +281,106 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       ),
     );
   }
+  Widget _buildOrderGrid(bool isDesktop, AsyncValue<List<Order>> activeOrdersAsync) {
+    return activeOrdersAsync.when(
+      data: (orders) {
+        final filteredOrders = orders.where((order) {
+          if (_selectedFilterIndex == 0) return true;
+          if (_selectedFilterIndex == 1) return order.status == OrderStatus.sentToKitchen;
+          if (_selectedFilterIndex == 2) return order.status == OrderStatus.prepping;
+          if (_selectedFilterIndex == 3) return order.status == OrderStatus.ready;
+          if (_selectedFilterIndex == 4) return order.status == OrderStatus.billed;
+          return true;
+        }).toList();
 
-  Widget _buildOrderGrid(bool isDesktop) {
-    return GridView.count(
-      crossAxisCount: isDesktop ? 3 : 1,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: AppSpacing.lg,
-      mainAxisSpacing: AppSpacing.lg,
-      childAspectRatio: isDesktop ? 1.1 : 1.2,
-      children: [
-        _buildOrderCard(
-          table: 'Mesa 12',
-          orderId: '#ORD-4921 • 12:45 PM',
-          status: 'Pendiente',
-          statusColor: AppColors.statusPending,
-          bgColor: const Color(0xFFF1F5F9),
-          items: [
-            {'name': '2x Burger Especial', 'price': '32,00€'},
-            {'name': '1x Patatas Bravas', 'price': '8,50€'},
-          ],
-          actions: [
-            _buildActionBtn('Cancelar', Icons.close, false),
-            _buildActionBtn('Cocina', Icons.restaurant, true),
-          ],
-        ),
-        _buildOrderCard(
-          table: 'Mesa 04',
-          orderId: '#ORD-4918 • 12:30 PM',
-          status: 'En Cocina',
-          statusColor: AppColors.statusCooking,
-          bgColor: const Color(0xFFFEF3C7),
-          icon: Icons.outdoor_grill,
-          warning: 'NOTA: Alergia frutos secos',
-          items: [
-            {'name': '1x Risotto de Setas', 'price': '18,00€'},
-          ],
-          progress: 0.65,
-          timeText: 'Tiempo transcurrido: 12 min',
-          actions: [
-            _buildActionBtn('Marcar como Listo', Icons.check_circle, true),
-          ],
-        ),
-        _buildOrderCard(
-          table: 'Terraza 02',
-          orderId: '#ORD-4912 • 12:15 PM',
-          status: 'Listo',
-          statusColor: AppColors.statusReady,
-          bgColor: AppColors.statusReady,
-          textColor: Colors.white,
-          icon: Icons.notifications_active,
-          items: [
-            {'name': '3x Menú del Día', 'price': '45,00€'},
-            {'name': '3x Cerveza Mahou', 'price': '7,50€'},
-          ],
-          actions: [
-            _buildActionBtn(
-                'Servir a Mesa', Icons.delivery_dining, true),
-          ],
-        ),
-        _buildOrderCard(
-          table: 'Mesa 08',
-          orderId: '#ORD-4925 • 1:05 PM',
-          status: 'En Cocina',
-          statusColor: AppColors.statusCooking,
-          bgColor: const Color(0xFFFEF3C7),
-          icon: Icons.outdoor_grill,
-          items: [
-            {'name': '1x Solomillo al punto', 'price': '22,50€'},
-          ],
-          actions: [
-            _buildActionBtn('Marcar como Listo', Icons.check_circle, true),
-          ],
-        ),
-        _buildOrderCard(
-          table: 'Mesa 15',
-          orderId: '#ORD-4930 • 1:12 PM',
-          status: 'Listo',
-          statusColor: AppColors.statusReady,
-          bgColor: AppColors.statusReady,
-          textColor: Colors.white,
-          icon: Icons.notifications_active,
-          items: [
-            {'name': '2x Ensalada César', 'price': '24,00€'},
-          ],
-          actions: [
-            _buildActionBtn(
-                'Servir a Mesa', Icons.delivery_dining, true),
-          ],
-        ),
-        _buildOrderCard(
-          table: 'Barra 03',
-          orderId: '#ORD-4935 • 1:15 PM',
-          status: 'Pendiente',
-          statusColor: AppColors.statusPending,
-          bgColor: const Color(0xFFF1F5F9),
-          items: [
-            {'name': '1x Tapa de Jamón', 'price': '12,00€'},
-          ],
-          actions: [
-            _buildActionBtn('Cancelar', null, false),
-            _buildActionBtn('A Cocina', null, true),
-          ],
-        ),
-      ],
+        if (filteredOrders.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: Text('No hay pedidos que coincidan con el filtro.', style: TextStyle(color: Colors.grey)),
+            ),
+          );
+        }
+
+        return GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: isDesktop ? 3 : 1,
+            crossAxisSpacing: AppSpacing.lg,
+            mainAxisSpacing: AppSpacing.lg,
+            childAspectRatio: isDesktop ? 1.1 : 1.2,
+          ),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: filteredOrders.length,
+          itemBuilder: (context, index) {
+            final order = filteredOrders[index];
+            String statusText = '';
+            Color statusColor = AppColors.primaryContainer;
+            Color bgColor = const Color(0xFFFFF7ED); // default orange-ish background
+
+            switch (order.status) {
+              case OrderStatus.draft:
+                statusText = 'Borrador';
+                statusColor = Colors.grey;
+                bgColor = const Color(0xFFF1F5F9);
+                break;
+              case OrderStatus.closed:
+                statusText = 'Cerrado';
+                statusColor = Colors.grey;
+                bgColor = const Color(0xFFF1F5F9);
+                break;
+              case OrderStatus.sentToKitchen:
+                statusText = 'Pendiente';
+                statusColor = AppColors.statusPending;
+                bgColor = const Color(0xFFF1F5F9); // slate background
+                break;
+              case OrderStatus.prepping:
+                statusText = 'En Cocina';
+                statusColor = AppColors.statusCooking;
+                bgColor = const Color(0xFFFFF7ED); // orange background
+                break;
+              case OrderStatus.ready:
+                statusText = 'Listo';
+                statusColor = AppColors.statusReady;
+                bgColor = const Color(0xFFF0FDF4); // green background
+                break;
+              case OrderStatus.billed:
+                statusText = 'Servido';
+                statusColor = AppColors.tertiaryContainer;
+                bgColor = const Color(0xFFF8FAFC); // default slate
+                break;
+            }
+
+            final items = order.items.map((item) {
+              return {
+                'name': '${item.quantity}x Artículo ${item.menuItemId.length > 5 ? item.menuItemId.substring(0, 5) : item.menuItemId}',
+                'price': '${(item.priceCents * item.quantity / 100).toStringAsFixed(2)}€'
+              };
+            }).toList();
+
+            return _buildOrderCard(
+              table: 'Mesa ${order.tableId}',
+              orderId: '#ORD-${order.id.substring(0, 4).toUpperCase()}',
+              status: statusText,
+              statusColor: statusColor,
+              bgColor: bgColor,
+              items: items,
+              actions: [
+                if (order.status == OrderStatus.sentToKitchen)
+                  _buildActionBtn('Cancelar', Icons.close, false),
+                if (order.status == OrderStatus.sentToKitchen)
+                  _buildActionBtn('Cocina', Icons.restaurant, true),
+                if (order.status == OrderStatus.ready)
+                  _buildActionBtn('Servir', Icons.check, true),
+                if (order.status == OrderStatus.billed)
+                  _buildActionBtn('Cobrar', Icons.payment, true),
+              ],
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
     );
   }
 

@@ -305,11 +305,13 @@ class NavLink {
 class StitchBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final dynamic currentUser;
 
   const StitchBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.currentUser,
   });
 
   @override
@@ -328,8 +330,10 @@ class StitchBottomNavBar extends StatelessWidget {
           _buildItem(Icons.dashboard_outlined, 'Inicio', 0),
           _buildItem(Icons.receipt_long_outlined, 'Pedidos', 1),
           _buildItem(Icons.table_restaurant_outlined, 'Mesas', 2),
-          _buildItem(Icons.bar_chart_outlined, 'Reportes', 3),
-          _buildItem(Icons.restaurant_menu_outlined, 'Menú', 4),
+          if (currentUser != null && currentUser.role.toString() == 'Role.admin') ...[
+            _buildItem(Icons.bar_chart_outlined, 'Reportes', 3),
+            _buildItem(Icons.restaurant_menu_outlined, 'Menú', 4),
+          ],
         ],
       ),
     );

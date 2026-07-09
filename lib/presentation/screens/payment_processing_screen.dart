@@ -286,8 +286,11 @@ class _PaymentProcessingScreenState
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Mesa ${order.tableId} • Cuenta Detallada',
-                            style: AppTypography.h2()),
+                        Expanded(
+                          child: Text('Mesa ${order.tableId} • Cuenta Detallada',
+                              style: AppTypography.h2()),
+                        ),
+                        const SizedBox(width: 16),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),

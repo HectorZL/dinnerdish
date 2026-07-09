@@ -66,6 +66,11 @@ class MockOrderService implements OrderService {
   int _counter = 0;
 
   @override
+  Future<List<Order>> getActiveOrders() async {
+    return [];
+  }
+
+  @override
   Future<Order> createDraft({
     required String waiterId,
     String? tableId,
@@ -82,6 +87,14 @@ class MockOrderService implements OrderService {
       totalCents: 0,
       createdAt: DateTime.now(),
     );
+  }
+
+  @override
+  Future<Order> updateTable({
+    required String orderId,
+    required String tableId,
+  }) async {
+    throw UnimplementedError('updateTable not expected in basic tests');
   }
 
   @override
