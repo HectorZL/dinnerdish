@@ -74,6 +74,21 @@ class MockOrderService implements OrderService {
   }
 
   @override
+  Future<List<Order>> getAllOrders() async {
+    return [];
+  }
+
+  @override
+  Future<Order> updateItemStatus({
+    required String orderId,
+    required String itemId,
+    required order_item.OrderStatus status,
+    required String byUserId,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<Order> createDraft({
     required String waiterId,
     String? tableId,

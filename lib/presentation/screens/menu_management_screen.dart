@@ -40,9 +40,20 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
       final menuService = ref.read(menuServiceProvider);
       final items = await menuService.fetchMenu();
       final categories = await menuService.getCategories();
+      final allCategories = {
+        ...categories,
+        'Entrantes',
+        'Platos Principales',
+        'Postres',
+        'Bebidas',
+        'Jugos',
+        'Especiales',
+        'Vinos'
+      }.toList()..sort();
+
       setState(() {
         _items = items;
-        _categories = categories;
+        _categories = allCategories;
         _isLoading = false;
       });
     } catch (e, st) {
@@ -839,298 +850,338 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.xl * 2),
+        borderRadius: BorderRadius.circular(AppRadius.xl * 1.5),
       ),
-      title: Text(
-        _isEditing ? 'Editar Plato' : 'Nuevo Plato',
-        style: AppTypography.h2(color: AppColors.onSurface),
-      ),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: SizedBox(
-            width: 450,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  controller: _nameController,
-                  style: AppTypography.bodyMd(color: AppColors.onSurface),
-                  decoration: _inputDecoration('Nombre del plato'),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Requerido' : null,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                DropdownButtonFormField<String>(
-                  initialValue: _category,
-                  dropdownColor: Colors.white,
-                  style: AppTypography.bodyMd(color: AppColors.onSurface),
-                  decoration: _inputDecoration('Categoría'),
-                  items: widget.categories
-                      .map((cat) => DropdownMenuItem(
-                            value: cat,
-                            child: Text(cat),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) setState(() => _category = v);
-                  },
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Text(
-                      '¿Tiene variaciones?',
-                      style: AppTypography.bodyMd(
-                          color: AppColors.onSurfaceVariant),
-                    ),
-                    const Spacer(),
-                    Switch(
-                      value: _hasVariations,
-                      onChanged: (v) {
-                        setState(() {
-                          _hasVariations = v;
-                          if (_hasVariations && _variationEntries.isEmpty) {
-                            _addVariationEntry();
-                          }
-                        });
-                      },
-                      activeColor: AppColors.primaryContainer,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                if (!_hasVariations) ...[
-                  TextFormField(
-                    controller: _priceController,
-                    style: AppTypography.bodyMd(color: AppColors.onSurface),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: _inputDecoration('Precio (€)'),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Requerido';
-                      final cleaned = v.replaceAll(',', '.');
-                      final parsed = double.tryParse(cleaned);
-                      if (parsed == null || parsed < 0) return 'Precio inválido';
-                      return null;
-                    },
+      backgroundColor: const Color(0xFFF8FAFC),
+      child: Container(
+        width: 600,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl * 1.5)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+                ]
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _isEditing ? Icons.edit_note : Icons.add_circle_outline,
+                    color: AppColors.primaryContainer,
+                    size: 28,
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  TextFormField(
-                    controller: _stockController,
-                    style: AppTypography.bodyMd(color: AppColors.onSurface),
-                    keyboardType: TextInputType.number,
-                    decoration: _inputDecoration('Stock Inicial'),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Requerido';
-                      final parsed = int.tryParse(v);
-                      if (parsed == null || parsed < 0) return 'Stock inválido';
-                      return null;
-                    },
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    _isEditing ? 'Editar Plato' : 'Nuevo Plato',
+                    style: AppTypography.h2(color: AppColors.onSurface),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  )
                 ],
-                if (_hasVariations) ...[
-                  Row(
+              ),
+            ),
+            // Scrollable Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'Variaciones',
-                        style: AppTypography.bodyMd(
-                            color: AppColors.onSurfaceVariant,
-                            fontWeight: FontWeight.bold),
+                      // Card 1: Detalles Básicos
+                      Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          side: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Detalles Básicos', style: AppTypography.h3(color: AppColors.primaryContainer)),
+                              const SizedBox(height: AppSpacing.md),
+                              TextFormField(
+                                controller: _nameController,
+                                style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                decoration: _inputDecoration('Nombre del plato'),
+                                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              DropdownButtonFormField<String>(
+                                initialValue: _category,
+                                dropdownColor: Colors.white,
+                                style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                decoration: _inputDecoration('Categoría'),
+                                items: widget.categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
+                                onChanged: (v) {
+                                  if (v != null) setState(() => _category = v);
+                                },
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              Row(
+                                children: [
+                                  Text('Disponible en menú', style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant)),
+                                  const Spacer(),
+                                  Switch(
+                                    value: _available,
+                                    onChanged: (v) => setState(() => _available = v),
+                                    activeColor: AppColors.primaryContainer,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: _addVariationEntry,
-                        icon: const Icon(Icons.add,
-                            size: 16,
-                            color: AppColors.primaryContainer),
-                        label: Text(
-                          'Añadir Var.',
-                          style: AppTypography.statusBadge(
-                              color: AppColors.primaryContainer),
+                      const SizedBox(height: AppSpacing.md),
+                      
+                      // Card 2: Precios y Variaciones
+                      Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          side: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text('Precios y Variaciones', style: AppTypography.h3(color: AppColors.primaryContainer)),
+                                  const Spacer(),
+                                  Text('¿Tiene variaciones?', style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant)),
+                                  Switch(
+                                    value: _hasVariations,
+                                    onChanged: (v) {
+                                      setState(() {
+                                        _hasVariations = v;
+                                        if (_hasVariations && _variationEntries.isEmpty) {
+                                          _addVariationEntry();
+                                        }
+                                      });
+                                    },
+                                    activeColor: AppColors.primaryContainer,
+                                  ),
+                                ],
+                              ),
+                              const Divider(),
+                              if (!_hasVariations) ...[
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _priceController,
+                                        style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        decoration: _inputDecoration('Precio Base (€)'),
+                                        validator: (v) {
+                                          if (v == null || v.trim().isEmpty) return 'Requerido';
+                                          final parsed = double.tryParse(v.replaceAll(',', '.'));
+                                          if (parsed == null || parsed < 0) return 'Inválido';
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.md),
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _stockController,
+                                        style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                        keyboardType: TextInputType.number,
+                                        decoration: _inputDecoration('Stock Inicial'),
+                                        validator: (v) {
+                                          if (v == null || v.trim().isEmpty) return 'Requerido';
+                                          final parsed = int.tryParse(v);
+                                          if (parsed == null || parsed < 0) return 'Inválido';
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              if (_hasVariations) ...[
+                                ..._variationEntries.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final variation = entry.value;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 2,
+                                          child: TextFormField(
+                                            controller: variation.nameController,
+                                            style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                            decoration: _inputDecoration('Nombre (ej: Mediano)'),
+                                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Req.' : null,
+                                          ),
+                                        ),
+                                        const SizedBox(width: AppSpacing.sm),
+                                        Expanded(
+                                          flex: 1,
+                                          child: TextFormField(
+                                            controller: variation.priceController,
+                                            style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                            decoration: _inputDecoration('Precio'),
+                                            validator: (v) => (v == null || v.trim().isEmpty || double.tryParse(v.replaceAll(',', '.')) == null) ? 'Err' : null,
+                                          ),
+                                        ),
+                                        const SizedBox(width: AppSpacing.sm),
+                                        Expanded(
+                                          flex: 1,
+                                          child: TextFormField(
+                                            controller: variation.stockController,
+                                            style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                            keyboardType: TextInputType.number,
+                                            decoration: _inputDecoration('Stock'),
+                                            validator: (v) => (v == null || v.trim().isEmpty || int.tryParse(v) == null) ? 'Err' : null,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.remove_circle, color: AppColors.error),
+                                          onPressed: () => _removeVariationEntry(index),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton.icon(
+                                    onPressed: _addVariationEntry,
+                                    icon: const Icon(Icons.add, color: AppColors.primaryContainer),
+                                    label: Text('Añadir Variación', style: AppTypography.statusBadge(color: AppColors.primaryContainer)),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      
+                      // Card 3: Modificadores
+                      Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          side: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Modificadores Opcionales', style: AppTypography.h3(color: AppColors.primaryContainer)),
+                              Text('Ingredientes extra o exclusiones (ej: Sin cebolla, Extra queso)', style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant)),
+                              const Divider(),
+                              ..._modifierEntries.asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final modifier = entry.value;
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        flex: 2,
+                                        child: TextFormField(
+                                          controller: modifier.nameController,
+                                          style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                          decoration: _inputDecoration('Nombre'),
+                                        ),
+                                      ),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      Expanded(
+                                        flex: 1,
+                                        child: TextFormField(
+                                          controller: modifier.priceController,
+                                          style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                          decoration: _inputDecoration('Precio (+€)'),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.remove_circle, color: AppColors.error),
+                                        onPressed: () => _removeModifierEntry(index),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton.icon(
+                                  onPressed: _addModifierEntry,
+                                  icon: const Icon(Icons.add, color: AppColors.primaryContainer),
+                                  label: Text('Añadir Modificador', style: AppTypography.statusBadge(color: AppColors.primaryContainer)),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  ..._variationEntries.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final variation = entry.value;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: TextFormField(
-                              controller: variation.nameController,
-                              style: AppTypography.bodyMd(
-                                  color: AppColors.onSurface,
-                                  fontWeight: FontWeight.normal),
-                              decoration: _inputDecoration('Nombre (ej: Familiar)'),
-                              validator: (v) => (v == null || v.trim().isEmpty)
-                                  ? 'Req.'
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            flex: 1,
-                            child: TextFormField(
-                              controller: variation.priceController,
-                              style: AppTypography.bodyMd(
-                                  color: AppColors.onSurface,
-                                  fontWeight: FontWeight.normal),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                decimal: true,
-                              ),
-                              decoration: _inputDecoration('Precio'),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Req.';
-                                final cleaned = v.replaceAll(',', '.');
-                                final parsed = double.tryParse(cleaned);
-                                if (parsed == null || parsed < 0) return 'Error';
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            flex: 1,
-                            child: TextFormField(
-                              controller: variation.stockController,
-                              style: AppTypography.bodyMd(
-                                  color: AppColors.onSurface,
-                                  fontWeight: FontWeight.normal),
-                              keyboardType: TextInputType.number,
-                              decoration: _inputDecoration('Stock'),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Req.';
-                                final parsed = int.tryParse(v);
-                                if (parsed == null || parsed < 0) return 'Error';
-                                return null;
-                              },
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle,
-                                size: 20, color: AppColors.error),
-                            onPressed: () => _removeVariationEntry(index),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                  const SizedBox(height: AppSpacing.sm),
-                ],
-                Row(
-                  children: [
-                    Text(
-                      'Disponible',
-                      style: AppTypography.bodyMd(
-                          color: AppColors.onSurfaceVariant),
-                    ),
-                    const Spacer(),
-                    Switch(
-                      value: _available,
-                      onChanged: (v) => setState(() => _available = v),
-                      activeColor: AppColors.primaryContainer,
-                    ),
-                  ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Text(
-                      'Modificadores',
-                      style: AppTypography.bodyMd(
-                          color: AppColors.onSurfaceVariant,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: _addModifierEntry,
-                      icon: const Icon(Icons.add,
-                          size: 16,
-                          color: AppColors.primaryContainer),
-                      label: Text(
-                        'Añadir',
-                        style: AppTypography.statusBadge(
-                            color: AppColors.primaryContainer),
-                      ),
-                    ),
-                  ],
-                ),
-                ..._modifierEntries.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final modifier = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: TextFormField(
-                            controller: modifier.nameController,
-                            style: AppTypography.bodyMd(
-                                color: AppColors.onSurface,
-                                fontWeight: FontWeight.normal),
-                            decoration: _inputDecoration('Nombre'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 1,
-                          child: TextFormField(
-                            controller: modifier.priceController,
-                            style: AppTypography.bodyMd(
-                                color: AppColors.onSurface,
-                                fontWeight: FontWeight.normal),
-                            keyboardType:
-                                const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: _inputDecoration('Precio'),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        IconButton(
-                          icon: const Icon(Icons.remove_circle,
-                              size: 20, color: AppColors.error),
-                          onPressed: () =>
-                              _removeModifierEntry(index),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
+              ),
             ),
-          ),
+            
+            // Footer Actions
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppRadius.xl * 1.5)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, -2))
+                ]
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Cancelar', style: AppTypography.statusBadge(color: AppColors.onSurfaceVariant)),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  ElevatedButton.icon(
+                    onPressed: _submit,
+                    icon: const Icon(Icons.save),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryContainer,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    label: Text(_isEditing ? 'Guardar Cambios' : 'Crear Plato'),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(
-            'Cancelar',
-            style: AppTypography.statusBadge(
-                color: AppColors.onSurfaceVariant),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: _submit,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryContainer,
-            foregroundColor: Colors.white,
-          ),
-          child: Text(_isEditing ? 'Guardar' : 'Crear'),
-        ),
-      ],
     );
   }
 

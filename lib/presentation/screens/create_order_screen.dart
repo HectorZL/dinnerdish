@@ -19,14 +19,7 @@ class CreateOrderScreen extends ConsumerStatefulWidget {
 
 class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   int _selectedCategoryIndex = 0;
-  final List<String> _categories = [
-    'Todos',
-    'Entrantes',
-    'Platos Principales',
-    'Bebidas',
-    'Postres',
-    'Vinos',
-  ];
+  List<String> _categories = ['Todos'];
 
   Order? _currentOrder;
   List<MenuItem> _menuItems = [];
@@ -73,6 +66,10 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
 
       setState(() {
         _menuItems = menu;
+        // Extraer categorías dinámicamente
+        final dynamicCategories = menu.map((e) => e.category).toSet().toList()..sort();
+        _categories = ['Todos', ...dynamicCategories];
+        
         _currentOrder = order;
         _isLoading = false;
       });
