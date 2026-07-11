@@ -123,11 +123,6 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
     await _updateItem(item.id, updated);
   }
 
-  Future<void> _updatePrice(MenuItem item, int newPriceCents) async {
-    if (newPriceCents == item.priceCents) return;
-    final updated = item.copyWith(priceCents: newPriceCents);
-    await _updateItem(item.id, updated);
-  }
 
   void _showCreateDialog() {
     showDialog(
@@ -380,162 +375,242 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
         ),
       );
     }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount =
-            constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 600 ? 2 : 1);
-        return GridView.builder(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: AppSpacing.sm,
-            mainAxisSpacing: AppSpacing.sm,
-            childAspectRatio: 1.6,
-          ),
-          itemCount: filtered.length,
-          itemBuilder: (context, index) =>
-              _buildItemCard(filtered[index]),
-        );
-      },
+    // Use ListView instead of GridView for mobile — better readability
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 4, bottom: 100),
+      itemCount: filtered.length,
+      itemBuilder: (context, index) => _buildItemCard(filtered[index]),
     );
   }
 
   Widget _buildItemCard(MenuItem item) {
-    return StitchCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header area
-          Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainer,
-              borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.xl)),
-            ),
+    final hasVariations = item.variations.isNotEmpty;
+    final priceLabel = hasVariations
+        ? 'Desde ${(item.variations.map((v) => v.priceCents).reduce((a, b) => a < b ? a : b) / 100).toStringAsFixed(2)} €'
+        : '${(item.priceCents / 100).toStringAsFixed(2)} €';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(
+          color: item.available
+              ? AppColors.primaryContainer.withValues(alpha: 0.2)
+              : Colors.grey.shade200,
+          width: 1.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _showEditDialog(item),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(width: AppSpacing.sm),
-                Icon(Icons.restaurant,
-                    color: AppColors.outline, size: 20),
-                const SizedBox(width: AppSpacing.base),
-                Expanded(
-                  child: Text(
-                    item.name,
-                    style: AppTypography.bodyMd(
-                        color: AppColors.onSurface,
-                        fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
+                // Icon avatar
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: item.available
+                        ? AppColors.primaryContainer.withValues(alpha: 0.12)
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.restaurant_menu,
+                    color: item.available
+                        ? AppColors.primaryContainer
+                        : Colors.grey.shade400,
+                    size: 24,
                   ),
                 ),
-              ],
-            ),
-          ),
-          // Body
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm, vertical: 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          item.modifiers.isEmpty
-                              ? 'Sin modificadores'
-                              : '${item.modifiers.length} modificador(es)',
-                          style: AppTypography.statusBadge(
-                              color: AppColors.outline),
-                        ),
-                        const SizedBox(height: 4),
-                        _InlinePriceEdit(
-                          initialPriceCents: item.priceCents,
-                          onSave: (cents) =>
-                              _updatePrice(item, cents),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                const SizedBox(width: 12),
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        height: 32,
-                        width: 32,
-                        child: Checkbox(
-                          value: item.available,
-                          onChanged: (_) =>
-                              _toggleAvailability(item),
-                          // ignore: deprecated_member_use
-                          activeColor: AppColors.statusReady,
-                          checkColor: Colors.white,
-                          side: const BorderSide(
-                              color: Color(0xFFE2E8F0)),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
+                      // Name + availability row
                       Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              icon: const Icon(Icons.edit,
-                                  size: 14),
-                              color: AppColors.primaryContainer,
-                              onPressed: () =>
-                                  _showEditDialog(item),
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: item.available
+                                    ? AppColors.onSurface
+                                    : Colors.grey.shade500,
+                                height: 1.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              icon: const Icon(Icons.delete,
-                                  size: 14),
-                              color: AppColors.error,
-                              onPressed: () async {
-                                final confirmed =
-                                    await _confirmDelete(item);
-                                if (confirmed) {
-                                  _deleteItem(item.id);
-                                }
-                              },
+                          const SizedBox(width: 8),
+                          // Availability pill
+                          GestureDetector(
+                            onTap: () => _toggleAvailability(item),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: item.available
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                    : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      color: item.available
+                                          ? const Color(0xFF10B981)
+                                          : Colors.grey.shade400,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    item.available ? 'Activo' : 'Inactivo',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: item.available
+                                          ? const Color(0xFF059669)
+                                          : Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      // Price + Category + Stock row
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          // Price
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              priceLabel,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          // Category badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF594138).withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              item.category,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          // Stock badge
+                          if (!hasVariations)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: item.stock > 5
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                                    : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Stock: ${item.stock}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: item.stock > 5
+                                      ? const Color(0xFF059669)
+                                      : const Color(0xFFD97706),
+                                ),
+                              ),
+                            ),
+                          if (hasVariations)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryContainer.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${item.variations.length} variacion(es)',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryContainer,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                // Actions column
+                Column(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      color: AppColors.primaryContainer,
+                      tooltip: 'Editar',
+                      onPressed: () => _showEditDialog(item),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      color: AppColors.error,
+                      tooltip: 'Eliminar',
+                      onPressed: () async {
+                        final confirmed = await _confirmDelete(item);
+                        if (confirmed) _deleteItem(item.id);
+                      },
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          // Category badge
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainer,
-              borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(AppRadius.xl)),
-            ),
-            child: Text(
-              item.category,
-              style: AppTypography.statusBadge(
-                  color: AppColors.outline),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1058,60 +1133,11 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                 ),
                               ],
                               if (_hasVariations) ...[
-                                ..._variationEntries.asMap().entries.map((entry) {
-                                  final index = entry.key;
-                                  final variation = entry.value;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          flex: 2,
-                                          child: TextFormField(
-                                            controller: variation.nameController,
-                                            style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                            decoration: _inputDecoration('Nombre (ej: Mediano)'),
-                                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Req.' : null,
-                                          ),
-                                        ),
-                                        const SizedBox(width: AppSpacing.sm),
-                                        Expanded(
-                                          flex: 1,
-                                          child: TextFormField(
-                                            controller: variation.priceController,
-                                            style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                            decoration: _inputDecoration('Precio'),
-                                            validator: (v) => (v == null || v.trim().isEmpty || double.tryParse(v.replaceAll(',', '.')) == null) ? 'Err' : null,
-                                          ),
-                                        ),
-                                        const SizedBox(width: AppSpacing.sm),
-                                        Expanded(
-                                          flex: 1,
-                                          child: TextFormField(
-                                            controller: variation.stockController,
-                                            style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                            keyboardType: TextInputType.number,
-                                            decoration: _inputDecoration('Stock'),
-                                            validator: (v) => (v == null || v.trim().isEmpty || int.tryParse(v) == null) ? 'Err' : null,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.remove_circle, color: AppColors.error),
-                                          onPressed: () => _removeVariationEntry(index),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton.icon(
-                                    onPressed: _addVariationEntry,
-                                    icon: const Icon(Icons.add, color: AppColors.primaryContainer),
-                                    label: Text('Añadir Variación', style: AppTypography.statusBadge(color: AppColors.primaryContainer)),
-                                  ),
+                                ..._variationEntries.asMap().entries.map((entry) =>
+                                  _buildVariationCard(entry.key, entry.value),
                                 ),
+                                const SizedBox(height: 4),
+                                _buildAddVariationButton(),
                               ],
                             ],
                           ),
@@ -1223,26 +1249,203 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
     );
   }
 
+  // ── Variations section UI ──────────────────────────────────────────────
+  Widget _buildVariationCard(int index, _VariationEntry variation) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7F3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryContainer.withValues(alpha: 0.25), width: 1.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Variation header
+                  Row(
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryContainer,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Variación',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFF26522),
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Nombre field
+                  TextFormField(
+                    controller: variation.nameController,
+                    style: const TextStyle(
+                      color: Color(0xFF131D21),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    decoration: _inputDecoration('Nombre (ej: Mediano, Grande)'),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Nombre requerido' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  // Precio y Stock en row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: variation.priceController,
+                          style: const TextStyle(
+                            color: Color(0xFF131D21),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          decoration: _inputDecoration('Precio (€)').copyWith(
+                            prefixIcon: const Icon(Icons.euro, size: 16, color: Color(0xFFF26522)),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Requerido';
+                            if (double.tryParse(v.replaceAll(',', '.')) == null) return 'Inválido';
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextFormField(
+                          controller: variation.stockController,
+                          style: const TextStyle(
+                            color: Color(0xFF131D21),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          keyboardType: TextInputType.number,
+                          decoration: _inputDecoration('Stock inicial').copyWith(
+                            prefixIcon: const Icon(Icons.inventory_2_outlined, size: 16, color: Color(0xFFF26522)),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Requerido';
+                            if (int.tryParse(v) == null) return 'Inválido';
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Delete button
+            IconButton(
+              icon: const Icon(Icons.close_rounded, color: Color(0xFFBA1A1A), size: 20),
+              tooltip: 'Eliminar variación',
+              onPressed: () => _removeVariationEntry(index),
+              padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Add variation button as dashed card ──────────────────────────────────
+  Widget _buildAddVariationButton() {
+    return GestureDetector(
+      onTap: _addVariationEntry,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.primaryContainer.withValues(alpha: 0.5),
+            width: 1.5,
+            // Dashed effect via a custom approach
+          ),
+          color: AppColors.primaryContainer.withValues(alpha: 0.04),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.add, color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Añadir nueva variación',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFF26522),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: AppTypography.bodyMd(
-          color: AppColors.onSurfaceVariant.withValues(alpha: 0.7)),
+      labelStyle: const TextStyle(
+        color: Color(0xFF594138),
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+      ),
+      filled: true,
+      fillColor: Colors.white,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFE2D5D0)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFE2D5D0)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: const BorderSide(
-            color: AppColors.primaryContainer, width: 2),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFF26522), width: 2),
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFBA1A1A)),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     );
   }
 }
