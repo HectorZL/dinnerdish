@@ -1098,38 +1098,26 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                               ),
                               const Divider(),
                               if (!_hasVariations) ...[
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextFormField(
-                                        controller: _priceController,
-                                        style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        decoration: _inputDecoration('Precio Base (€)'),
-                                        validator: (v) {
-                                          if (v == null || v.trim().isEmpty) return 'Requerido';
-                                          final parsed = double.tryParse(v.replaceAll(',', '.'));
-                                          if (parsed == null || parsed < 0) return 'Inválido';
-                                          return null;
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: AppSpacing.md),
-                                    Expanded(
-                                      child: TextFormField(
-                                        controller: _stockController,
-                                        style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                        keyboardType: TextInputType.number,
-                                        decoration: _inputDecoration('Stock Inicial'),
-                                        validator: (v) {
-                                          if (v == null || v.trim().isEmpty) return 'Requerido';
-                                          final parsed = int.tryParse(v);
-                                          if (parsed == null || parsed < 0) return 'Inválido';
-                                          return null;
-                                        },
-                                      ),
-                                    ),
-                                  ],
+                                // Precio
+                                TextFormField(
+                                  controller: _priceController,
+                                  style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  decoration: _inputDecoration('Precio Base (€)').copyWith(
+                                    prefixIcon: const Icon(Icons.euro, size: 16, color: Color(0xFFF26522)),
+                                  ),
+                                  validator: (v) {
+                                    if (v == null || v.trim().isEmpty) return 'Requerido';
+                                    final parsed = double.tryParse(v.replaceAll(',', '.'));
+                                    if (parsed == null || parsed < 0) return 'Inválido';
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                // Stock stepper
+                                _buildStockStepper(
+                                  label: 'Stock disponible',
+                                  controller: _stockController,
                                 ),
                               ],
                               if (_hasVariations) ...[
@@ -1337,27 +1325,13 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextFormField(
-                          controller: variation.stockController,
-                          style: const TextStyle(
-                            color: Color(0xFF131D21),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          keyboardType: TextInputType.number,
-                          decoration: _inputDecoration('Stock inicial').copyWith(
-                            prefixIcon: const Icon(Icons.inventory_2_outlined, size: 16, color: Color(0xFFF26522)),
-                          ),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) return 'Requerido';
-                            if (int.tryParse(v) == null) return 'Inválido';
-                            return null;
-                          },
-                        ),
-                      ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Stock stepper para la variación
+                  _buildStockStepper(
+                    label: 'Stock inicial',
+                    controller: variation.stockController,
                   ),
                 ],
               ),
@@ -1415,6 +1389,90 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ── Reusable stock stepper ───────────────────────────────────────────
+  Widget _buildStockStepper({
+    required String label,
+    required TextEditingController controller,
+  }) {
+    final current = int.tryParse(controller.text) ?? 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2D5D0)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.inventory_2_outlined, size: 18, color: Color(0xFFF26522)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF594138),
+              ),
+            ),
+          ),
+          // Minus button
+          GestureDetector(
+            onTap: () {
+              if (current > 0) {
+                setState(() => controller.text = '${current - 1}');
+              }
+            },
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: current > 0
+                    ? AppColors.primaryContainer.withValues(alpha: 0.12)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.remove,
+                size: 18,
+                color: current > 0 ? AppColors.primaryContainer : Colors.grey.shade400,
+              ),
+            ),
+          ),
+          // Count display
+          Container(
+            width: 52,
+            height: 36,
+            alignment: Alignment.center,
+            child: Text(
+              '$current',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF131D21),
+              ),
+            ),
+          ),
+          // Plus button
+          GestureDetector(
+            onTap: () {
+              setState(() => controller.text = '${current + 1}');
+            },
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.add, size: 18, color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }

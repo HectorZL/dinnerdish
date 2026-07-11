@@ -542,25 +542,10 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 900
-            ? 3
-            : constraints.maxWidth > 600
-                ? 2
-                : 1;
-        return GridView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: AppSpacing.gutter,
-            mainAxisSpacing: AppSpacing.gutter,
-            childAspectRatio: crossAxisCount > 1 ? 0.7 : 1.2,
-          ),
-          itemCount: filteredItems.length,
-          itemBuilder: (ctx, idx) => _buildDishCard(filteredItems[idx]),
-        );
-      },
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 4, bottom: 120),
+      itemCount: filteredItems.length,
+      itemBuilder: (ctx, idx) => _buildDishCard(filteredItems[idx]),
     );
   }
 
@@ -569,192 +554,288 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     final totalQuantity = hasVariations
         ? item.variations.fold(0, (sum, v) => sum + (_selectedQuantities['${item.id}_${v.id}'] ?? 0))
         : (_selectedQuantities[item.id] ?? 0);
+    final isOutOfStock = !hasVariations && item.stock <= 0;
+
+    final priceLabel = hasVariations
+        ? 'Desde ${(item.variations.map((v) => v.priceCents).reduce((a, b) => a < b ? a : b) / 100).toStringAsFixed(2)} €'
+        : '${(item.priceCents / 100).toStringAsFixed(2)} €';
 
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.xl * 2),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [AppShadows.card],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: totalQuantity > 0
+              ? AppColors.primaryContainer.withValues(alpha: 0.4)
+              : isOutOfStock
+                  ? Colors.grey.shade200
+                  : AppColors.primaryContainer.withValues(alpha: 0.15),
+          width: totalQuantity > 0 ? 2 : 1.2,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image area
-          Container(
-            height: 140,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Stack(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: isOutOfStock
+              ? null
+              : () {
+                  if (hasVariations) {
+                    _showVariationsBottomSheet(item);
+                  } else {
+                    if (totalQuantity >= item.stock) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('No hay más stock disponible')),
+                      );
+                      return;
+                    }
+                    setState(() {
+                      _selectedQuantities[item.id] = totalQuantity + 1;
+                    });
+                  }
+                },
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Center(
-                  child: Icon(Icons.restaurant, color: const Color(0xFF94A3B8), size: 48),
-                ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)],
-                    ),
-                    child: Text(
-                      hasVariations
-                          ? 'Varias opciones'
-                          : '${(item.priceCents / 100).toStringAsFixed(2)}€',
-                      style: AppTypography.statusBadge(color: AppColors.primaryContainer).copyWith(fontWeight: FontWeight.bold),
-                    ),
+                // Icon avatar
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: isOutOfStock
+                        ? Colors.grey.shade100
+                        : totalQuantity > 0
+                            ? AppColors.primaryContainer.withValues(alpha: 0.15)
+                            : AppColors.primaryContainer.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.restaurant_menu,
+                    color: isOutOfStock
+                        ? Colors.grey.shade400
+                        : AppColors.primaryContainer,
+                    size: 24,
                   ),
                 ),
-              ],
-            ),
-          ),
-          // Body
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                const SizedBox(width: 12),
+                // Content
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: Text(
-                          item.name,
-                          style: AppTypography.h3(color: AppColors.onSurface),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        item.name,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: isOutOfStock ? Colors.grey.shade400 : AppColors.onSurface,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          // Price badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isOutOfStock
+                                  ? Colors.grey.shade200
+                                  : AppColors.primaryContainer,
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: Text(
+                              priceLabel,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isOutOfStock ? Colors.grey.shade500 : Colors.white,
+                              ),
+                            ),
+                          ),
+                          // Stock / variations badge
+                          if (hasVariations)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryContainer.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              child: Text(
+                                '${item.variations.length} opciones',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryContainer,
+                                ),
+                              ),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: isOutOfStock
+                                    ? AppColors.errorContainer
+                                    : item.stock <= 5
+                                        ? const Color(0xFFFFF3CD)
+                                        : const Color(0xFF10B981).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              child: Text(
+                                isOutOfStock ? 'Agotado' : 'Stock: ${item.stock}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: isOutOfStock
+                                      ? AppColors.error
+                                      : item.stock <= 5
+                                          ? const Color(0xFFD97706)
+                                          : const Color(0xFF059669),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Action — stepper or add button
+                if (hasVariations)
+                  GestureDetector(
+                    onTap: () => _showVariationsBottomSheet(item),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: totalQuantity > 0
+                            ? AppColors.primaryContainer
+                            : AppColors.primaryContainer.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.tune,
+                            size: 16,
+                            color: totalQuantity > 0 ? Colors.white : AppColors.primaryContainer,
+                          ),
+                          if (totalQuantity > 0) ...[ 
+                            const SizedBox(width: 4),
+                            Text(
+                              '$totalQuantity',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  )
+                else if (isOutOfStock)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.remove_circle_outline, color: Colors.grey.shade400, size: 20),
+                  )
+                else if (totalQuantity == 0)
+                  GestureDetector(
+                    onTap: () {
+                      if (totalQuantity >= item.stock) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No hay más stock disponible')),
+                        );
+                        return;
+                      }
+                      setState(() => _selectedQuantities[item.id] = 1);
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.add, color: Colors.white, size: 22),
+                    ),
+                  )
+                else
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: () => setState(() => _selectedQuantities[item.id] = totalQuantity - 1),
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryContainer.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.remove, size: 18, color: AppColors.primaryContainer),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 34,
+                        child: Center(
+                          child: Text(
+                            '$totalQuantity',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                        ),
+                      ),
                       GestureDetector(
                         onTap: () {
-                          if (hasVariations) {
-                            _showVariationsBottomSheet(item);
-                          } else {
-                            if (item.stock <= 0) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Este plato está agotado')),
-                              );
-                              return;
-                            }
-                            if (totalQuantity >= item.stock) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('No hay más stock disponible')),
-                              );
-                              return;
-                            }
-                            setState(() {
-                              _selectedQuantities[item.id] = totalQuantity + 1;
-                            });
+                          if (totalQuantity >= item.stock) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('No hay más stock disponible')),
+                            );
+                            return;
                           }
+                          setState(() => _selectedQuantities[item.id] = totalQuantity + 1);
                         },
                         child: Container(
-                          width: 40,
-                          height: 40,
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
-                            color: item.stock == 0 && !hasVariations ? Colors.grey : AppColors.primaryContainer,
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primaryContainer.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            color: AppColors.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(hasVariations ? Icons.tune : Icons.add, color: Colors.white, size: 20),
+                          child: const Icon(Icons.add, size: 18, color: Colors.white),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  if (hasVariations)
-                    Text(
-                      item.variations.map((v) => '${v.name}: ${v.stock}').join(' | '),
-                      style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    )
-                  else
-                    Text(
-                      item.stock == 0 ? 'Agotado' : 'Stock: ${item.stock} disponibles',
-                      style: AppTypography.bodyMd(color: item.stock == 0 ? Colors.red : const Color(0xFF64748B)),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  if (totalQuantity > 0) ...[
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (!hasVariations) ...[
-                          GestureDetector(
-                            onTap: () => setState(
-                              () => _selectedQuantities[item.id] = totalQuantity - 1,
-                            ),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.primaryContainer,
-                              ),
-                              child: const Icon(Icons.remove, color: Colors.white, size: 18),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              '$totalQuantity',
-                              style: AppTypography.h3(color: AppColors.onSurface),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              if (totalQuantity >= item.stock) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('No hay más stock disponible')),
-                                );
-                                return;
-                              }
-                              setState(
-                                () => _selectedQuantities[item.id] = totalQuantity + 1,
-                              );
-                            },
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.primaryContainer,
-                              ),
-                              child: const Icon(Icons.add, color: Colors.white, size: 18),
-                            ),
-                          ),
-                        ] else ...[
-                          TextButton.icon(
-                            onPressed: () => _showVariationsBottomSheet(item),
-                            icon: const Icon(Icons.edit, size: 16, color: AppColors.primaryContainer),
-                            label: Text(
-                              '$totalQuantity seleccionados',
-                              style: AppTypography.statusBadge(color: AppColors.primaryContainer),
-                            ),
-                          ),
-                        ]
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
