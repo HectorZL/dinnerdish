@@ -7,7 +7,6 @@ import 'package:dinnerhome/models/payment_method.dart';
 import 'package:dinnerhome/models/payment_status.dart';
 import 'package:dinnerhome/models/payment_summary.dart';
 import 'package:dinnerhome/models/payment_transaction.dart';
-import 'package:dinnerhome/presentation/screens/cashier_screen.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import 'package:dinnerhome/services/auth_service.dart';
 import 'package:dinnerhome/services/payment_service.dart';
@@ -118,21 +117,6 @@ PaymentTransaction makePendingRequest({
 
 // ── ProviderScope builder ──────────────────────────────────────
 
-Widget buildCashierApp(MockCashierPaymentService paymentService) {
-  return ProviderScope(
-    overrides: [
-      currentUserProvider.overrideWith((ref) {
-        final notifier = CurrentUserNotifier(MockCashierAuthService());
-        notifier.state = AsyncValue.data(_mockUser);
-        return notifier;
-      }),
-      paymentServiceProvider.overrideWith((ref) => paymentService),
-    ],
-    child: MaterialApp(
-      home: CashierScreen(),
-    ),
-  );
-}
 
 // ── Tests ──────────────────────────────────────────────────────
 

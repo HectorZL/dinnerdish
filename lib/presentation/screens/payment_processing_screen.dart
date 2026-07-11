@@ -238,7 +238,7 @@ class _PaymentProcessingScreenState
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
-          onPressed: () => context.go('/cashier/payments'),
+          onPressed: () => context.go('/cashier/pending'),
         ),
         title: Text(
           'Procesar Pago',

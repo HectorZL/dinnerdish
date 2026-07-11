@@ -27,7 +27,7 @@ class CashierPendingScreen extends ConsumerWidget {
           children: [
             StitchTopAppBar(
               title: 'Pendientes de Cobro',
-              showBack: true,
+              showBack: false,
               onBack: () => context.go('/cashier/payments'),
             ),
             // Header count badge

@@ -9,7 +9,6 @@ import '../presentation/screens/create_order_screen.dart';
 import '../presentation/screens/order_detail_screen.dart';
 import '../presentation/screens/kds_screen.dart';
 import '../presentation/screens/audit_log_screen.dart';
-import '../presentation/screens/cashier_screen.dart';
 import '../presentation/screens/payment_processing_screen.dart';
 import '../presentation/screens/cash_drawer_screen.dart';
 import '../presentation/screens/menu_management_screen.dart';
@@ -17,7 +16,6 @@ import '../presentation/screens/cashier_pending_screen.dart';
 import '../presentation/screens/table_management_screen.dart';
 import '../presentation/screens/order_tracking_screen.dart';
 import '../presentation/screens/user_management_screen.dart';
-import '../presentation/screens/inventory_screen.dart';
 import '../presentation/screens/reports_screen.dart';
 import 'route_guards.dart';
 
@@ -73,7 +71,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/tables', builder: (ctx, state) => const TableManagementScreen()),
       GoRoute(path: '/kds', builder: (ctx, state) => const KdsScreen()),
       GoRoute(path: '/audit', builder: (ctx, state) => const AuditLogScreen()),
-      GoRoute(path: '/cashier/payments', builder: (ctx, state) => const CashierScreen()),
       GoRoute(path: '/cashier/pending', builder: (ctx, state) => const CashierPendingScreen()),
       GoRoute(
         path: '/orders/:id/payment',
@@ -84,7 +81,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/cash-drawer', builder: (ctx, state) => const CashDrawerScreen()),
       GoRoute(path: '/admin/menu', builder: (ctx, state) => const MenuManagementScreen()),
       GoRoute(path: '/admin/users', builder: (ctx, state) => const UserManagementScreen()),
-      GoRoute(path: '/admin/inventory', builder: (ctx, state) => const InventoryScreen()),
       GoRoute(path: '/admin/reports', builder: (ctx, state) => const ReportsScreen()),
     ],
   );

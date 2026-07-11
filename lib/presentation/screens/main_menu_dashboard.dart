@@ -221,8 +221,9 @@ class _MainMenuDashboardScreenState
     }
     
     if (RouteGuard.canAccessAdmin(currentUser)) {
-      modules.add(_buildInventoryModule(isLoggedIn, currentUser));
       modules.add(_buildAdminModule(isLoggedIn, currentUser));
+      modules.add(_buildReportModule(isLoggedIn, currentUser));
+      modules.add(_buildUserManagementModule(isLoggedIn, currentUser));
     }
 
     final spacedModules = <Widget>[];
@@ -501,57 +502,11 @@ class _MainMenuDashboardScreenState
 
 
 
-  Widget _buildInventoryModule(bool isLoggedIn, dynamic currentUser) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.xl * 2),
-        boxShadow: [AppShadows.card],
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryFixed,
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                ),
-                child: Icon(Icons.inventory_2, color: AppColors.primaryContainer, size: 24),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.errorContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: Text('2 CRÍTICOS',
-                    style: AppTypography.statusBadge(color: AppColors.error)),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text('Inventario', style: AppTypography.h3()),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Mermas, compras y stock de seguridad automatizado.',
-            style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildAdminModule(bool isLoggedIn, dynamic currentUser) {
+  Widget _buildReportModule(bool isLoggedIn, dynamic currentUser) {
     final canAccess = isLoggedIn && RouteGuard.canAccessAdmin(currentUser);
     return GestureDetector(
-      onTap: canAccess ? () => context.go('/audit') : null,
+      onTap: canAccess ? () => context.go('/admin/reports') : null,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
@@ -607,6 +562,104 @@ class _MainMenuDashboardScreenState
                 _buildBar(0.5, Colors.white24),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminModule(bool isLoggedIn, dynamic currentUser) {
+    final canAccess = isLoggedIn && RouteGuard.canAccessAdmin(currentUser);
+    return GestureDetector(
+      onTap: canAccess ? () => context.go('/admin/menu') : null,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 145, 54, 163),
+          borderRadius: BorderRadius.circular(AppRadius.xl * 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Administración', style: AppTypography.h3(color: Colors.white)),
+                    Text('Administrar menu',
+                        style: AppTypography.bodyMd(color: const Color(0xFF94A3B8))),
+                  ],
+                ),
+                Icon(Icons.settings, color: const Color(0xFF94A3B8), size: 24),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Añadir, editar y eliminar platos',
+                    style: AppTypography.statusBadge(color: const Color(0xFF94A3B8))),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.base),
+          ],
+        ),
+      ),
+    );
+  }
+
+    Widget _buildUserManagementModule(bool isLoggedIn, dynamic currentUser) {
+    final canAccess = isLoggedIn && RouteGuard.canAccessAdmin(currentUser);
+    return GestureDetector(
+      onTap: canAccess ? () => context.go('/admin/users') : null,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(195, 192, 22, 22),
+          borderRadius: BorderRadius.circular(AppRadius.xl * 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Administración', style: AppTypography.h3(color: Colors.white)),
+                    Text('Administrar usuarios',
+                        style: AppTypography.bodyMd(color: const Color(0xFF94A3B8))),
+                  ],
+                ),
+                Icon(Icons.settings, color: const Color(0xFF94A3B8), size: 24),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Añadir, editar y eliminar usuarios',
+                    style: AppTypography.statusBadge(color: const Color(0xFF94A3B8))),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.base),
           ],
         ),
       ),
