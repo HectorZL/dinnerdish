@@ -508,7 +508,7 @@ class _PaymentProcessingScreenState
                             _buildMethodCard(
                                 PaymentMethod.cash, Icons.money, 'Efectivo'),
                             _buildMethodCard(PaymentMethod.split,
-                                Icons.call_split, 'Dividir'),
+                                Icons.call_split, 'Dividir', key: const Key('splitPaymentButton')),
                             _buildMethodCard(
                                 PaymentMethod.qr, Icons.qr_code, 'QR / Bizum'),
                           ],
@@ -541,6 +541,7 @@ class _PaymentProcessingScreenState
                     const SizedBox(height: AppSpacing.md),
                     // Primary Action
                     StitchPrimaryButton(
+                      key: const Key('processPaymentButton'),
                       onPressed: _isProcessing ? null : _processPayment,
                       isLoading: _isProcessing,
                       icon: Icons.receipt_long,
@@ -596,9 +597,10 @@ class _PaymentProcessingScreenState
   }
 
   Widget _buildMethodCard(
-      PaymentMethod method, IconData icon, String label) {
+      PaymentMethod method, IconData icon, String label, {Key? key}) {
     final isSelected = _selectedMethod == method;
     return GestureDetector(
+      key: key,
       onTap: () => setState(() => _selectedMethod = method),
       child: Container(
         decoration: BoxDecoration(

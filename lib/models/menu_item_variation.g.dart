@@ -1,37 +1,33 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'menu_item.dart';
+part of 'menu_item_variation.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class MenuItemAdapter extends TypeAdapter<MenuItem> {
+class MenuItemVariationAdapter extends TypeAdapter<MenuItemVariation> {
   @override
-  final int typeId = 1;
+  final int typeId = 19;
 
   @override
-  MenuItem read(BinaryReader reader) {
+  MenuItemVariation read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return MenuItem(
+    return MenuItemVariation(
       id: fields[0] as String,
       name: fields[1] as String,
       priceCents: fields[2] as int,
-      modifiers: (fields[3] as List).cast<Modifier>(),
-      available: fields[4] as bool,
-      category: fields[5] as String,
-      stock: fields[6] as int,
-      variations: (fields[7] as List).cast<MenuItemVariation>(),
+      stock: fields[3] as int,
     );
   }
 
   @override
-  void write(BinaryWriter writer, MenuItem obj) {
+  void write(BinaryWriter writer, MenuItemVariation obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -39,15 +35,7 @@ class MenuItemAdapter extends TypeAdapter<MenuItem> {
       ..writeByte(2)
       ..write(obj.priceCents)
       ..writeByte(3)
-      ..write(obj.modifiers)
-      ..writeByte(4)
-      ..write(obj.available)
-      ..writeByte(5)
-      ..write(obj.category)
-      ..writeByte(6)
-      ..write(obj.stock)
-      ..writeByte(7)
-      ..write(obj.variations);
+      ..write(obj.stock);
   }
 
   @override
@@ -56,7 +44,7 @@ class MenuItemAdapter extends TypeAdapter<MenuItem> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is MenuItemAdapter &&
+      other is MenuItemVariationAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

@@ -117,7 +117,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
-                    child: Flex(
+                    child: SizedBox(
+                      height: isDesktop ? 640 : null,
+                      child: Flex(
                       direction: isDesktop ? Axis.horizontal : Axis.vertical,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -143,6 +145,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       'https://lh3.googleusercontent.com/aida-public/AB6AXuBX3IkcN7Z4dxxcZa1RRNw2jVS2F3w6fpRVDa5MnDs3dfeXlPeMH7R1mf-CdORhKoEN0Fmhyh-No5p8Ba4JEqRpgVtAiRMCE38GEV-bbRYkyHxnmCNmqeDqGAtERsFtxdyP_ivR6b3jBXZyNZVlEgAsV5U4bydPoM7_OTX74-jJAKXW024jcnkikcuXNuXjFd7k-aiZYdJd_pNWoOlJ59IVERtpXGWItu9rV68am_07IN0fRFYtz6EOk7qKmCNw2UzMTywy4ZjhAZsZ',
                                       fit: BoxFit.cover,
                                       colorBlendMode: BlendMode.overlay,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(color: const Color(0xFFF26522));
+                                      },
                                     ),
                                   ),
                                 ),
@@ -217,6 +222,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
                   ),
                 ),
+                ),
               ),
             ),
           ),
@@ -226,12 +232,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _buildFormSide(bool isDesktop, BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(isDesktop ? 64.0 : 32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.all(isDesktop ? 64.0 : 32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
                               // Mobile Header
                               if (!isDesktop) ...[
                                 Row(
@@ -308,8 +315,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               const SizedBox(height: 24),
 
                               // Password
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   Text(
                                     'CONTRASEÑA',
@@ -500,7 +508,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       shrinkWrap: true,
                                       mainAxisSpacing: 8,
                                       crossAxisSpacing: 8,
-                                      childAspectRatio: 3.5,
+                                      childAspectRatio: 2.2,
                                       physics: const NeverScrollableScrollPhysics(),
                                       children: [
                                         _buildTestUserCard(
@@ -561,6 +569,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
         ],
+      ),
       ),
     );
   }

@@ -146,8 +146,6 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
             _buildNavItem(Icons.group_outlined, 'Usuarios', false, context),
             _buildNavItem(
                 Icons.inventory_2_outlined, 'Inventario', false, context),
-            _buildNavItem(
-                Icons.calculate_outlined, 'Escandallo', false, context),
             const Spacer(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -218,8 +216,6 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
         context.go('/admin/users');
       case 'Inventario':
         context.go('/admin/inventory');
-      case 'Escandallo':
-        context.go('/admin/ingredient-assignment');
       case 'Reportes':
         context.go('/admin/reports');
     }

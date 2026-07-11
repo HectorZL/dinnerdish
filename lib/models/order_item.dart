@@ -42,6 +42,9 @@ class OrderItem {
   @HiveField(7)
   final String? name;
 
+  @HiveField(8)
+  final String? variationId;
+
   const OrderItem({
     required this.id,
     required this.menuItemId,
@@ -51,6 +54,7 @@ class OrderItem {
     required this.modifierIds,
     this.priceCents = 0,
     this.name,
+    this.variationId,
   }) : assert(quantity > 0, 'quantity must be > 0'),
        assert(priceCents >= 0, 'priceCents must be >= 0');
 
@@ -78,6 +82,7 @@ class OrderItem {
     }
     final priceCents = json['priceCents'] as int? ?? 0;
     final name = json['name'] as String?;
+    final variationId = json['variationId'] as String?;
 
     return OrderItem(
       id: id,
@@ -88,6 +93,7 @@ class OrderItem {
       modifierIds: modifierIdsRaw.map((e) => e as String).toList(),
       priceCents: priceCents,
       name: name,
+      variationId: variationId,
     );
   }
 
@@ -100,6 +106,7 @@ class OrderItem {
         'modifierIds': modifierIds,
         'priceCents': priceCents,
         'name': name,
+        'variationId': variationId,
       };
 
   OrderItem copyWith({
@@ -111,6 +118,7 @@ class OrderItem {
     List<String>? modifierIds,
     int? priceCents,
     String? name,
+    String? variationId,
   }) {
     return OrderItem(
       id: id ?? this.id,
@@ -121,6 +129,7 @@ class OrderItem {
       modifierIds: modifierIds ?? this.modifierIds,
       priceCents: priceCents ?? this.priceCents,
       name: name ?? this.name,
+      variationId: variationId ?? this.variationId,
     );
   }
 }

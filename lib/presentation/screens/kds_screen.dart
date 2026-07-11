@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import 'package:dinnerhome/models/order.dart';
+import 'package:dinnerhome/models/order_item.dart' as oi;
 import 'package:dinnerhome/widgets/kds_ticket.dart';
 import '../theme/app_theme.dart';
 
@@ -59,6 +60,34 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
       await orderService.updateStatus(
         orderId: order.id,
         status: OrderStatus.ready,
+        byUserId: userId,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  Future<void> _markItemAsReady(Order order, String itemId) async {
+    final userId = ref.read(currentUserProvider).value?.id;
+    if (userId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe iniciar sesión')),
+      );
+      return;
+    }
+
+    try {
+      final orderService = ref.read(orderServiceProvider);
+      // Asumiendo que has importado 'package:dinnerhome/models/order_item.dart' as oi
+      // Pero mejor usamos dynamic o si podemos usamos OrderStatus desde order_item
+      await orderService.updateItemStatus(
+        orderId: order.id,
+        itemId: itemId,
+        status: oi.OrderStatus.ready, // Esto requiere importar order_item como oi
         byUserId: userId,
       );
     } catch (e) {
@@ -214,6 +243,9 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
               onMarkPrepping: isPending ? () => _markAsPrepping(order) : null,
               onMarkReady: !isPending && !isReady
                   ? () => _markAsReady(order)
+                  : null,
+              onItemMarkReady: !isPending && !isReady
+                  ? (itemId) => _markItemAsReady(order, itemId)
                   : null,
             );
           },

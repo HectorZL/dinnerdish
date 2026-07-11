@@ -44,8 +44,9 @@ final menuItemsProvider = FutureProvider<List<MenuItem>>((ref) async {
 
 final orderServiceProvider = Provider<OrderService>((ref) {
   final socketService = ref.watch(socketServiceProvider);
+  final menuService = ref.watch(menuServiceProvider);
   final auditService = ref.watch(auditServiceProvider);
-  return InMemoryOrderService(socketService, auditService: auditService);
+  return InMemoryOrderService(socketService, menuService: menuService, auditService: auditService);
 });
 
 final activeOrdersProvider = StreamProvider<List<Order>>((ref) async* {
@@ -53,6 +54,14 @@ final activeOrdersProvider = StreamProvider<List<Order>>((ref) async* {
   yield await orderService.getActiveOrders();
   await for (final _ in orderService.watchOrders()) {
     yield await orderService.getActiveOrders();
+  }
+});
+
+final allOrdersProvider = StreamProvider<List<Order>>((ref) async* {
+  final orderService = ref.watch(orderServiceProvider);
+  yield await orderService.getAllOrders();
+  await for (final _ in orderService.watchOrders()) {
+    yield await orderService.getAllOrders();
   }
 });
 

@@ -323,6 +323,7 @@ void main() {
           priceCents: 2200,
         ),
       );
+      await Future.microtask(() {});
       expect(events.length, 2);
       expect(events[1].eventType, 'item_added');
 
@@ -331,6 +332,7 @@ void main() {
         orderId: draft.id,
         byUserId: 'waiter-1',
       );
+      await Future.microtask(() {});
       expect(events.length, 3);
       expect(events[2].eventType, 'sent_to_kitchen');
 
@@ -340,6 +342,7 @@ void main() {
         status: OrderStatus.prepping,
         byUserId: 'chef-1',
       );
+      await Future.microtask(() {});
       expect(events.length, 4);
       expect(events[3].eventType, 'status_updated');
     });

@@ -18,7 +18,6 @@ import '../presentation/screens/table_management_screen.dart';
 import '../presentation/screens/order_tracking_screen.dart';
 import '../presentation/screens/user_management_screen.dart';
 import '../presentation/screens/inventory_screen.dart';
-import '../presentation/screens/ingredient_assignment_screen.dart';
 import '../presentation/screens/reports_screen.dart';
 import 'route_guards.dart';
 
@@ -86,7 +85,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/admin/menu', builder: (ctx, state) => const MenuManagementScreen()),
       GoRoute(path: '/admin/users', builder: (ctx, state) => const UserManagementScreen()),
       GoRoute(path: '/admin/inventory', builder: (ctx, state) => const InventoryScreen()),
-      GoRoute(path: '/admin/ingredient-assignment', builder: (ctx, state) => const IngredientAssignmentScreen()),
       GoRoute(path: '/admin/reports', builder: (ctx, state) => const ReportsScreen()),
     ],
   );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:dinnerhome/models/menu_item.dart';
+import 'package:dinnerhome/models/menu_item_variation.dart';
 import 'package:dinnerhome/models/modifier.dart';
 import 'package:dinnerhome/models/order_item.dart' as order_item;
 import 'package:dinnerhome/models/order.dart';
@@ -28,6 +29,7 @@ Future<void> initHive() async {
   await Hive.initFlutter();
 
   Hive.registerAdapter(MenuItemAdapter());
+  Hive.registerAdapter(MenuItemVariationAdapter());
   Hive.registerAdapter(ModifierAdapter());
   Hive.registerAdapter(order_item.OrderItemAdapter());
   Hive.registerAdapter(order_item.OrderStatusAdapter());

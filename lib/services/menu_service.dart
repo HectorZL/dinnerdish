@@ -7,4 +7,5 @@ abstract class MenuService {
   Future<MenuItem> updateMenuItem(String id, MenuItem item);
   Future<void> deleteMenuItem(String id);
   Future<List<String>> getCategories();
+  Future<void> adjustStock(String itemId, String? variationId, int quantityChange);
 }

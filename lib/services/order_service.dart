@@ -1,5 +1,6 @@
 import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/models/order_item.dart' hide OrderStatus;
+import 'package:dinnerhome/models/order_item.dart' as oi;
 
 class OrderEvent {
   final String orderId;
@@ -33,7 +34,14 @@ abstract class OrderService {
     required OrderStatus status,
     required String byUserId,
   });
+  Future<Order> updateItemStatus({
+    required String orderId,
+    required String itemId,
+    required oi.OrderStatus status,
+    required String byUserId,
+  });
   Future<Order?> getOrder(String orderId);
   Future<List<Order>> getActiveOrders();
+  Future<List<Order>> getAllOrders();
   Stream<OrderEvent> watchOrders();
 }

@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import '../theme/app_theme.dart';
-
+import 'package:dinnerhome/models/order.dart';
+import 'package:dinnerhome/models/menu_item.dart';
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -15,6 +16,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = ref.watch(currentUserProvider).value;
+    final allOrdersAsync = ref.watch(allOrdersProvider);
+    final menuItemsAsync = ref.watch(menuItemsProvider);
     final isDesktop = MediaQuery.of(context).size.width > 1024;
     final isMobile = !isDesktop;
 
@@ -48,7 +51,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           children: [
                             _buildHeader(),
                             const SizedBox(height: AppSpacing.xl),
-                            _buildBentoGrid(),
+                            _buildBentoGrid(allOrdersAsync.value ?? [], menuItemsAsync.value ?? []),
                             const SizedBox(height: 100),
                           ],
                         ),
@@ -113,8 +116,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 Icons.group_outlined, 'Usuarios', false, context),
             _buildNavItem(Icons.inventory_2_outlined, 'Inventario',
                 false, context),
-            _buildNavItem(Icons.calculate_outlined, 'Escandallo',
-                false, context),
             _buildNavItem(
                 Icons.bar_chart, 'Reportes', true, context),
             _buildNavItem(
@@ -157,8 +158,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               context.go('/admin/users');
             case 'Inventario':
               context.go('/admin/inventory');
-            case 'Escandallo':
-              context.go('/admin/ingredient-assignment');
           }
         },
         shape: RoundedRectangleBorder(
@@ -225,7 +224,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildBentoGrid() {
+  Widget _buildBentoGrid(List<Order> orders, List<MenuItem> menuItems) {
+    double totalSales = 0;
+    int billedCount = 0;
+    Map<String, int> dishQuantities = {};
+    Map<String, double> dishRevenue = {};
+
+    for (var order in orders) {
+      if (order.status == OrderStatus.closed || order.status == OrderStatus.billed) {
+        billedCount++;
+        for (var item in order.items) {
+          totalSales += (item.priceCents * item.quantity / 100);
+          dishQuantities[item.menuItemId] = (dishQuantities[item.menuItemId] ?? 0) + item.quantity;
+          dishRevenue[item.menuItemId] = (dishRevenue[item.menuItemId] ?? 0) + (item.priceCents * item.quantity / 100);
+        }
+      }
+    }
+    
+    double averageTicket = billedCount > 0 ? totalSales / billedCount : 0;
+    var sortedEntries = dishQuantities.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    var top3 = sortedEntries.take(3).toList();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 900;
@@ -236,8 +255,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               children: [
                 _buildKpiCard(
                   'Ventas Totales',
-                  '12.450€',
-                  '+12%',
+                  '${totalSales.toStringAsFixed(2)}€',
+                  '+0%',
                   Icons.payments,
                   const Color(0xFFFFF7ED),
                   AppColors.primaryContainer,
@@ -246,8 +265,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 const SizedBox(width: AppSpacing.gutter),
                 _buildKpiCard(
                   'Tickets Medios',
-                  '42,50€',
-                  '+3%',
+                  '${averageTicket.toStringAsFixed(2)}€',
+                  '+0%',
                   Icons.receipt_long,
                   const Color(0xFFEFF6FF),
                   const Color(0xFF3B82F6),
@@ -264,18 +283,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 children: [
                   Expanded(flex: 6, child: _buildSalesChart()),
                   const SizedBox(width: AppSpacing.gutter),
-                  Expanded(flex: 6, child: _buildTopSellers()),
+                  Expanded(flex: 6, child: _buildTopSellers(top3, dishRevenue, menuItems)),
                 ],
               )
             else ...[
               _buildSalesChart(),
               const SizedBox(height: AppSpacing.gutter),
-              _buildTopSellers(),
+              _buildTopSellers(top3, dishRevenue, menuItems),
             ],
-            const SizedBox(height: AppSpacing.gutter),
-
-            // Inventory Heatmap
-            _buildInventoryHeatmap(),
           ],
         );
       },
@@ -438,7 +453,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildTopSellers() {
+  Widget _buildTopSellers(List<MapEntry<String, int>> topDishes, Map<String, double> revenues, List<MenuItem> menuItems) {
+    int maxUnits = topDishes.isEmpty ? 1 : topDishes.first.value;
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -453,26 +470,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Text('Platos Estrella',
               style: AppTypography.h3(color: AppColors.onSurface)),
           const SizedBox(height: AppSpacing.md),
-          _buildTopSellerItem(
-            'Poke Bowl Salmón',
-            '245 unidades vendidas',
-            0.85,
-            '3.430€',
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _buildTopSellerItem(
-            'Pizza Margarita Premium',
-            '198 unidades vendidas',
-            0.70,
-            '2.376€',
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _buildTopSellerItem(
-            'Hamburguesa Black Angus',
-            '156 unidades vendidas',
-            0.55,
-            '2.184€',
-          ),
+          if (topDishes.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text('No hay ventas registradas aún.', style: TextStyle(color: Colors.grey)),
+            ),
+          for (var entry in topDishes) ...[
+            Builder(
+              builder: (context) {
+                final menuItem = menuItems.firstWhere((m) => m.id == entry.key, orElse: () => MenuItem(id: '', name: 'Desconocido', priceCents: 0, category: '', available: true, modifiers: []));
+                return _buildTopSellerItem(
+                  menuItem.name,
+                  '${entry.value} unidades vendidas',
+                  maxUnits > 0 ? entry.value / maxUnits : 0,
+                  '${(revenues[entry.key] ?? 0).toStringAsFixed(2)}€',
+                );
+              }
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
         ],
       ),
     );
@@ -531,174 +547,5 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildInventoryHeatmap() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: const Color(0xFFF8FAFC)),
-        boxShadow: [AppShadows.card],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Consumo crítico de Ingredientes',
-                      style: AppTypography.h3(
-                          color: AppColors.onSurface)),
-                  SizedBox(width: 300,
-                  child: Text(
-                      'Ingredientes con mayor rotación en las últimas 24 horas.',
-                      style: AppTypography.bodyMd(
-                          color: AppColors.secondary)),
-                  ),
-                               TextButton(
-                onPressed: () => context.go('/admin/inventory'),
-                child: Text('Ver Inventario Completo',
-                    style: AppTypography.labelCaps(
-                        color: AppColors.primaryContainer)),
-              ),
-                ],
-                 
-              ),
-            ],
-          ),        
-          
-          const SizedBox(height: AppSpacing.md), SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              spacing: 10.0,
-            children: [
-              SizedBox(
-                height: 200,
-                width: 125,
-                child: _buildHeatmapCard(
-                'Salmón Noruego',
-                'Quedan: 2.5 kg',
-                0.15,
-                AppColors.error,
-                AppColors.errorContainer,
-                Icons.warning,
-                'Crítico',
-              ),
-              ),
-              SizedBox(
-                height: 200,
-                width: 125,
-                child: _buildHeatmapCard(
-                'Aguacate Hass',
-                'Quedan: 15 unidades',
-                0.35,
-                AppColors.statusCooking,
-                const Color(0xFFFFF7ED),
-                Icons.inventory_2,
-                'Bajo',
-              ),
-              ),
-              SizedBox(
-                height: 200,
-                width: 125,
-                child: _buildHeatmapCard(
-                'Harina de Trigo',
-                'Quedan: 45 kg',
-                0.80,
-                AppColors.statusReady,
-                const Color(0xFFF0FDF4),
-                Icons.check_circle,
-                'Óptimo',
-              ),
-              ),
-              SizedBox(
-                height: 200,
-                width: 125,
-                child: _buildHeatmapCard(
-                'Queso Mozzarella',
-                'Quedan: 12 kg',
-                0.65,
-                AppColors.statusReady,
-                const Color(0xFFF0FDF4),
-                Icons.check_circle,
-                'Óptimo',
-              ),
-              ),
 
-            ],
-          ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeatmapCard(
-    String name,
-    String remaining,
-    double progress,
-    Color indicatorColor,
-    Color bgColor,
-    IconData icon,
-    String badge,
-  ) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: bgColor.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(
-              color: indicatorColor.withValues(alpha: 0.2)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(icon, color: indicatorColor, size: 22),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.base,
-                      vertical: 2),
-                  decoration: BoxDecoration(
-                    color: indicatorColor,
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.full),
-                  ),
-                  child: Text(badge,
-                      style: AppTypography.statusBadge(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.base),
-            Text(name,
-                style: AppTypography.bodyLg(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.onBackground)),
-            Text(remaining,
-                style: AppTypography.bodyMd(
-                    color: AppColors.secondary)),
-            const SizedBox(height: AppSpacing.base),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                backgroundColor: const Color(0xFFE2E8F0),
-                color: indicatorColor,
-                minHeight: 8,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

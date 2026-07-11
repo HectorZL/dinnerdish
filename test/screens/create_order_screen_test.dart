@@ -60,6 +60,9 @@ class MockMenuService implements MenuService {
 
   @override
   Future<List<String>> getCategories() async => ['Entrantes', 'Platos Principales'];
+
+  @override
+  Future<void> adjustStock(String itemId, String? variationId, int quantityChange) async {}
 }
 
 class MockOrderService implements OrderService {
@@ -302,8 +305,8 @@ void main() {
       expect(find.text('Ensalada César'), findsOneWidget);
 
       // Prices should appear in dish cards
-      expect(find.text('\$12.00'), findsAtLeastNWidgets(1));
-      expect(find.text('\$8.50'), findsAtLeastNWidgets(1));
+      expect(find.text('12.00€'), findsAtLeastNWidgets(1));
+      expect(find.text('8.50€'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows header with waiter info', (tester) async {
@@ -329,7 +332,7 @@ void main() {
       await tester.pump();
 
       // The summary should now show 1 selected item
-      expect(find.text('1 Ítem seleccionado'), findsOneWidget);
+      expect(find.text('1 Items — 12.00€'), findsOneWidget);
     });
 
     testWidgets('counter increments quantity display', (tester) async {
@@ -346,7 +349,7 @@ void main() {
       await tester.pump();
 
       // Summary shows 2 selected items
-      expect(find.text('2 Ítems seleccionados'), findsOneWidget);
+      expect(find.text('2 Items — 24.00€'), findsOneWidget);
     });
 
     testWidgets('remove button decreases quantity', (tester) async {
@@ -363,10 +366,12 @@ void main() {
 
       // Now remove one
       final removeButtons = find.byIcon(Icons.remove);
+      await tester.ensureVisible(removeButtons.first);
+      await tester.pumpAndSettle();
       await tester.tap(removeButtons.first);
       await tester.pump();
 
-      expect(find.text('1 Ítem seleccionado'), findsOneWidget);
+      expect(find.text('1 Items — 12.00€'), findsOneWidget);
     });
 
     testWidgets('shows search field and category filters', (tester) async {
@@ -375,12 +380,12 @@ void main() {
       await tester.pump();
 
       // Search field hint
-      expect(find.text('Buscar plato o código...'), findsOneWidget);
+      expect(find.text('Buscar plato...'), findsOneWidget);
 
       // Category buttons
-      expect(find.text('Favoritos'), findsOneWidget);
-      expect(find.text('Entradas'), findsOneWidget);
-      expect(find.text('Fuertes'), findsOneWidget);
+      expect(find.text('Todos'), findsOneWidget);
+      expect(find.text('Entrantes'), findsOneWidget);
+      expect(find.text('Platos Principales'), findsOneWidget);
       expect(find.text('Bebidas'), findsOneWidget);
       expect(find.text('Postres'), findsOneWidget);
     });
@@ -391,9 +396,7 @@ void main() {
       await tester.pump();
 
       // Summary section
-      expect(find.text('RESUMEN DEL PEDIDO'), findsOneWidget);
-      expect(find.text('0 Ítems seleccionados'), findsOneWidget);
-      expect(find.text('\$0.00'), findsOneWidget);
+      expect(find.text('0 Items — 0.00€'), findsOneWidget);
     });
   });
 }

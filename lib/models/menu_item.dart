@@ -1,6 +1,7 @@
 import 'package:hive/hive.dart';
 
 import 'modifier.dart';
+import 'menu_item_variation.dart';
 
 part 'menu_item.g.dart';
 
@@ -24,6 +25,12 @@ class MenuItem {
   @HiveField(5)
   final String category;
 
+  @HiveField(6)
+  final int stock;
+
+  @HiveField(7)
+  final List<MenuItemVariation> variations;
+
   const MenuItem({
     required this.id,
     required this.name,
@@ -31,7 +38,10 @@ class MenuItem {
     required this.modifiers,
     required this.available,
     required this.category,
-  }) : assert(priceCents >= 0, 'priceCents must be >= 0');
+    this.stock = 99,
+    this.variations = const [],
+  }) : assert(priceCents >= 0, 'priceCents must be >= 0'),
+       assert(stock >= 0, 'stock must be >= 0');
 
   factory MenuItem.fromJson(Map<String, dynamic> json) {
     final id = json['id'] as String?;
@@ -58,6 +68,12 @@ class MenuItem {
     if (category == null) {
       throw ArgumentError('Missing required field: category');
     }
+    final stock = json['stock'] as int? ?? 99;
+    final variationsRaw = json['variations'] as List<dynamic>? ?? [];
+    final variations = variationsRaw
+        .map((e) => MenuItemVariation.fromJson(e as Map<String, dynamic>))
+        .toList();
+
     return MenuItem(
       id: id,
       name: name,
@@ -67,6 +83,8 @@ class MenuItem {
           .toList(),
       available: available,
       category: category,
+      stock: stock,
+      variations: variations,
     );
   }
 
@@ -77,6 +95,8 @@ class MenuItem {
         'modifiers': modifiers.map((e) => e.toJson()).toList(),
         'available': available,
         'category': category,
+        'stock': stock,
+        'variations': variations.map((e) => e.toJson()).toList(),
       };
 
   MenuItem copyWith({
@@ -86,6 +106,8 @@ class MenuItem {
     List<Modifier>? modifiers,
     bool? available,
     String? category,
+    int? stock,
+    List<MenuItemVariation>? variations,
   }) {
     return MenuItem(
       id: id ?? this.id,
@@ -94,6 +116,8 @@ class MenuItem {
       modifiers: modifiers ?? this.modifiers,
       available: available ?? this.available,
       category: category ?? this.category,
+      stock: stock ?? this.stock,
+      variations: variations ?? this.variations,
     );
   }
 }

@@ -326,17 +326,13 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                           height: 40,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
+                            color: AppColors.primaryContainer,
                             border: Border.all(color: Colors.white, width: 2),
                             boxShadow: [
                               BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
                             ],
-                            image: const DecorationImage(
-                              image: NetworkImage(
-                                'https://lh3.googleusercontent.com/aida-public/AB6AXuDqi9W_iAlZGSRGBAPUtUY6V_Z0P-g4uKUgnAOui92UixNda83uNO4Ma8gx_jM7807GqxqYZA6TUfAjqS_5sAC3ZFA4aFbDM-I2gw1rBpYo_V8SBaiH0dy-UqF1rNf3PaR1nJMj6ulfCH4A5z7qLsRHQeUvk4qCryjj6XFTqzMy2IYvOTaYb67GQ_kx91JCcjKBk1PEraZZSGWs-9H6lskZ_dkinRCibJSYnQE9M5D5bIw-YOu_kHwqPQy-y4jXLfNAw7lYlYRWOxLX',
-                              ),
-                              fit: BoxFit.cover,
-                            ),
                           ),
+                          child: const Icon(Icons.person, color: Colors.white, size: 24),
                         ),
                       );
                     },
@@ -354,7 +350,8 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
 class NavLink {
   final String label;
   final bool isActive;
-  const NavLink(this.label, this.isActive);
+  final String? route;
+  const NavLink(this.label, this.isActive, {this.route});
 }
 
 /// Bottom Navigation Bar matching Stitch mobile pattern.

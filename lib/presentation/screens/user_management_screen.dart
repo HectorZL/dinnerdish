@@ -115,8 +115,6 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             _buildNavItem(Icons.group, 'Usuarios', true, context),
             _buildNavItem(
                 Icons.inventory_2_outlined, 'Inventario', false, context),
-            _buildNavItem(
-                Icons.calculate_outlined, 'Escandallo', false, context),
             _buildNavItem(Icons.bar_chart_outlined, 'Reportes', false, context),
             _buildNavItem(
                 Icons.settings_outlined, 'Ajustes', false, context),
@@ -152,8 +150,6 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           switch (title) {
             case 'Inventario':
               context.go('/admin/inventory');
-            case 'Escandallo':
-              context.go('/admin/ingredient-assignment');
             case 'Reportes':
               context.go('/admin/reports');
           }

@@ -20,11 +20,11 @@ void main() {
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      // Admin sees Gestión de Menú on dashboard
-      expect(find.text('Gestión de Menú'), findsOneWidget);
+      // Admin sees Menú nav link
+      expect(find.text('Menú'), findsOneWidget);
 
       // Navigate to menu management
-      await tapDashboardCard(tester, 'Gestión de Menú');
+      await tester.tap(find.text('Menú'));
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -42,7 +42,7 @@ void main() {
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      await tapDashboardCard(tester, 'Gestión de Menú');
+      await tester.tap(find.text('Menú'));
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -81,7 +81,7 @@ void main() {
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      await tapDashboardCard(tester, 'Gestión de Menú');
+      await tester.tap(find.text('Menú'));
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -105,7 +105,7 @@ void main() {
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      await tapDashboardCard(tester, 'Gestión de Menú');
+      await tester.tap(find.text('Menú'));
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -137,7 +137,7 @@ void main() {
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      await tapDashboardCard(tester, 'Gestión de Menú');
+      await tester.tap(find.text('Menú'));
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -158,11 +158,11 @@ void main() {
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      expect(find.text('Manage Staff'), findsOneWidget);
-      expect(find.text('View Orders'), findsOneWidget);
-      expect(find.text('Kitchen Orders'), findsOneWidget);
-      expect(find.text('Facturación'), findsOneWidget);
-      expect(find.text('Gestión de Menú'), findsOneWidget);
+      expect(find.text('Administración'), findsOneWidget);
+      expect(find.text('Gestión de Pedidos'), findsOneWidget);
+      expect(find.text('Pantalla KDS - Cocina'), findsOneWidget);
+      expect(find.text('Caja y Cobros'), findsOneWidget);
+      expect(find.text('Menú'), findsOneWidget);
     });
   });
 }

@@ -108,7 +108,7 @@ class MockPaymentProcOrderService implements OrderService {
     required OrderStatus status,
     required String byUserId,
   }) async {
-    throw UnimplementedError();
+    return order ?? makeTestOrder(id: orderId);
   }
 
   @override
@@ -281,11 +281,11 @@ void main() {
 
       // Payment method labels
       expect(find.text('Efectivo'), findsOneWidget);
-      expect(find.text('Tarjeta de Crédito'), findsOneWidget);
-      expect(find.text('QR'), findsOneWidget);
+      expect(find.text('Tarjeta'), findsOneWidget);
+      expect(find.text('QR / Bizum'), findsOneWidget);
 
       // Split button
-      expect(find.text('Dividir Pago'), findsOneWidget);
+      expect(find.text('Dividir'), findsOneWidget);
     });
 
     testWidgets('process payment shows success dialog', (tester) async {

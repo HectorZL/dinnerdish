@@ -234,13 +234,11 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 if (order.status == OrderStatus.sentToKitchen)
                   _buildActionBtn('Editar', Icons.edit, false, onTap: () => context.go('/orders/${order.id}/edit')),
                 if (order.status == OrderStatus.sentToKitchen)
-                  _buildActionBtn('Cancelar', Icons.close, false),
-                if (order.status == OrderStatus.sentToKitchen)
-                  _buildActionBtn('Cocina', Icons.restaurant, true),
+                  _buildActionBtn('Cancelar', Icons.close, false, onTap: () => ref.read(orderServiceProvider).updateStatus(orderId: order.id, status: OrderStatus.closed, byUserId: ref.read(currentUserProvider).value?.id ?? 'user')),
                 if (order.status == OrderStatus.ready)
-                  _buildActionBtn('Servir', Icons.check, true),
+                  _buildActionBtn('Servir', Icons.check, true, onTap: () => ref.read(orderServiceProvider).updateStatus(orderId: order.id, status: OrderStatus.billed, byUserId: ref.read(currentUserProvider).value?.id ?? 'user')),
                 if (order.status == OrderStatus.billed)
-                  _buildActionBtn('Cobrar', Icons.payment, true),
+                  _buildActionBtn('Cobrar', Icons.payment, true, onTap: () => context.go('/orders/pay/${order.id}')),
               ],
             );
           },

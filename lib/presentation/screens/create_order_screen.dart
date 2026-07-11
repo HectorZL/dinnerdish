@@ -61,7 +61,10 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         order = await orderService.getOrder(widget.existingOrderId!);
         if (order != null) {
           for (var item in order.items) {
-            _selectedQuantities[item.menuItemId] = (_selectedQuantities[item.menuItemId] ?? 0) + item.quantity;
+            final key = item.variationId != null && item.variationId!.isNotEmpty
+                ? '${item.menuItemId}_${item.variationId}'
+                : item.menuItemId;
+            _selectedQuantities[key] = (_selectedQuantities[key] ?? 0) + item.quantity;
           }
         }
       } else if (currentUser != null) {
@@ -89,13 +92,20 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     var total = 0;
     for (final entry in _selectedQuantities.entries) {
       if (entry.value > 0) {
-        final item = _menuItems.firstWhere((m) => m.id == entry.key);
-        total += item.priceCents * entry.value;
+        final parts = entry.key.split('_');
+        final itemId = parts[0];
+        final variationId = parts.length > 1 ? parts[1] : null;
+        
+        final item = _menuItems.firstWhere((m) => m.id == itemId);
+        final priceCents = variationId != null
+            ? item.variations.firstWhere((v) => v.id == variationId).priceCents
+            : item.priceCents;
+            
+        total += priceCents * entry.value;
       }
     }
     return total;
   }
-
 
   Future<void> _sendToKitchen(String tableId) async {
     if (_currentOrder == null) return;
@@ -131,15 +141,31 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
 
       for (final entry in _selectedQuantities.entries) {
         if (entry.value <= 0) continue;
-        final item = _menuItems.firstWhere((m) => m.id == entry.key);
+        
+        final parts = entry.key.split('_');
+        final itemId = parts[0];
+        final variationId = parts.length > 1 ? parts[1] : null;
+
+        final item = _menuItems.firstWhere((m) => m.id == itemId);
+        
+        String displayName = item.name;
+        int priceCents = item.priceCents;
+        
+        if (variationId != null) {
+          final variation = item.variations.firstWhere((v) => v.id == variationId);
+          displayName = '${item.name} (${variation.name})';
+          priceCents = variation.priceCents;
+        }
+
         final orderItem = order_item.OrderItem(
           id: 'item-${DateTime.now().millisecondsSinceEpoch}-${entry.key}',
           menuItemId: item.id,
-          name: item.name,
+          name: displayName,
           quantity: entry.value,
-          priceCents: item.priceCents,
+          priceCents: priceCents,
           status: order_item.OrderStatus.pending,
           modifierIds: [],
+          variationId: variationId,
         );
         await orderService.addItem(
           orderId: _currentOrder!.id,
@@ -169,7 +195,105 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     }
   }
 
-
+  void _showVariationsBottomSheet(MenuItem item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    item.name,
+                    style: AppTypography.h2(),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Selecciona las variaciones y cantidades:',
+                    style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 16),
+                  ...item.variations.map((v) {
+                    final key = '${item.id}_${v.id}';
+                    final qty = _selectedQuantities[key] ?? 0;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  v.name,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                Text(
+                                  '${(v.priceCents / 100).toStringAsFixed(2)}€ • ${v.stock} disp.',
+                                  style: TextStyle(
+                                    color: v.stock == 0 ? Colors.red : const Color(0xFF64748B),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline, color: AppColors.primaryContainer),
+                                onPressed: qty > 0
+                                    ? () {
+                                        setModalState(() {
+                                          _selectedQuantities[key] = qty - 1;
+                                        });
+                                        setState(() {});
+                                      }
+                                    : null,
+                              ),
+                              Text('$qty', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryContainer),
+                                onPressed: () {
+                                  if (qty >= v.stock) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('No hay suficiente stock para la variación ${v.name}')),
+                                    );
+                                    return;
+                                  }
+                                  setModalState(() {
+                                    _selectedQuantities[key] = qty + 1;
+                                  });
+                                  setState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 24),
+                  StitchPrimaryButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    label: 'Confirmar',
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -271,17 +395,13 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
+              color: AppColors.primaryContainer,
               border: Border.all(color: AppColors.primaryContainer, width: 2),
               boxShadow: [
                 BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
               ],
-              image: const DecorationImage(
-                image: NetworkImage(
-                  'https://lh3.googleusercontent.com/aida-public/AB6AXuDwlJyRUytgNUtSy1ACnp9jgsFrf3sxLFeD4a3O8FmMc1R5s2o7AQIcyI5tnEsSSrs2j_wtdYri1dGbRFmSFsuIBCtQT9EqZmB1-BFReegVtMCVBV4kOUJk4-TuYvm5SqLSk9Bfp3va46GC7Wf1lRzPsd4o1oq4d2D0EXYMmz2hRW_8Wti6ZKGZcrdThb-3TdZ8o6s3srnUy90A_jFwsSQXwMz41JEXrT6sbDfo_AgvyqwTK2DeFNjc_1qRM-ykAYBLGfitiIA_WdXN',
-                ),
-                fit: BoxFit.cover,
-              ),
             ),
+            child: const Icon(Icons.person, color: Colors.white, size: 24),
           ),
         ],
       ),
@@ -294,7 +414,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Buscar plato o ingrediente...',
+          hintText: 'Buscar plato...',
           hintStyle: GoogleFonts.plusJakartaSans(
             fontSize: 14,
             color: const Color(0xFF94A3B8),
@@ -406,7 +526,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: AppSpacing.gutter,
             mainAxisSpacing: AppSpacing.gutter,
-            childAspectRatio: crossAxisCount > 1 ? 0.85 : 1.2,
+            childAspectRatio: crossAxisCount > 1 ? 0.7 : 1.2,
           ),
           itemCount: filteredItems.length,
           itemBuilder: (ctx, idx) => _buildDishCard(filteredItems[idx]),
@@ -416,12 +536,15 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   }
 
   Widget _buildDishCard(MenuItem item) {
-    final quantity = _selectedQuantities[item.id] ?? 0;
-    final hasVariants = item.modifiers.isNotEmpty;
+    final hasVariations = item.variations.isNotEmpty;
+    final totalQuantity = hasVariations
+        ? item.variations.fold(0, (sum, v) => sum + (_selectedQuantities['${item.id}_${v.id}'] ?? 0))
+        : (_selectedQuantities[item.id] ?? 0);
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.xl * 2), // rounded-xl with overflow hidden
+        borderRadius: BorderRadius.circular(AppRadius.xl * 2),
         border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [AppShadows.card],
       ),
@@ -451,7 +574,9 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)],
                     ),
                     child: Text(
-                      '\$${(item.priceCents / 100).toStringAsFixed(2)}',
+                      hasVariations
+                          ? 'Varias opciones'
+                          : '${(item.priceCents / 100).toStringAsFixed(2)}€',
                       style: AppTypography.statusBadge(color: AppColors.primaryContainer).copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -479,14 +604,32 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(
-                        onTap: () => setState(
-                          () => _selectedQuantities[item.id] = (quantity) + 1,
-                        ),
+                        onTap: () {
+                          if (hasVariations) {
+                            _showVariationsBottomSheet(item);
+                          } else {
+                            if (item.stock <= 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Este plato está agotado')),
+                              );
+                              return;
+                            }
+                            if (totalQuantity >= item.stock) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('No hay más stock disponible')),
+                              );
+                              return;
+                            }
+                            setState(() {
+                              _selectedQuantities[item.id] = totalQuantity + 1;
+                            });
+                          }
+                        },
                         child: Container(
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: AppColors.primaryContainer,
+                            color: item.stock == 0 && !hasVariations ? Colors.grey : AppColors.primaryContainer,
                             borderRadius: BorderRadius.circular(AppRadius.xl),
                             boxShadow: [
                               BoxShadow(
@@ -496,60 +639,85 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.add, color: Colors.white, size: 20),
+                          child: Icon(hasVariations ? Icons.tune : Icons.add, color: Colors.white, size: 20),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    hasVariants
-                        ? '${item.modifiers.length} variante${item.modifiers.length > 1 ? 's' : ''} disponible${item.modifiers.length > 1 ? 's' : ''}'
-                        : 'Sin variantes',
-                    style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (quantity > 0) ...[
+                  if (hasVariations)
+                    Text(
+                      item.variations.map((v) => '${v.name}: ${v.stock}').join(' | '),
+                      style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  else
+                    Text(
+                      item.stock == 0 ? 'Agotado' : 'Stock: ${item.stock} disponibles',
+                      style: AppTypography.bodyMd(color: item.stock == 0 ? Colors.red : const Color(0xFF64748B)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  if (totalQuantity > 0) ...[
                     const Spacer(),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: () => setState(
-                            () => _selectedQuantities[item.id] = quantity - 1,
-                          ),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primaryContainer,
+                        if (!hasVariations) ...[
+                          GestureDetector(
+                            onTap: () => setState(
+                              () => _selectedQuantities[item.id] = totalQuantity - 1,
                             ),
-                            child: const Icon(Icons.remove, color: Colors.white, size: 18),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            '$quantity',
-                            style: AppTypography.h3(color: AppColors.onSurface),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => setState(
-                            () => _selectedQuantities[item.id] = quantity + 1,
-                          ),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primaryContainer,
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.primaryContainer,
+                              ),
+                              child: const Icon(Icons.remove, color: Colors.white, size: 18),
                             ),
-                            child: const Icon(Icons.add, color: Colors.white, size: 18),
                           ),
-                        ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              '$totalQuantity',
+                              style: AppTypography.h3(color: AppColors.onSurface),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              if (totalQuantity >= item.stock) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('No hay más stock disponible')),
+                                );
+                                return;
+                              }
+                              setState(
+                                () => _selectedQuantities[item.id] = totalQuantity + 1,
+                              );
+                            },
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.primaryContainer,
+                              ),
+                              child: const Icon(Icons.add, color: Colors.white, size: 18),
+                            ),
+                          ),
+                        ] else ...[
+                          TextButton.icon(
+                            onPressed: () => _showVariationsBottomSheet(item),
+                            icon: const Icon(Icons.edit, size: 16, color: AppColors.primaryContainer),
+                            label: Text(
+                              '$totalQuantity seleccionados',
+                              style: AppTypography.statusBadge(color: AppColors.primaryContainer),
+                            ),
+                          ),
+                        ]
                       ],
                     ),
                   ],
@@ -582,7 +750,6 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                 final availableTables = tablesAsync.value?.where((t) => t.status == table_model.TableStatus.available).map((t) => t.id).toList() ?? [];
                 final allTables = tablesAsync.value ?? [];
                 if (allTables.isEmpty) {
-                  // Fallback just in case
                   availableTables.addAll(['01', '02', '03', '04']);
                 }
                 if (widget.existingOrderId == null) {
@@ -615,11 +782,25 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                   itemCount: selectedItems.length,
                                   itemBuilder: (context, index) {
                                     final entry = selectedItems[index];
-                                    final item = _menuItems.firstWhere((m) => m.id == entry.key);
+                                    final parts = entry.key.split('_');
+                                    final itemId = parts[0];
+                                    final variationId = parts.length > 1 ? parts[1] : null;
+
+                                    final item = _menuItems.firstWhere((m) => m.id == itemId);
+
+                                    String displayName = item.name;
+                                    int priceCents = item.priceCents;
+
+                                    if (variationId != null) {
+                                      final variation = item.variations.firstWhere((v) => v.id == variationId);
+                                      displayName = '${item.name} (${variation.name})';
+                                      priceCents = variation.priceCents;
+                                    }
+
                                     return ListTile(
                                       contentPadding: EdgeInsets.zero,
-                                      title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                      subtitle: Text('\$${(item.priceCents / 100).toStringAsFixed(2)} c/u'),
+                                      title: Text(displayName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      subtitle: Text('${(priceCents / 100).toStringAsFixed(2)}€ c/u'),
                                       trailing: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -627,21 +808,30 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                             icon: const Icon(Icons.remove_circle_outline, color: AppColors.primaryContainer),
                                             onPressed: () {
                                               if (entry.value > 1) {
-                                                setModalState(() => _selectedQuantities[item.id] = entry.value - 1);
-                                                setState(() => _selectedQuantities[item.id] = entry.value - 1);
+                                                setModalState(() => _selectedQuantities[entry.key] = entry.value - 1);
+                                                setState(() => _selectedQuantities[entry.key] = entry.value - 1);
                                               } else {
-                                                setModalState(() => _selectedQuantities.remove(item.id));
-                                                setState(() => _selectedQuantities.remove(item.id));
+                                                setModalState(() => _selectedQuantities.remove(entry.key));
+                                                setState(() => _selectedQuantities.remove(entry.key));
                                               }
-                                              if (_selectedQuantities.isEmpty) Navigator.pop(ctx);
+                                              if (_selectedQuantities.entries.where((e) => e.value > 0).isEmpty) Navigator.pop(ctx);
                                             },
                                           ),
-                                          Text('${_selectedQuantities[item.id] ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                          Text('${_selectedQuantities[entry.key] ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                           IconButton(
                                             icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryContainer),
                                             onPressed: () {
-                                              setModalState(() => _selectedQuantities[item.id] = entry.value + 1);
-                                              setState(() => _selectedQuantities[item.id] = entry.value + 1);
+                                              final maxStock = variationId != null
+                                                  ? item.variations.firstWhere((v) => v.id == variationId).stock
+                                                  : item.stock;
+                                              if (entry.value >= maxStock) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('No hay más stock disponible')),
+                                                );
+                                                return;
+                                              }
+                                              setModalState(() => _selectedQuantities[entry.key] = entry.value + 1);
+                                              setState(() => _selectedQuantities[entry.key] = entry.value + 1);
                                             },
                                           ),
                                         ],
@@ -675,7 +865,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text('Total:', style: AppTypography.h3()),
-                                  Text('\$${(_totalSelectedCents / 100).toStringAsFixed(2)}', style: AppTypography.h2(color: AppColors.primaryContainer)),
+                                  Text('${(_totalSelectedCents / 100).toStringAsFixed(2)}€', style: AppTypography.h2(color: AppColors.primaryContainer)),
                                 ],
                               ),
                               const SizedBox(height: 24),
@@ -698,7 +888,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
             : null,
         icon: Icons.receipt_long,
         label:
-            '$_totalSelectedItems Items — \$${(_totalSelectedCents / 100).toStringAsFixed(2)}',
+            '$_totalSelectedItems Items — ${(_totalSelectedCents / 100).toStringAsFixed(2)}€',
       ),
     );
   }

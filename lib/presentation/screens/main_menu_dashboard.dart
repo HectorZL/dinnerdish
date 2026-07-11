@@ -20,7 +20,7 @@ class _MainMenuDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = ref.read(currentUserProvider).value;
+    final currentUser = ref.watch(currentUserProvider).value;
     final isLoggedIn = currentUser != null;
     final isDesktop = MediaQuery.of(context).size.width > 768;
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
@@ -35,11 +35,11 @@ class _MainMenuDashboardScreenState
             StitchTopAppBar(
               navLinks: isDesktop
                   ? [
-                      const NavLink('Inicio', true),
-                      const NavLink('Pedidos', false),
-                      const NavLink('Mesas', false),
+                      const NavLink('Inicio', true, route: '/menu'),
+                      const NavLink('Pedidos', false, route: '/orders/tracking'),
+                      const NavLink('Mesas', false, route: '/tables'),
                       if (RouteGuard.canAccessAdmin(currentUser))
-                        const NavLink('Menú', false),
+                        const NavLink('Menú', false, route: '/admin/menu'),
                     ]
                   : null,
             ),
@@ -706,7 +706,6 @@ class _MainMenuDashboardScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
-        spacing: 10,
         children: [
           Expanded(
             flex: 3,
@@ -744,11 +743,9 @@ class _MainMenuDashboardScreenState
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(status,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.statusBadge(color: statusColor)),
-                  ),
+                  Text(status,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.statusBadge(color: statusColor)),
                 ],
               ),
             ),

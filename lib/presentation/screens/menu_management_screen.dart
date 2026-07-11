@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../exceptions/menu_exception.dart';
 import '../../models/menu_item.dart';
+import '../../models/menu_item_variation.dart';
 import '../../models/modifier.dart';
 import '../../providers/providers.dart';
 import '../theme/app_theme.dart';
@@ -191,6 +192,11 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
               showBack: true,
               onBack: () => context.go('/menu'),
               actions: [
+                TextButton.icon(
+                  onPressed: _showCreateDialog,
+                  icon: const Icon(Icons.add, color: AppColors.primaryContainer),
+                  label: const Text('Nuevo Item', style: TextStyle(color: AppColors.primaryContainer, fontWeight: FontWeight.bold)),
+                ),
                 const SizedBox(width: 8),
               ],
             ),
@@ -665,9 +671,12 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _priceController;
+  late TextEditingController _stockController;
   late bool _available;
   late String _category;
   late List<_ModifierEntry> _modifierEntries;
+  late List<_VariationEntry> _variationEntries;
+  late bool _hasVariations;
 
   bool get _isEditing => widget.existingItem != null;
 
@@ -681,9 +690,14 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
           ? (item.priceCents / 100).toStringAsFixed(2)
           : '',
     );
+    _stockController = TextEditingController(
+      text: item != null ? item.stock.toString() : '0',
+    );
     _available = item?.available ?? true;
     _category = item?.category ??
         (widget.categories.isNotEmpty ? widget.categories.first : '');
+    _hasVariations = item?.variations.isNotEmpty ?? false;
+
     _modifierEntries = (item?.modifiers ?? [])
         .map((m) => _ModifierEntry(
               id: m.id,
@@ -696,15 +710,32 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
     if (_modifierEntries.isEmpty) {
       _addModifierEntry();
     }
+
+    _variationEntries = (item?.variations ?? [])
+        .map((v) => _VariationEntry(
+              id: v.id,
+              nameController: TextEditingController(text: v.name),
+              priceController: TextEditingController(
+                text: (v.priceCents / 100).toStringAsFixed(2),
+              ),
+              stockController: TextEditingController(text: v.stock.toString()),
+            ))
+        .toList();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _priceController.dispose();
+    _stockController.dispose();
     for (final entry in _modifierEntries) {
       entry.nameController.dispose();
       entry.priceController.dispose();
+    }
+    for (final entry in _variationEntries) {
+      entry.nameController.dispose();
+      entry.priceController.dispose();
+      entry.stockController.dispose();
     }
     super.dispose();
   }
@@ -729,11 +760,38 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
     });
   }
 
+  void _addVariationEntry() {
+    setState(() {
+      _variationEntries.add(_VariationEntry(
+        id: 'var-${DateTime.now().millisecondsSinceEpoch}-${_variationEntries.length}',
+        nameController: TextEditingController(),
+        priceController: TextEditingController(),
+        stockController: TextEditingController(text: '0'),
+      ));
+    });
+  }
+
+  void _removeVariationEntry(int index) {
+    if (_variationEntries.length <= 1) return;
+    setState(() {
+      final entry = _variationEntries.removeAt(index);
+      entry.nameController.dispose();
+      entry.priceController.dispose();
+      entry.stockController.dispose();
+    });
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    final priceText = _priceController.text.replaceAll(',', '.');
-    final priceCents = (double.parse(priceText) * 100).round();
+    int priceCents = 0;
+    int stock = 0;
+
+    if (!_hasVariations) {
+      final priceText = _priceController.text.replaceAll(',', '.');
+      priceCents = (double.parse(priceText) * 100).round();
+      stock = int.parse(_stockController.text);
+    }
 
     final modifiers = _modifierEntries
         .where((e) => e.nameController.text.trim().isNotEmpty)
@@ -749,6 +807,20 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
       );
     }).toList();
 
+    final variations = _hasVariations
+        ? _variationEntries.map((e) {
+            final priceText = e.priceController.text.replaceAll(',', '.');
+            final varPriceCents = (double.parse(priceText) * 100).round();
+            final varStock = int.parse(e.stockController.text);
+            return MenuItemVariation(
+              id: e.id,
+              name: e.nameController.text.trim(),
+              priceCents: varPriceCents,
+              stock: varStock,
+            );
+          }).toList()
+        : <MenuItemVariation>[];
+
     final item = MenuItem(
       id: widget.existingItem?.id ??
           'item-${DateTime.now().millisecondsSinceEpoch}',
@@ -757,6 +829,8 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
       modifiers: modifiers,
       available: _available,
       category: _category,
+      stock: stock,
+      variations: variations,
     );
 
     widget.onSave(item);
@@ -777,7 +851,7 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
         child: Form(
           key: _formKey,
           child: SizedBox(
-            width: 400,
+            width: 450,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -806,21 +880,153 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                   },
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                TextFormField(
-                  controller: _priceController,
-                  style: AppTypography.bodyMd(color: AppColors.onSurface),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: _inputDecoration('Precio (€)'),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Requerido';
-                    final cleaned = v.replaceAll(',', '.');
-                    final parsed = double.tryParse(cleaned);
-                    if (parsed == null || parsed < 0) return 'Precio inválido';
-                    return null;
-                  },
+                Row(
+                  children: [
+                    Text(
+                      '¿Tiene variaciones?',
+                      style: AppTypography.bodyMd(
+                          color: AppColors.onSurfaceVariant),
+                    ),
+                    const Spacer(),
+                    Switch(
+                      value: _hasVariations,
+                      onChanged: (v) {
+                        setState(() {
+                          _hasVariations = v;
+                          if (_hasVariations && _variationEntries.isEmpty) {
+                            _addVariationEntry();
+                          }
+                        });
+                      },
+                      activeColor: AppColors.primaryContainer,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
+                if (!_hasVariations) ...[
+                  TextFormField(
+                    controller: _priceController,
+                    style: AppTypography.bodyMd(color: AppColors.onSurface),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: _inputDecoration('Precio (€)'),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Requerido';
+                      final cleaned = v.replaceAll(',', '.');
+                      final parsed = double.tryParse(cleaned);
+                      if (parsed == null || parsed < 0) return 'Precio inválido';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  TextFormField(
+                    controller: _stockController,
+                    style: AppTypography.bodyMd(color: AppColors.onSurface),
+                    keyboardType: TextInputType.number,
+                    decoration: _inputDecoration('Stock Inicial'),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Requerido';
+                      final parsed = int.tryParse(v);
+                      if (parsed == null || parsed < 0) return 'Stock inválido';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+                if (_hasVariations) ...[
+                  Row(
+                    children: [
+                      Text(
+                        'Variaciones',
+                        style: AppTypography.bodyMd(
+                            color: AppColors.onSurfaceVariant,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: _addVariationEntry,
+                        icon: const Icon(Icons.add,
+                            size: 16,
+                            color: AppColors.primaryContainer),
+                        label: Text(
+                          'Añadir Var.',
+                          style: AppTypography.statusBadge(
+                              color: AppColors.primaryContainer),
+                        ),
+                      ),
+                    ],
+                  ),
+                  ..._variationEntries.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final variation = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: TextFormField(
+                              controller: variation.nameController,
+                              style: AppTypography.bodyMd(
+                                  color: AppColors.onSurface,
+                                  fontWeight: FontWeight.normal),
+                              decoration: _inputDecoration('Nombre (ej: Familiar)'),
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Req.'
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            flex: 1,
+                            child: TextFormField(
+                              controller: variation.priceController,
+                              style: AppTypography.bodyMd(
+                                  color: AppColors.onSurface,
+                                  fontWeight: FontWeight.normal),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              decoration: _inputDecoration('Precio'),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return 'Req.';
+                                final cleaned = v.replaceAll(',', '.');
+                                final parsed = double.tryParse(cleaned);
+                                if (parsed == null || parsed < 0) return 'Error';
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            flex: 1,
+                            child: TextFormField(
+                              controller: variation.stockController,
+                              style: AppTypography.bodyMd(
+                                  color: AppColors.onSurface,
+                                  fontWeight: FontWeight.normal),
+                              keyboardType: TextInputType.number,
+                              decoration: _inputDecoration('Stock'),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return 'Req.';
+                                final parsed = int.tryParse(v);
+                                if (parsed == null || parsed < 0) return 'Error';
+                                return null;
+                              },
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle,
+                                size: 20, color: AppColors.error),
+                            onPressed: () => _removeVariationEntry(index),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
                 Row(
                   children: [
                     Text(
@@ -832,7 +1038,6 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                     Switch(
                       value: _available,
                       onChanged: (v) => setState(() => _available = v),
-                      // ignore: deprecated_member_use
                       activeColor: AppColors.primaryContainer,
                     ),
                   ],
@@ -962,6 +1167,20 @@ class _ModifierEntry {
     required this.id,
     required this.nameController,
     required this.priceController,
+  });
+}
+
+class _VariationEntry {
+  final String id;
+  final TextEditingController nameController;
+  final TextEditingController priceController;
+  final TextEditingController stockController;
+
+  _VariationEntry({
+    required this.id,
+    required this.nameController,
+    required this.priceController,
+    required this.stockController,
   });
 }
 

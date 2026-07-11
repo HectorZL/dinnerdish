@@ -62,6 +62,9 @@ class MockMenuService implements MenuService {
     categories.sort();
     return categories;
   }
+
+  @override
+  Future<void> adjustStock(String itemId, String? variationId, int quantityChange) async {}
 }
 
 // ── Helpers ────────────────────────────────────────────────────

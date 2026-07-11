@@ -2,18 +2,21 @@ import 'dart:async';
 import 'package:dinnerhome/exceptions/order_exception.dart';
 import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/models/order_item.dart' show OrderItem;
+import 'package:dinnerhome/models/order_item.dart' as oi;
 import 'package:dinnerhome/services/audit_service.dart';
 import 'package:dinnerhome/services/order_service.dart';
 import 'package:dinnerhome/services/socket_service.dart';
+import 'package:dinnerhome/services/menu_service.dart';
 
 class InMemoryOrderService implements OrderService {
   final SocketService socketService;
+  final MenuService? menuService;
   final AuditService? auditService;
   final Map<String, Order> _orders = {};
   int _orderCounter = 0;
   final _orderEventsController = StreamController<OrderEvent>.broadcast();
 
-  InMemoryOrderService(this.socketService, {this.auditService});
+  InMemoryOrderService(this.socketService, {this.menuService, this.auditService});
 
   @override
   Future<Order> createDraft({required String waiterId, String? tableId}) async {
@@ -71,6 +74,9 @@ class InMemoryOrderService implements OrderService {
       throw OrderLockedException(order.status.name);
     }
 
+    // Decrementar stock si menuService está presente
+    await menuService?.adjustStock(item.menuItemId, item.variationId, -item.quantity);
+
     final updatedItems = [...order.items, item];
     final updatedOrder = _recalculateOrder(order.copyWith(items: updatedItems));
     _orders[orderId] = updatedOrder;
@@ -94,6 +100,12 @@ class InMemoryOrderService implements OrderService {
       throw OrderNotFoundException(orderId);
     }
 
+    final oldItem = order.items.firstWhere((i) => i.id == item.id, orElse: () => throw Exception('Item no encontrado en el pedido'));
+    final diff = item.quantity - oldItem.quantity;
+
+    // Ajustar stock si menuService está presente
+    await menuService?.adjustStock(item.menuItemId, item.variationId, -diff);
+
     final items = order.items.map((i) => i.id == item.id ? item : i).toList();
     final updatedOrder = _recalculateOrder(order.copyWith(items: items));
     _orders[orderId] = updatedOrder;
@@ -116,6 +128,11 @@ class InMemoryOrderService implements OrderService {
     if (order == null) {
       throw OrderNotFoundException(orderId);
     }
+
+    final item = order.items.firstWhere((i) => i.id == itemId, orElse: () => throw Exception('Item no encontrado en el pedido'));
+
+    // Incrementar stock al remover si menuService está presente
+    await menuService?.adjustStock(item.menuItemId, item.variationId, item.quantity);
 
     final updatedItems = order.items.where((i) => i.id != itemId).toList();
     final updatedOrder = _recalculateOrder(order.copyWith(items: updatedItems));
@@ -194,6 +211,53 @@ class InMemoryOrderService implements OrderService {
     );
     return updatedOrder;
   }
+  @override
+  Future<Order> updateItemStatus({
+    required String orderId,
+    required String itemId,
+    required oi.OrderStatus status,
+    required String byUserId,
+  }) async {
+    final order = _orders[orderId];
+    if (order == null) {
+      throw OrderNotFoundException(orderId);
+    }
+
+    final itemIndex = order.items.indexWhere((i) => i.id == itemId);
+    if (itemIndex == -1) {
+      throw OrderNotFoundException('Item $itemId not found in order $orderId'); // Could use ItemNotFound
+    }
+
+    // Actualizar el item
+    final updatedItem = order.items[itemIndex].copyWith(status: status);
+    final updatedItems = List<oi.OrderItem>.from(order.items);
+    updatedItems[itemIndex] = updatedItem;
+
+    var updatedOrder = order.copyWith(items: updatedItems);
+
+    if (status == oi.OrderStatus.ready && order.status == OrderStatus.prepping) {
+      final allReady = updatedItems.every((item) => item.status == oi.OrderStatus.ready || item.status == oi.OrderStatus.served);
+      if (allReady) {
+        updatedOrder = updatedOrder.copyWith(
+          status: OrderStatus.ready,
+          readyAt: DateTime.now(),
+        );
+      }
+    }
+
+    _orders[orderId] = updatedOrder;
+    _emitEvent(updatedOrder, 'item_status_updated');
+    auditService?.record(
+      action: 'order.item_status_updated',
+      userId: byUserId,
+      metadata: {
+        'orderId': orderId,
+        'itemId': itemId,
+        'newStatus': status.name,
+      },
+    );
+    return updatedOrder;
+  }
 
   @override
   Future<Order?> getOrder(String orderId) async {
@@ -205,6 +269,11 @@ class InMemoryOrderService implements OrderService {
     return _orders.values.where((o) => 
       o.status != OrderStatus.closed && o.status != OrderStatus.draft
     ).toList();
+  }
+
+  @override
+  Future<List<Order>> getAllOrders() async {
+    return _orders.values.toList();
   }
 
   @override

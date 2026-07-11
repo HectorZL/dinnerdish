@@ -136,6 +136,15 @@ class TestServices {
   }
 }
 
+class TestScrollBehavior extends MaterialScrollBehavior {
+  const TestScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
+  }
+}
+
 class IntegrationTestApp extends ConsumerWidget {
   const IntegrationTestApp({super.key});
 
@@ -146,6 +155,7 @@ class IntegrationTestApp extends ConsumerWidget {
       title: 'Dinnerhome Integration Test',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
+      scrollBehavior: const TestScrollBehavior(),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFEA2A33)),
         useMaterial3: true,

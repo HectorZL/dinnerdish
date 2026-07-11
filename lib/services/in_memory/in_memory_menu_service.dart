@@ -1,5 +1,6 @@
 import 'package:dinnerhome/exceptions/menu_exception.dart';
 import 'package:dinnerhome/models/menu_item.dart';
+import 'package:dinnerhome/models/menu_item_variation.dart';
 import 'package:dinnerhome/models/modifier.dart';
 import 'package:dinnerhome/services/menu_service.dart';
 
@@ -16,6 +17,11 @@ class InMemoryMenuService implements MenuService {
       ],
       available: true,
       category: 'Platos Principales',
+      stock: 0,
+      variations: [
+        MenuItemVariation(id: 'var-1-1', name: 'Normal', priceCents: 1200, stock: 15),
+        MenuItemVariation(id: 'var-1-2', name: 'Familiar', priceCents: 2200, stock: 5),
+      ],
     ),
     MenuItem(
       id: 'item-2',
@@ -27,6 +33,8 @@ class InMemoryMenuService implements MenuService {
       ],
       available: true,
       category: 'Entrantes',
+      stock: 20,
+      variations: [],
     ),
     MenuItem(
       id: 'item-3',
@@ -38,6 +46,8 @@ class InMemoryMenuService implements MenuService {
       ],
       available: true,
       category: 'Platos Principales',
+      stock: 12,
+      variations: [],
     ),
     MenuItem(
       id: 'item-4',
@@ -46,6 +56,8 @@ class InMemoryMenuService implements MenuService {
       modifiers: [],
       available: true,
       category: 'Entrantes',
+      stock: 8,
+      variations: [],
     ),
     MenuItem(
       id: 'item-5',
@@ -54,6 +66,8 @@ class InMemoryMenuService implements MenuService {
       modifiers: [],
       available: true,
       category: 'Entrantes',
+      stock: 10,
+      variations: [],
     ),
   ];
 
@@ -99,5 +113,26 @@ class InMemoryMenuService implements MenuService {
     final categories = _menu.map((item) => item.category).toSet().toList();
     categories.sort();
     return categories;
+  }
+
+  @override
+  Future<void> adjustStock(String itemId, String? variationId, int quantityChange) async {
+    final index = _menu.indexWhere((item) => item.id == itemId);
+    if (index == -1) return;
+
+    final item = _menu[index];
+    if (variationId != null && variationId.isNotEmpty) {
+      final updatedVariations = item.variations.map((v) {
+        if (v.id == variationId) {
+          final newStock = (v.stock + quantityChange).clamp(0, 999999);
+          return v.copyWith(stock: newStock);
+        }
+        return v;
+      }).toList();
+      _menu[index] = item.copyWith(variations: updatedVariations);
+    } else {
+      final newStock = (item.stock + quantityChange).clamp(0, 999999);
+      _menu[index] = item.copyWith(stock: newStock);
+    }
   }
 }

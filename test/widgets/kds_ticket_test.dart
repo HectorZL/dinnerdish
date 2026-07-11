@@ -8,6 +8,7 @@ void main() {
   final testOrderItem = order_item.OrderItem(
     id: 'oi-1',
     menuItemId: 'menu-1',
+    name: 'Item menu-1',
     quantity: 2,
     status: order_item.OrderStatus.pending,
     modifierIds: ['mod-1'],

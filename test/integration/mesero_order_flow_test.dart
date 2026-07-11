@@ -17,16 +17,20 @@ void main() {
   group('Mesero Order Flow', () {
     testWidgets('creates order with items, sends to kitchen, requests payment',
         (tester) async {
-      // ── Build app and login as mesero ──
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(services.buildApp());
       await tester.pump();
       await loginViaProvider(tester, meseroUser);
 
       // Should be at dashboard
-      expect(find.text('View Orders'), findsOneWidget);
+      expect(find.text('Gestión de Pedidos'), findsOneWidget);
 
       // ── Navigate to Create Order ──
-      await tapDashboardCard(tester, 'View Orders');
+      await tapDashboardCard(tester, 'Gestión de Pedidos');
       await tester.pump();
       await tester.pump();
 
@@ -85,15 +89,20 @@ void main() {
       // Verify payment request in service
       expect(services.payment.pendingRequests, hasLength(1));
       expect(services.payment.pendingRequests.first.requestedBy, 'user-mesero-1');
-    });
+    }, semanticsEnabled: false);
 
     testWidgets('shows error when sending empty order', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(services.buildApp());
       await tester.pump();
       await loginViaProvider(tester, meseroUser);
 
       // Navigate to Create Order
-      await tapDashboardCard(tester, 'View Orders');
+      await tapDashboardCard(tester, 'Gestión de Pedidos');
       await tester.pump();
       await tester.pump();
 
@@ -107,6 +116,6 @@ void main() {
 
       // No confirmation dialog
       expect(find.text('Confirmar'), findsNothing);
-    });
+    }, semanticsEnabled: false);
   });
 }

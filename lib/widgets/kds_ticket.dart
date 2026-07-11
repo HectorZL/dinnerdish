@@ -5,11 +5,13 @@ class KdsTicket extends StatelessWidget {
   final Order order;
   final VoidCallback? onMarkPrepping;
   final VoidCallback? onMarkReady;
+  final Function(String)? onItemMarkReady;
 
   const KdsTicket({
     required this.order,
     this.onMarkPrepping,
     this.onMarkReady,
+    this.onItemMarkReady,
     super.key,
   });
 
@@ -107,6 +109,9 @@ class KdsTicket extends StatelessWidget {
                 itemCount: order.items.length,
                 itemBuilder: (ctx, idx) {
                   final item = order.items[idx];
+                  // Asumimos import de order_item.dart para el estado o comparamos nombre
+                  final isItemReady = item.status.name == 'ready' || item.status.name == 'served';
+
                   return Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Row(
@@ -114,21 +119,39 @@ class KdsTicket extends StatelessWidget {
                       children: [
                         Text(
                           '${item.quantity}x',
-                          style: const TextStyle(
-                            color: Color(0xFFEC5B13),
+                          style: TextStyle(
+                            color: isItemReady ? Colors.white38 : const Color(0xFFEC5B13),
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
+                            decoration: isItemReady ? TextDecoration.lineThrough : null,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             item.name ?? item.menuItemId,
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            style: TextStyle(
+                              color: isItemReady ? Colors.white38 : Colors.white,
+                              fontSize: 13,
+                              decoration: isItemReady ? TextDecoration.lineThrough : null,
+                            ),
                           ),
                         ),
                         if (item.modifierIds.isNotEmpty)
                           const Icon(Icons.tune, color: Colors.white38, size: 14),
+                        if (onItemMarkReady != null && !isItemReady)
+                          InkWell(
+                            onTap: () => onItemMarkReady!(item.id),
+                            child: const Padding(
+                              padding: EdgeInsets.only(left: 8.0),
+                              child: Icon(Icons.check_circle_outline, color: Color(0xFF10B981), size: 18),
+                            ),
+                          ),
+                        if (isItemReady)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 8.0),
+                            child: Icon(Icons.check_circle, color: Color(0xFF10B981), size: 18),
+                          ),
                       ],
                     ),
                   );
