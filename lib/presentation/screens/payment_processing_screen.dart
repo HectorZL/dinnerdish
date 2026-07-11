@@ -58,6 +58,14 @@ class _PaymentProcessingScreenState
   Future<void> _processPayment() async {
     if (_order == null || _isProcessing) return;
 
+    // F5-03: Guard — no procesar si ya está cerrado
+    if (_order!.status == OrderStatus.closed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Este pedido ya fue procesado y cerrado.')),
+      );
+      return;
+    }
+
     setState(() => _isProcessing = true);
 
     try {
@@ -90,12 +98,16 @@ class _PaymentProcessingScreenState
         );
       }
 
-      // Close the order lifecycle: ready → billed → closed
-      await orderService.updateStatus(
-        orderId: widget.orderId,
-        status: OrderStatus.billed,
-        byUserId: currentUser.id,
-      );
+      // F5-01: Solo avanzar a billed si no está ya en billed.
+      // El flujo correcto: ready → billed (lo hizo el mesero) → closed (lo hace el cajero)
+      if (_order!.status != OrderStatus.billed) {
+        await orderService.updateStatus(
+          orderId: widget.orderId,
+          status: OrderStatus.billed,
+          byUserId: currentUser.id,
+        );
+      }
+      // Cerrar la orden
       await orderService.updateStatus(
         orderId: widget.orderId,
         status: OrderStatus.closed,
@@ -156,7 +168,8 @@ class _PaymentProcessingScreenState
             const SizedBox(height: AppSpacing.base),
             _buildSummaryRow(
               'Total',
-              '\$${(_order?.totalCents ?? 0 / 100).toStringAsFixed(2)}',
+              // F5-02: Fix — paréntesis correctos para la división
+              '\$${((_order?.totalCents ?? 0) / 100).toStringAsFixed(2)}',
             ),
             if (_splitAmounts.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.base),

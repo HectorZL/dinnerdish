@@ -798,10 +798,37 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
     int priceCents = 0;
     int stock = 0;
 
-    if (!_hasVariations) {
-      final priceText = _priceController.text.replaceAll(',', '.');
-      priceCents = (double.parse(priceText) * 100).round();
-      stock = int.parse(_stockController.text);
+    try {
+      if (!_hasVariations) {
+        final priceText = _priceController.text.replaceAll(',', '.');
+        final parsed = double.tryParse(priceText);
+        if (parsed == null || parsed < 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Precio inválido. Ingresa un número positivo.')),
+          );
+          return;
+        }
+        priceCents = (parsed * 100).round();
+
+        final stockParsed = int.tryParse(_stockController.text);
+        if (stockParsed == null || stockParsed < 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Stock inválido. Ingresa un número entero positivo.')),
+          );
+          return;
+        }
+        stock = stockParsed;
+      } else {
+        // F1-02: Cuando hay variaciones, el stock base no aplica.
+        // Usamos 99 como valor placeholder (el stock real está en las variaciones).
+        stock = 99;
+        priceCents = 0; // El precio se obtiene de las variaciones
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error en los datos: $e')),
+      );
+      return;
     }
 
     final modifiers = _modifierEntries
@@ -809,8 +836,7 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
         .map((e) {
       final priceText = e.priceController.text.replaceAll(',', '.');
       final modPriceCents =
-          (double.parse(priceText.isEmpty ? '0' : priceText) * 100)
-              .round();
+          ((double.tryParse(priceText) ?? 0) * 100).round();
       return Modifier(
         id: e.id,
         name: e.nameController.text.trim(),
@@ -818,19 +844,30 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
       );
     }).toList();
 
+    // F1-03: Filtrar variaciones sin nombre antes de guardar
     final variations = _hasVariations
-        ? _variationEntries.map((e) {
-            final priceText = e.priceController.text.replaceAll(',', '.');
-            final varPriceCents = (double.parse(priceText) * 100).round();
-            final varStock = int.parse(e.stockController.text);
-            return MenuItemVariation(
-              id: e.id,
-              name: e.nameController.text.trim(),
-              priceCents: varPriceCents,
-              stock: varStock,
-            );
-          }).toList()
+        ? _variationEntries
+            .where((e) => e.nameController.text.trim().isNotEmpty)
+            .map((e) {
+              final priceText = e.priceController.text.replaceAll(',', '.');
+              final varPriceCents =
+                  ((double.tryParse(priceText) ?? 0) * 100).round();
+              final varStock = int.tryParse(e.stockController.text) ?? 0;
+              return MenuItemVariation(
+                id: e.id,
+                name: e.nameController.text.trim(),
+                priceCents: varPriceCents,
+                stock: varStock,
+              );
+            }).toList()
         : <MenuItemVariation>[];
+
+    if (_hasVariations && variations.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Añade al menos una variación con nombre.')),
+      );
+      return;
+    }
 
     final item = MenuItem(
       id: widget.existingItem?.id ??
@@ -847,6 +884,7 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
     widget.onSave(item);
     Navigator.of(context).pop();
   }
+
 
   @override
   Widget build(BuildContext context) {

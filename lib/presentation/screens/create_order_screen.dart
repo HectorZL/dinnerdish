@@ -38,7 +38,26 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    // F2-03: Cancelar borrador huérfano si el usuario sale sin enviar
+    _cancelOrphanDraftIfNeeded();
     super.dispose();
+  }
+
+  void _cancelOrphanDraftIfNeeded() {
+    // Solo cancelar si el borrador existe y no fue enviado a cocina
+    final order = _currentOrder;
+    if (order != null && order.status == OrderStatus.draft && widget.existingOrderId == null) {
+      // Cancelar de forma fire-and-forget (no await en dispose)
+      try {
+        ref.read(orderServiceProvider).updateStatus(
+          orderId: order.id,
+          status: OrderStatus.closed,
+          byUserId: order.waiterId,
+        );
+      } catch (_) {
+        // Ignorar errores al limpiar borradores
+      }
+    }
   }
 
   Future<void> _loadData() async {
@@ -108,6 +127,19 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     if (_currentOrder == null) return;
     final currentUser = ref.read(currentUserProvider).value;
     if (currentUser == null) return;
+
+    // F2-01: Validar mesa antes de enviar
+    if (tableId.trim().isEmpty && widget.existingOrderId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Selecciona una mesa antes de enviar el pedido.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
 
     try {
       final orderService = ref.read(orderServiceProvider);

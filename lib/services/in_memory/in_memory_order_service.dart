@@ -183,8 +183,9 @@ class InMemoryOrderService implements OrderService {
     }
 
     const validTransitions = <OrderStatus, Set<OrderStatus>>{
-      OrderStatus.sentToKitchen: {OrderStatus.prepping},
-      OrderStatus.prepping: {OrderStatus.ready},
+      OrderStatus.draft: {OrderStatus.sentToKitchen, OrderStatus.closed},
+      OrderStatus.sentToKitchen: {OrderStatus.prepping, OrderStatus.closed},
+      OrderStatus.prepping: {OrderStatus.ready, OrderStatus.closed},
       OrderStatus.ready: {OrderStatus.billed},
       OrderStatus.billed: {OrderStatus.closed},
     };
@@ -235,8 +236,14 @@ class InMemoryOrderService implements OrderService {
 
     var updatedOrder = order.copyWith(items: updatedItems);
 
-    if (status == oi.OrderStatus.ready && order.status == OrderStatus.prepping) {
-      final allReady = updatedItems.every((item) => item.status == oi.OrderStatus.ready || item.status == oi.OrderStatus.served);
+    // Auto-promote: if all items ready, promote order to ready
+    // Works from both sentToKitchen and prepping states
+    if (status == oi.OrderStatus.ready &&
+        (order.status == OrderStatus.prepping ||
+         order.status == OrderStatus.sentToKitchen)) {
+      final allReady = updatedItems.every(
+        (item) => item.status == oi.OrderStatus.ready || item.status == oi.OrderStatus.served,
+      );
       if (allReady) {
         updatedOrder = updatedOrder.copyWith(
           status: OrderStatus.ready,

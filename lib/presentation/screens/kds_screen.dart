@@ -57,11 +57,30 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
 
     try {
       final orderService = ref.read(orderServiceProvider);
-      await orderService.updateStatus(
-        orderId: order.id,
-        status: OrderStatus.ready,
-        byUserId: userId,
-      );
+      // F3-01: Marcar cada ítem pendiente como listo para que el auto-promote funcione correctamente.
+      // Esto evita el bypass de la lógica de ítems individuales.
+      final pendingItems = order.items
+          .where((item) =>
+              item.status != oi.OrderStatus.ready &&
+              item.status != oi.OrderStatus.served)
+          .toList();
+
+      for (final item in pendingItems) {
+        await orderService.updateItemStatus(
+          orderId: order.id,
+          itemId: item.id,
+          status: oi.OrderStatus.ready,
+          byUserId: userId,
+        );
+      }
+      // Si no había ítems pendientes, forzar la transición directamente
+      if (pendingItems.isEmpty) {
+        await orderService.updateStatus(
+          orderId: order.id,
+          status: OrderStatus.ready,
+          byUserId: userId,
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

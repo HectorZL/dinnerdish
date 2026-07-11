@@ -112,7 +112,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       'Pendiente ($pendingCount)',
       'En Cocina ($preppingCount)',
       'Listo ($readyCount)',
-      'Servido ($billedCount)'
+      'Por cobrar ($billedCount)'
     ];
     return Wrap(
       spacing: AppSpacing.base,
@@ -234,7 +234,44 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 if (order.status == OrderStatus.sentToKitchen)
                   _buildActionBtn('Editar', Icons.edit, false, onTap: () => context.go('/orders/${order.id}/edit')),
                 if (order.status == OrderStatus.sentToKitchen)
-                  _buildActionBtn('Cancelar', Icons.close, false, onTap: () => ref.read(orderServiceProvider).updateStatus(orderId: order.id, status: OrderStatus.closed, byUserId: ref.read(currentUserProvider).value?.id ?? 'user')),
+                  _buildActionBtn(
+                    'Cancelar', Icons.close, false,
+                    onTap: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Cancelar pedido'),
+                          content: const Text('\u00bfEstás seguro? Esta acción no se puede deshacer.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('No'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                              child: const Text('Sí, cancelar', style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true) {
+                        try {
+                          await ref.read(orderServiceProvider).updateStatus(
+                            orderId: order.id,
+                            status: OrderStatus.closed,
+                            byUserId: ref.read(currentUserProvider).value?.id ?? 'user',
+                          );
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error al cancelar: $e')),
+                            );
+                          }
+                        }
+                      }
+                    },
+                  ),
                 if (order.status == OrderStatus.ready)
                   _buildActionBtn('Servir', Icons.check, true, onTap: () => ref.read(orderServiceProvider).updateStatus(orderId: order.id, status: OrderStatus.billed, byUserId: ref.read(currentUserProvider).value?.id ?? 'user')),
                 if (order.status == OrderStatus.billed)
