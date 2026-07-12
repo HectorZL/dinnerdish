@@ -67,8 +67,7 @@ class InMemoryOrderService implements OrderService {
       throw OrderNotFoundException(orderId);
     }
 
-    if (order.status == OrderStatus.prepping ||
-        order.status == OrderStatus.ready ||
+    if (order.status == OrderStatus.ready ||
         order.status == OrderStatus.billed ||
         order.status == OrderStatus.closed) {
       throw OrderLockedException(order.status.name);
