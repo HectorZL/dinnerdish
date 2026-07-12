@@ -209,14 +209,14 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                           NavLink('Reportes', false, route: '/admin/reports'),
                         ]
                       : null,
-                  actions: [
+                  actions: isDesktop ? [
                     TextButton.icon(
                       onPressed: _showCreateDialog,
                       icon: const Icon(Icons.add, color: AppColors.primaryContainer),
                       label: const Text('Nuevo Item', style: TextStyle(color: AppColors.primaryContainer, fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(width: 8),
-                  ],
+                  ] : null,
                 ),
                 Expanded(child: _buildBody()),
               ],

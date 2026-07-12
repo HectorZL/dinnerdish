@@ -204,7 +204,7 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   const StitchTopAppBar({
     super.key,
-    this.title = 'GastroGestion',
+    this.title = 'SABOR Y HOGAR',
     this.actions,
     this.showBack = false,
     this.onBack,

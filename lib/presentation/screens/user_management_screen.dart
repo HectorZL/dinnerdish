@@ -244,13 +244,13 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
   Widget _buildUserList(bool isDesktop) {
     final users = [
-      _UserData('Carlos Mendez', 'carlos.m@gastrogestion.com', 'Admin',
+      _UserData('Carlos Mendez', 'carlos.m@sabor-y-hogar.com', 'Admin',
           AppColors.primaryContainer, 'Hoy, 09:15 AM', true),
-      _UserData('Lucia Ferrero', 'lucia.f@gastrogestion.com', 'Sala',
+      _UserData('Lucia Ferrero', 'lucia.f@sabor-y-hogar.com', 'Sala',
           const Color(0xFF3B82F6), 'Ayer, 11:30 PM', true),
-      _UserData('Jorge Ruiz', 'jruiz@gastrogestion.com', 'Cocina',
+      _UserData('Jorge Ruiz', 'jruiz@sabor-y-hogar.com', 'Cocina',
           const Color(0xFF10B981), 'Hoy, 06:45 AM', true),
-      _UserData('Elena Blanco', 'elena.b@gastrogestion.com', 'Caja',
+      _UserData('Elena Blanco', 'elena.b@sabor-y-hogar.com', 'Caja',
           const Color(0xFF8B5CF6), 'Hace 3 dias', false),
     ];
 
