@@ -7,12 +7,12 @@ import 'models/user.dart';
 import 'providers/providers.dart';
 
 // ─── Design Tokens ────────────────────────────
-const _orange = Color(0xFFF26522);
-const _orangeDark = Color(0xFFA63B00);
-const _dark = Color(0xFF0D1117);
-const _darkBorder = Color(0xFF30363D);
-const _muted = Color(0xFF7D8590);
-const _white = Colors.white;
+const _orange      = Color(0xFFF26522);
+const _orangeDark  = Color(0xFFA63B00);
+const _ink         = Color(0xFF131D21);   // near-black for text
+const _muted       = Color(0xFF586062);   // warm grey
+const _bg          = Color(0xFFF1FBFF);   // brand light bg
+const _white       = Colors.white;
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -102,8 +102,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg,
-          style: GoogleFonts.plusJakartaSans(color: _white)),
-      backgroundColor: const Color(0xFF21262D),
+          style: GoogleFonts.plusJakartaSans(
+              color: _white, fontWeight: FontWeight.w600)),
+      backgroundColor: _orangeDark,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ));
@@ -115,7 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final isDesktop = size.width > 860;
 
     return Scaffold(
-      backgroundColor: _dark,
+      backgroundColor: _bg,
       body: isDesktop
           ? _buildDesktopLayout()
           : _buildMobileLayout(),
@@ -126,12 +127,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // Left: dark branding panel
+        // Left: orange branding panel
         Expanded(
           flex: 5,
           child: _buildBrandingPanel(),
         ),
-        // Right: form
+        // Right: form on light bg
         Expanded(
           flex: 4,
           child: Container(
@@ -143,34 +144,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
-  // ─── MOBILE: dark bg + card ──────────────────
+  // ─── MOBILE: warm gradient bg + white card ───
   Widget _buildMobileLayout() {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0D1117), Color(0xFF161B22), Color(0xFF0D1117)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF26522), // orange top
+            Color(0xFFFF8C42), // lighter mid
+            Color(0xFFF1FBFF), // brand light at bottom
+          ],
+          stops: [0.0, 0.35, 0.75],
         ),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Logo area
+              // Logo area on orange
               Padding(
-                padding: const EdgeInsets.fromLTRB(32, 48, 32, 0),
+                padding: const EdgeInsets.fromLTRB(32, 44, 32, 0),
                 child: FadeTransition(
                   opacity: _fadeAnim,
                   child: Column(
                     children: [
-                      _buildLogo(size: 52),
-                      const SizedBox(height: 8),
+                      _buildLogo(size: 48, onDark: true),
+                      const SizedBox(height: 6),
                       Text(
                         'Panel de Operaciones',
                         style: GoogleFonts.plusJakartaSans(
-                          color: _muted,
+                          color: _white.withValues(alpha: 0.85),
                           fontSize: 13,
+                          fontWeight: FontWeight.w500,
                           letterSpacing: 0.3,
                         ),
                       ),
@@ -178,10 +185,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-              // Card
+              const SizedBox(height: 28),
+              // White card
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
                 child: SlideTransition(
                   position: _slideAnim,
                   child: FadeTransition(
@@ -189,12 +196,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     child: Container(
                       decoration: BoxDecoration(
                         color: _white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            blurRadius: 48,
-                            offset: const Offset(0, 16),
+                            color: _orange.withValues(alpha: 0.18),
+                            blurRadius: 40,
+                            offset: const Offset(0, 12),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -210,57 +222,62 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
-  // ─── BRANDING PANEL ──────────────────────────
+  // ─── BRANDING PANEL (orange) ─────────────────
   Widget _buildBrandingPanel() {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF0D1117), Color(0xFF1A0F00), Color(0xFF0D1117)],
-          stops: [0.0, 0.5, 1.0],
+          colors: [
+            Color(0xFFF26522),
+            Color(0xFFD94F0A),
+            Color(0xFFAD3800),
+          ],
+          stops: [0.0, 0.55, 1.0],
         ),
       ),
       child: Stack(
         children: [
-          // Warm glow behind center
+          // Light orb top-right
           Positioned(
-            top: -120,
-            left: -80,
+            top: -80,
+            right: -80,
             child: Container(
-              width: 500,
-              height: 500,
+              width: 340,
+              height: 340,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    _orange.withValues(alpha: 0.18),
+                    _white.withValues(alpha: 0.15),
                     Colors.transparent,
                   ],
                 ),
               ),
             ),
           ),
+          // Dark orb bottom-left
           Positioned(
-            bottom: -100,
-            right: -100,
+            bottom: -60,
+            left: -60,
             child: Container(
-              width: 400,
-              height: 400,
+              width: 280,
+              height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    _orangeDark.withValues(alpha: 0.12),
+                    Colors.black.withValues(alpha: 0.2),
                     Colors.transparent,
                   ],
                 ),
               ),
             ),
           ),
-          // Subtle grid lines
+          // Subtle grid
           Positioned.fill(
-            child: CustomPaint(painter: _GridPainter()),
+            child: CustomPaint(painter: _GridPainter(lineColor: _white.withValues(alpha: 0.06))),
           ),
           // Content
           SafeArea(
@@ -271,7 +288,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLogo(size: 44),
+                    _buildLogo(size: 40, onDark: true),
                     const Spacer(),
                     // Big headline
                     Text(
@@ -281,19 +298,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         fontSize: 42,
                         fontWeight: FontWeight.w800,
                         height: 1.15,
-                        letterSpacing: -1.5,
+                        letterSpacing: -1.2,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
                     Text(
                       'Pedidos, cocina, caja y personal\nen un solo sistema operativo.',
                       style: GoogleFonts.plusJakartaSans(
-                        color: _muted,
+                        color: _white.withValues(alpha: 0.82),
                         fontSize: 16,
                         height: 1.6,
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 36),
                     // Feature pills
                     Wrap(
                       spacing: 10,
@@ -305,12 +322,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         _buildPill(Icons.kitchen_outlined, 'KDS integrado'),
                       ],
                     ),
-                    const SizedBox(height: 52),
-                    // Version
+                    const SizedBox(height: 48),
                     Text(
                       'GastroGestion v1.0.4',
                       style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF3D444D),
+                        color: _white.withValues(alpha: 0.45),
                         fontSize: 12,
                         letterSpacing: 0.4,
                       ),
@@ -325,7 +341,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
-  Widget _buildLogo({double size = 36}) {
+  Widget _buildLogo({double size = 36, bool onDark = false}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -333,20 +349,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           width: size * 1.1,
           height: size * 1.1,
           decoration: BoxDecoration(
-            color: _orange,
+            color: onDark
+                ? _white.withValues(alpha: 0.2)
+                : _orange.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(size * 0.28),
+            border: onDark
+                ? Border.all(color: _white.withValues(alpha: 0.3))
+                : null,
           ),
-          child: Icon(Icons.restaurant_menu,
-              color: _white, size: size * 0.58),
+          child: Icon(
+            Icons.restaurant_menu,
+            color: onDark ? _white : _orange,
+            size: size * 0.58,
+          ),
         ),
         const SizedBox(width: 12),
         Text(
           'GastroGestion',
           style: GoogleFonts.plusJakartaSans(
-            color: _white,
+            color: onDark ? _white : _ink,
             fontSize: size,
             fontWeight: FontWeight.w900,
-            letterSpacing: -1.2,
+            letterSpacing: -1.0,
           ),
         ),
       ],
@@ -355,23 +379,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   Widget _buildPill(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: _white.withValues(alpha: 0.04),
+        color: _white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _darkBorder),
+        border: Border.all(color: _white.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: _orange, size: 15),
+          Icon(icon, color: _white, size: 14),
           const SizedBox(width: 6),
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xFFCDD9E5),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+              color: _white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -420,7 +444,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             Text(
               'Iniciar sesion',
               style: GoogleFonts.plusJakartaSans(
-                color: _dark,
+                color: _ink,
                 fontSize: isDesktop ? 40 : 34,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -1.0,
@@ -711,7 +735,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       obscureText: obscure,
       keyboardType: keyboardType,
       style: GoogleFonts.plusJakartaSans(
-        color: _dark,
+        color: _ink,
         fontSize: 15,
         fontWeight: FontWeight.w500,
       ),
@@ -811,10 +835,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
 // ─── Subtle Grid Background ──────────────────
 class _GridPainter extends CustomPainter {
+  final Color lineColor;
+  const _GridPainter({this.lineColor = const Color(0x08FFFFFF)});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.025)
+      ..color = lineColor
       ..strokeWidth = 0.5;
     const step = 48.0;
     for (double x = 0; x < size.width; x += step) {
@@ -826,5 +853,5 @@ class _GridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_GridPainter old) => false;
+  bool shouldRepaint(_GridPainter old) => old.lineColor != lineColor;
 }
