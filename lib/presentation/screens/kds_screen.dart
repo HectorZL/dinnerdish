@@ -246,6 +246,31 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
       builder: (context, constraints) {
         final crossAxisCount =
             constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 600 ? 2 : 1);
+
+        if (crossAxisCount == 1) {
+          return ListView.builder(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            itemCount: tickets.length,
+            itemBuilder: (ctx, idx) {
+              final order = tickets[idx];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: KdsTicket(
+                  order: order,
+                  shrinkWrap: true,
+                  onMarkPrepping: isPending ? () => _markAsPrepping(order) : null,
+                  onMarkReady: !isPending && !isReady
+                      ? () => _markAsReady(order)
+                      : null,
+                  onItemMarkReady: !isPending && !isReady
+                      ? (itemId) => _markItemAsReady(order, itemId)
+                      : null,
+                ),
+              );
+            },
+          );
+        }
+
         return GridView.builder(
           padding: const EdgeInsets.all(AppSpacing.sm),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -259,6 +284,7 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
             final order = tickets[idx];
             return KdsTicket(
               order: order,
+              shrinkWrap: false,
               onMarkPrepping: isPending ? () => _markAsPrepping(order) : null,
               onMarkReady: !isPending && !isReady
                   ? () => _markAsReady(order)

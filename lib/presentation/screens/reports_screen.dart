@@ -26,17 +26,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isDesktop) _buildSidebar(),
+          if (isDesktop) const StitchAdminSidebar(activeTab: 'Reportes'),
           Expanded(
             child: Column(
               children: [
                 StitchTopAppBar(
                   navLinks: isDesktop
                       ? const [
-                          NavLink('Inicio', false),
-                          NavLink('Pedidos', false),
-                          NavLink('Mesas', false),
-                          NavLink('Reportes', true),
+                          NavLink('Inicio', false, route: '/menu'),
+                          NavLink('Usuarios', false, route: '/admin/users'),
+                          NavLink('Menú', false, route: '/admin/menu'),
+                          NavLink('Reportes', true, route: '/admin/reports'),
                         ]
                       : null,
                 ),
@@ -65,104 +65,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         ],
       ),
       bottomNavigationBar: isMobile ? _buildBottomNavBar(currentUser) : null,
-    );
-  }
-
-  Widget _buildSidebar() {
-    return SizedBox(
-      width: 320,
-      child: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.xl),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryContainer,
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                    ),
-                    child: const Icon(Icons.analytics,
-                        color: Colors.white),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Admin Principal',
-                          style: AppTypography.bodyLg(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.onSurface)),
-                      Text('Gestión Global',
-                          style: AppTypography.bodyMd(
-                              color: const Color(0xFF64748B))),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildNavItem(
-                Icons.group_outlined, 'Usuarios', false, context),
-            _buildNavItem(Icons.inventory_2_outlined, 'Inventario',
-                false, context),
-            _buildNavItem(
-                Icons.bar_chart, 'Reportes', true, context),
-            _buildNavItem(
-                Icons.settings_outlined, 'Ajustes', false, context),
-            const Spacer(),
-            Text('Versión v1.0.4',
-                style: AppTypography.labelCaps(
-                    color: const Color(0xFF94A3B8))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(
-      IconData icon, String title, bool isActive, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.base),
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFFFF7ED) : Colors.transparent,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: isActive
-            ? const Border(
-                right: BorderSide(color: AppColors.primaryContainer, width: 4))
-            : null,
-      ),
-      child: ListTile(
-        leading: Icon(icon,
-            color: isActive
-                ? AppColors.primaryContainer
-                : const Color(0xFF475569)),
-        title: Text(title,
-            style: AppTypography.bodyMd(
-                color: isActive
-                    ? AppColors.primaryContainer
-                    : const Color(0xFF475569))),
-        onTap: () {
-          switch (title) {
-            case 'Usuarios':
-              context.go('/admin/users');
-            case 'Inventario':
-              context.go('/admin/inventory');
-          }
-        },
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.xl)),
-      ),
     );
   }
 

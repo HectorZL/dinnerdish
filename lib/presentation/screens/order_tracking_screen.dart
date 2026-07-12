@@ -31,6 +31,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
           children: [
             StitchTopAppBar(
               title: 'Pedidos',
+              showBack: true,
+              onBack: () => context.go('/menu'),
               navLinks: isDesktop
                   ? [
                       const NavLink('Inicio', false),
@@ -321,25 +323,34 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.table_restaurant,
-                            color: statusColor, size: 20),
-                        const SizedBox(width: AppSpacing.base),
-                        Text(table,
-                            style: AppTypography.h3(
-                                color: const Color(0xFF0F172A))),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(orderId,
-                        style: AppTypography.statusBadge(
-                            color: const Color(0xFF94A3B8))),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.table_restaurant,
+                              color: statusColor, size: 20),
+                          const SizedBox(width: AppSpacing.base),
+                          Flexible(
+                            child: Text(table,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.h3(
+                                    color: const Color(0xFF0F172A))),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(orderId,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.statusBadge(
+                              color: const Color(0xFF94A3B8))),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: AppSpacing.sm),
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
@@ -400,9 +411,16 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(item['name']!,
+                            Expanded(
+                              child: Text(
+                                item['name']!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: AppTypography.bodyMd(
-                                    color: const Color(0xFF475569))),
+                                    color: const Color(0xFF475569)),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
                             Text(item['price']!,
                                 style: AppTypography.bodyMd(
                                     fontWeight: FontWeight.bold,
@@ -474,14 +492,17 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
         ),
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (icon != null) ...[Icon(icon, size: 16), const SizedBox(width: AppSpacing.base)],
-          Text(text,
-              style: AppTypography.statusBadge(
-                  fontWeight: FontWeight.bold)),
-        ],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[Icon(icon, size: 16), const SizedBox(width: AppSpacing.base)],
+            Text(text,
+                style: AppTypography.statusBadge(
+                    fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     );
   }

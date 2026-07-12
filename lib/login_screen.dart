@@ -165,13 +165,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             children: [
                                               const Icon(Icons.restaurant, color: Colors.white, size: 36),
                                               const SizedBox(width: 8),
-                                              Text(
-                                                'GastroGestion',
-                                                style: GoogleFonts.plusJakartaSans(
-                                                  color: Colors.white,
-                                                  fontSize: 32,
-                                                  fontWeight: FontWeight.bold,
-                                                  letterSpacing: -0.5,
+                                              Flexible(
+                                                child: Text(
+                                                  'GastroGestion',
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: GoogleFonts.plusJakartaSans(
+                                                    color: Colors.white,
+                                                    fontSize: 32,
+                                                    fontWeight: FontWeight.bold,
+                                                    letterSpacing: -0.5,
+                                                  ),
                                                 ),
                                               ),
                                             ],
@@ -382,7 +386,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 24),
 
-                              // Remember me
+                               // Remember me
                               Row(
                                 children: [
                                   SizedBox(
@@ -401,11 +405,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    'Recordar mi sesión',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: const Color(0xFF586062),
-                                      fontSize: 14,
+                                  Expanded(
+                                    child: Text(
+                                      'Recordar mi sesión',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: const Color(0xFF586062),
+                                        fontSize: 14,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -427,12 +433,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      'Iniciar Sesión',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                                    Flexible(
+                                      child: Text(
+                                        'Iniciar Sesión',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
@@ -508,7 +519,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       shrinkWrap: true,
                                       mainAxisSpacing: 8,
                                       crossAxisSpacing: 8,
-                                      childAspectRatio: 2.2,
+                                      childAspectRatio: 1.5,
                                       physics: const NeverScrollableScrollPhysics(),
                                       children: [
                                         _buildTestUserCard(
@@ -605,6 +616,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       Text(
                         label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -613,6 +626,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       Text(
                         name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10,
                           color: Colors.grey.shade600,

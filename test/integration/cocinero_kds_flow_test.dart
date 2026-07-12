@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/models/order_item.dart' as order_item;
+import 'package:dinnerhome/widgets/kds_ticket.dart';
 
 import 'integration_test_helpers.dart';
 
@@ -46,16 +47,16 @@ void main() {
       await loginViaProvider(tester, cocineroUser);
 
       // Dashboard shows Kitchen Orders
-      expect(find.text('Kitchen Orders'), findsOneWidget);
+      expect(find.text('Pantalla KDS - Cocina'), findsOneWidget);
 
       // ── Navigate to KDS ──
-      await tapDashboardCard(tester, 'Kitchen Orders');
+      await tapDashboardCard(tester, 'Pantalla KDS - Cocina');
       await tester.pump();
       await tester.pump();
 
       // KDS shows empty state
       expect(find.text('Esperando órdenes...'), findsOneWidget);
-      expect(find.text('Desconectado'), findsOneWidget);
+      expect(find.text('Conectado'), findsOneWidget);
 
       // ── Seed a kitchen order (this emits a socket event) ──
       await seedKitchenOrder();
@@ -66,7 +67,7 @@ void main() {
       expect(find.text('Pendientes (1)'), findsOneWidget);
       expect(find.text('Preparando (0)'), findsOneWidget);
       expect(find.text('Listos (0)'), findsOneWidget);
-      expect(find.text('Mesa 5'), findsOneWidget);
+      expect(find.descendant(of: find.byType(KdsTicket), matching: find.text('Mesa 5')), findsOneWidget);
       expect(find.text('Conectado'), findsOneWidget);
 
       // "Iniciar Preparación" button is visible
@@ -85,8 +86,7 @@ void main() {
 
       // ── Switch to Preparando tab and mark as Ready ──
       await tester.tap(find.text('Preparando (1)'));
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // "Marcar Listo" button visible on the Preparando tab
       expect(find.text('Marcar Listo'), findsOneWidget);
@@ -114,7 +114,7 @@ void main() {
       await tester.pump();
       await loginViaProvider(tester, cocineroUser);
 
-      await tapDashboardCard(tester, 'Kitchen Orders');
+      await tapDashboardCard(tester, 'Pantalla KDS - Cocina');
       await tester.pump();
       await tester.pump();
 
@@ -148,9 +148,9 @@ void main() {
       await tester.pump();
       await loginViaProvider(tester, cocineroUser);
 
-      expect(find.text('Kitchen Orders'), findsOneWidget);
-      expect(find.text('Facturación'), findsNothing);
-      expect(find.text('Gestión de Menú'), findsNothing);
+      expect(find.text('Pantalla KDS - Cocina'), findsOneWidget);
+      expect(find.text('Caja y Cobros'), findsNothing);
+      expect(find.text('Administrar menu'), findsNothing);
     });
   });
 }

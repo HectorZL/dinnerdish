@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../models/user.dart';
 import '../login_screen.dart';
 import '../providers/providers.dart';
 import '../presentation/screens/main_menu_dashboard.dart';
@@ -27,6 +28,10 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final routerNotifier = RouterNotifier();
+
+  ref.listen<AsyncValue<User?>>(currentUserProvider, (previous, next) {
+    routerNotifier.notify();
+  });
 
   ref.onDispose(() => routerNotifier.dispose());
 

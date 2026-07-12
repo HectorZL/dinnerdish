@@ -100,23 +100,37 @@ class TestServices {
   final InMemoryOrderService order;
   final InMemoryPaymentService payment;
 
-  TestServices({
+  TestServices._({
+    required this.audit,
+    required this.socket,
+    required this.menu,
+    required this.auth,
+    required this.order,
+    required this.payment,
+  });
+
+  factory TestServices({
     InMemoryAuditService? audit,
     InMemorySocketService? socket,
     InMemoryMenuService? menu,
     InMemoryAuthService? auth,
     InMemoryOrderService? order,
     InMemoryPaymentService? payment,
-  })  : audit = audit ?? InMemoryAuditService(),
-        socket = socket ?? InMemorySocketService(),
-        menu = menu ?? InMemoryMenuService(),
-        auth = auth ?? InMemoryAuthService(),
-        order = order ??
-            InMemoryOrderService(
-                socket ?? InMemorySocketService(),
-                auditService: audit ?? InMemoryAuditService()),
-        payment = payment ??
-            InMemoryPaymentService(auditService: audit ?? InMemoryAuditService());
+  }) {
+    final resolvedAudit = audit ?? InMemoryAuditService();
+    final resolvedSocket = socket ?? InMemorySocketService();
+    final resolvedMenu = menu ?? InMemoryMenuService();
+    final resolvedAuth = auth ?? InMemoryAuthService();
+
+    return TestServices._(
+      audit: resolvedAudit,
+      socket: resolvedSocket,
+      menu: resolvedMenu,
+      auth: resolvedAuth,
+      order: order ?? InMemoryOrderService(resolvedSocket, auditService: resolvedAudit),
+      payment: payment ?? InMemoryPaymentService(auditService: resolvedAudit),
+    );
+  }
 
   /// Builds a ProviderScope with all services overridden.
   ProviderScope buildApp() {
@@ -177,11 +191,35 @@ Future<void> loginViaProvider(WidgetTester tester, User user) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> switchUser(WidgetTester tester, User user) async {
+  // Logout current user (via provider)
+  final ctx = tester.element(find.byType(MaterialApp));
+  final container = ProviderScope.containerOf(ctx, listen: false);
+  print('DEBUG: switchUser started for ${user.username}');
+  await container.read(currentUserProvider.notifier).logout();
+  await tester.pumpAndSettle();
+  print('DEBUG: switchUser logged out');
+
+  // Login new user
+  await container.read(currentUserProvider.notifier).loginWithTestUser(user);
+  await tester.pumpAndSettle();
+  print('DEBUG: switchUser logged in');
+
+  // Force navigate to dashboard so tests start from a clean state
+  print('DEBUG: switchUser forcing navigation to /menu');
+  container.read(goRouterProvider).go('/menu');
+  await tester.pumpAndSettle();
+  print('DEBUG: switchUser completed');
+}
+
 // ──────────────────────────────────────────────────────────────
 // Navigation helper — tap a dashboard card by title
 // ──────────────────────────────────────────────────────────────
 
 Future<void> tapDashboardCard(WidgetTester tester, String title) async {
-  await tester.tap(find.text(title));
+  final finder = find.text(title);
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
   await tester.pump();
 }

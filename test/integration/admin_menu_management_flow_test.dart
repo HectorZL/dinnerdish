@@ -16,6 +16,10 @@ void main() {
 
   group('Admin Menu Management Flow', () {
     testWidgets('displays menu items grid', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(services.buildApp());
       await tester.pump();
       await loginViaProvider(tester, adminUser);
@@ -24,7 +28,7 @@ void main() {
       expect(find.text('Menú'), findsOneWidget);
 
       // Navigate to menu management
-      await tester.tap(find.text('Menú'));
+      await tester.tap(find.text('Menú').first);
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -38,11 +42,15 @@ void main() {
     });
 
     testWidgets('creates a new menu item', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(services.buildApp());
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      await tester.tap(find.text('Menú'));
+      await tester.tap(find.text('Menú').first);
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -77,11 +85,15 @@ void main() {
     });
 
     testWidgets('allows category filtering', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(services.buildApp());
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      await tester.tap(find.text('Menú'));
+      await tester.tap(find.text('Menú').first);
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -90,7 +102,7 @@ void main() {
       expect(find.text('Pasta Carbonara'), findsOneWidget);
 
       // Tap "Entrantes" category
-      await tester.tap(find.text('Entrantes'));
+      await tester.tap(find.byKey(const Key('category_chip_Entrantes')));
       await tester.pumpAndSettle();
 
       // Only Entrantes items visible
@@ -101,11 +113,15 @@ void main() {
     });
 
     testWidgets('deletes a menu item', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(services.buildApp());
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      await tester.tap(find.text('Menú'));
+      await tester.tap(find.text('Menú').first);
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -114,7 +130,7 @@ void main() {
       expect(find.text('Sopa del Día'), findsOneWidget);
 
       // Tap the delete button for Sopa del Día (last item card)
-      await tester.tap(find.byIcon(Icons.delete).last);
+      await tester.tap(find.byIcon(Icons.delete_outline).last);
       await tester.pumpAndSettle();
 
       // Confirmation dialog
@@ -133,16 +149,20 @@ void main() {
     });
 
     testWidgets('cancels delete when user cancels', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(services.buildApp());
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      await tester.tap(find.text('Menú'));
+      await tester.tap(find.text('Menú').first);
       await tester.pump();
       await tester.pump();
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.delete).first);
+      await tester.tap(find.byIcon(Icons.delete_outline).first);
       await tester.pumpAndSettle();
 
       // Cancel
@@ -154,11 +174,15 @@ void main() {
     });
 
     testWidgets('admin sees all dashboard cards', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(services.buildApp());
       await tester.pump();
       await loginViaProvider(tester, adminUser);
 
-      expect(find.text('Administración'), findsOneWidget);
+      expect(find.text('Administración'), findsNWidgets(3));
       expect(find.text('Gestión de Pedidos'), findsOneWidget);
       expect(find.text('Pantalla KDS - Cocina'), findsOneWidget);
       expect(find.text('Caja y Cobros'), findsOneWidget);

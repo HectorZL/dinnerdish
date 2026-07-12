@@ -47,13 +47,24 @@ class MockMenuService implements MenuService {
   }
 
   @override
-  Future<MenuItem> createMenuItem(MenuItem item) async => item;
+  Future<MenuItem> createMenuItem(MenuItem item) async {
+    _items.add(item);
+    return item;
+  }
 
   @override
-  Future<MenuItem> updateMenuItem(String id, MenuItem item) async => item;
+  Future<MenuItem> updateMenuItem(String id, MenuItem item) async {
+    final index = _items.indexWhere((element) => element.id == id);
+    if (index != -1) {
+      _items[index] = item;
+    }
+    return item;
+  }
 
   @override
-  Future<void> deleteMenuItem(String id) async {}
+  Future<void> deleteMenuItem(String id) async {
+    _items.removeWhere((element) => element.id == id);
+  }
 
   @override
   Future<List<String>> getCategories() async {
@@ -258,9 +269,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the edit icon button
-      expect(find.byIcon(Icons.edit), findsOneWidget);
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.edit));
+      await tester.tap(find.byIcon(Icons.edit_outlined));
       await tester.pumpAndSettle();
 
       // Edit dialog should appear
@@ -285,9 +296,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find delete icon
-      expect(find.byIcon(Icons.delete), findsOneWidget);
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.delete));
+      await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
       // Confirmation dialog
@@ -313,15 +324,15 @@ void main() {
       await tester.pumpWidget(buildMenuApp(menuService));
       await tester.pumpAndSettle();
 
-      // Find the checkbox. It should be checked by default (available: true).
-      expect(find.byType(Checkbox), findsOneWidget);
+      // Find the active pill. It should show 'Activo' by default (available: true).
+      expect(find.text('Activo'), findsOneWidget);
 
       // Toggle it
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.text('Activo'));
       await tester.pumpAndSettle();
 
-      // Checkbox should still be present
-      expect(find.byType(Checkbox), findsOneWidget);
+      // Should show 'Inactivo'
+      expect(find.text('Inactivo'), findsOneWidget);
     });
 
     testWidgets('category badge shown on item card', (tester) async {

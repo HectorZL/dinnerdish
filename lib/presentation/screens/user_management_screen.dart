@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import '../theme/app_theme.dart';
@@ -8,14 +7,16 @@ class UserManagementScreen extends ConsumerStatefulWidget {
   const UserManagementScreen({super.key});
 
   @override
-  ConsumerState<UserManagementScreen> createState() => _UserManagementScreenState();
+  ConsumerState<UserManagementScreen> createState() =>
+      _UserManagementScreenState();
 }
 
 class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = ref.watch(currentUserProvider).value;
-    final isDesktop = MediaQuery.of(context).size.width > 1024;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 1024;
     final isMobile = !isDesktop;
 
     return Scaffold(
@@ -23,16 +24,17 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isMobile) _buildSidebar(),
+          if (isDesktop) const StitchAdminSidebar(activeTab: 'Usuarios'),
           Expanded(
             child: Column(
               children: [
                 StitchTopAppBar(
                   navLinks: isDesktop
                       ? const [
-                          NavLink('Inicio', false),
-                          NavLink('Usuarios', true),
-                          NavLink('Reportes', false),
+                          NavLink('Inicio', false, route: '/menu'),
+                          NavLink('Usuarios', true, route: '/admin/users'),
+                          NavLink('Menu', false, route: '/admin/menu'),
+                          NavLink('Reportes', false, route: '/admin/reports'),
                         ]
                       : null,
                 ),
@@ -45,13 +47,15 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildHeader(),
+                            _buildHeader(isMobile),
                             const SizedBox(height: AppSpacing.lg),
-                            _buildStats(),
-                            const SizedBox(height: AppSpacing.lg),
-                            _buildUserGrid(),
-                            const SizedBox(height: AppSpacing.lg),
-                            _buildRoleDistribution(),
+                            _buildStats(isMobile),
+                            const SizedBox(height: AppSpacing.xl),
+                            _buildSectionTitle('Equipo del Restaurante'),
+                            const SizedBox(height: AppSpacing.md),
+                            _buildUserList(isDesktop),
+                            const SizedBox(height: AppSpacing.xl),
+                            _buildRoleDistribution(isMobile),
                             const SizedBox(height: 80),
                           ],
                         ),
@@ -64,141 +68,97 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: isMobile ? _buildBottomNavBar(currentUser) : null,
+      bottomNavigationBar: isMobile
+          ? StitchBottomNavBar(
+              currentRoute: '/admin/users', currentUser: currentUser)
+          : null,
     );
   }
 
-  Widget _buildSidebar() {
-    return SizedBox(
-      width: 320,
-      child: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.xl),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                    ),
-                    child: const Icon(Icons.admin_panel_settings,
-                        color: AppColors.primaryContainer),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Admin Principal',
-                          style: AppTypography.h3(
-                              color: AppColors.primaryContainer,
-                              fontWeight: FontWeight.bold)),
-                      Text('Gestión Global • v1.0.4',
-                          style: AppTypography.bodyMd(
-                              color: const Color(0xFF64748B))),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildNavItem(Icons.group, 'Usuarios', true, context),
-            _buildNavItem(
-                Icons.inventory_2_outlined, 'Inventario', false, context),
-            _buildNavItem(Icons.bar_chart_outlined, 'Reportes', false, context),
-            _buildNavItem(
-                Icons.settings_outlined, 'Ajustes', false, context),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(
-      IconData icon, String title, bool isActive, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.base),
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFFFF7ED) : Colors.transparent,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: isActive
-            ? const Border(
-                right: BorderSide(color: AppColors.primaryContainer, width: 4))
-            : null,
-      ),
-      child: ListTile(
-        leading: Icon(icon,
-            color: isActive
-                ? AppColors.primaryContainer
-                : const Color(0xFF475569)),
-        title: Text(title,
-            style: AppTypography.bodyMd(
-                color: isActive
-                    ? AppColors.primaryContainer
-                    : const Color(0xFF475569))),
-        onTap: () {
-          switch (title) {
-            case 'Inventario':
-              context.go('/admin/inventory');
-            case 'Reportes':
-              context.go('/admin/reports');
-          }
-        },
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.xl)),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar(dynamic currentUser) {
-    return StitchBottomNavBar(
-      currentRoute: '/admin/users',
-      currentUser: currentUser,
-    );
-  }
-
-  Widget _buildHeader() {
+  Widget _buildSectionTitle(String title) {
     return Row(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Gestión de Personal',
-                  style: AppTypography.h1(color: AppColors.onBackground)),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                  'Control de acceso y roles para los empleados de tu restaurante.',
-                  style: AppTypography.bodyMd(color: AppColors.secondary)),
-            ],
+        Container(
+          width: 4,
+          height: 22,
+          decoration: BoxDecoration(
+            color: AppColors.primaryContainer,
+            borderRadius: BorderRadius.circular(AppRadius.full),
           ),
         ),
+        const SizedBox(width: AppSpacing.sm),
+        Text(title, style: AppTypography.h3()),
+      ],
+    );
+  }
+
+  Widget _buildHeader(bool isMobile) {
+    final titleColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Gestion de Personal',
+            style: AppTypography.h1(color: AppColors.onBackground)),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'Control de acceso y roles para los empleados de tu restaurante.',
+          style: AppTypography.bodyMd(color: AppColors.secondary),
+        ),
+      ],
+    );
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          titleColumn,
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.manage_accounts, size: 18),
+                  label: const Text('Configurar Roles'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.onSurfaceVariant,
+                    side: const BorderSide(color: Color(0xFFE1BFB3)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.xl)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: StitchPrimaryButton(
+                  label: 'Nuevo Usuario',
+                  icon: Icons.person_add,
+                  onPressed: () {},
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: titleColumn),
         const SizedBox(width: AppSpacing.md),
-        ElevatedButton.icon(
+        OutlinedButton.icon(
           onPressed: () {},
-          icon: const Icon(Icons.manage_accounts, size: 20),
-          label: Text('Configurar Roles',
-              style: AppTypography.statusBadge(
-                  fontWeight: FontWeight.bold)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
+          icon: const Icon(Icons.manage_accounts, size: 18),
+          label: const Text('Configurar Roles'),
+          style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.onSurfaceVariant,
             side: const BorderSide(color: Color(0xFFE1BFB3)),
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.xl)),
-            elevation: 1,
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
@@ -212,277 +172,442 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     );
   }
 
-  Widget _buildStats() {
+  Widget _buildStats(bool isMobile) {
+    final cards = [
+      _buildStatCard(Icons.groups, 'Total Usuarios', '24',
+          const Color(0xFF3B82F6), 'Registrados'),
+      _buildStatCard(Icons.verified_user, 'Activos Ahora', '8',
+          const Color(0xFF10B981), 'En turno'),
+      _buildStatCard(Icons.lock_open, 'Roles Definidos', '5',
+          AppColors.primaryContainer, 'Permisos'),
+    ];
+
+    if (isMobile) {
+      return Column(
+        children: cards
+            .map((c) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: c,
+                ))
+            .toList(),
+      );
+    }
+
     return Row(
       children: [
-        _buildStatCard(
-            Icons.groups, 'Total Usuarios', '24', const Color(0xFF3B82F6)),
+        Expanded(child: cards[0]),
         const SizedBox(width: AppSpacing.md),
-        _buildStatCard(Icons.verified_user, 'Activos ahora', '8',
-            const Color(0xFF10B981)),
+        Expanded(child: cards[1]),
         const SizedBox(width: AppSpacing.md),
-        _buildStatCard(Icons.lock_open, 'Roles Definidos', '5',
-            AppColors.primaryContainer),
+        Expanded(child: cards[2]),
       ],
     );
   }
 
   Widget _buildStatCard(
-      IconData icon, String label, String value, Color iconColor) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          boxShadow: [AppShadows.card],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: iconColor, size: 28),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: AppTypography.bodyMd(
-                        color: const Color(0xFF64748B))),
-                Text(value,
-                    style: AppTypography.h1(
-                        fontSize: 28, color: AppColors.onBackground)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserGrid() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: AppSpacing.base),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: AppSpacing.md,
-          mainAxisSpacing: AppSpacing.md,
-          childAspectRatio: 2.2,
-          children: [
-            _buildUserCard(
-              'Carlos Méndez',
-              'carlos.m@gastrogestion.com',
-              'Admin',
-              AppColors.primaryContainer,
-              null,
-              'Hoy, 09:15 AM',
-            ),
-            _buildUserCard(
-              'Lucía Ferrero',
-              'lucia.f@gastrogestion.com',
-              'Sala',
-              const Color(0xFF3B82F6),
-              null,
-              'Ayer, 11:30 PM',
-            ),
-            _buildUserCard(
-              'Jorge Ruíz',
-              'jruiz@gastrogestion.com',
-              'Cocina',
-              const Color(0xFF10B981),
-              null,
-              'Hoy, 06:45 AM',
-            ),
-            _buildUserCard(
-              'Elena Blanco',
-              'elena.b@gastrogestion.com',
-              'Caja',
-              const Color(0xFF8B5CF6),
-              null,
-              'Hace 3 días',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUserCard(
-    String name,
-    String email,
-    String role,
-    Color roleColor,
-    String? imageUrl,
-    String lastLogin,
-  ) {
+      IconData icon, String label, String value, Color color, String sub) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: [AppShadows.card],
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+            ),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: AppTypography.bodyMd(color: const Color(0xFF64748B))),
+              Text(value, style: AppTypography.h2(color: AppColors.onBackground)),
+              Text(sub,
+                  style:
+                      AppTypography.labelCaps(color: color, fontSize: 10)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserList(bool isDesktop) {
+    final users = [
+      _UserData('Carlos Mendez', 'carlos.m@gastrogestion.com', 'Admin',
+          AppColors.primaryContainer, 'Hoy, 09:15 AM', true),
+      _UserData('Lucia Ferrero', 'lucia.f@gastrogestion.com', 'Sala',
+          const Color(0xFF3B82F6), 'Ayer, 11:30 PM', true),
+      _UserData('Jorge Ruiz', 'jruiz@gastrogestion.com', 'Cocina',
+          const Color(0xFF10B981), 'Hoy, 06:45 AM', true),
+      _UserData('Elena Blanco', 'elena.b@gastrogestion.com', 'Caja',
+          const Color(0xFF8B5CF6), 'Hace 3 dias', false),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [AppShadows.card],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFF1F5F9),
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF8FAFC),
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 52 + AppSpacing.md),
+                Expanded(
+                  flex: 4,
+                  child: Text('NOMBRE',
+                      style: AppTypography.labelCaps(
+                          color: const Color(0xFF94A3B8))),
                 ),
-                child: Center(
-                  child: Icon(Icons.person,
-                      color: roleColor, size: 24),
+                if (isDesktop)
+                  Expanded(
+                    flex: 4,
+                    child: Text('EMAIL',
+                        style: AppTypography.labelCaps(
+                            color: const Color(0xFF94A3B8))),
+                  ),
+                Expanded(
+                  flex: 2,
+                  child: Text('ROL',
+                      style: AppTypography.labelCaps(
+                          color: const Color(0xFF94A3B8))),
                 ),
+                if (isDesktop)
+                  Expanded(
+                    flex: 3,
+                    child: Text('ULTIMA SESION',
+                        style: AppTypography.labelCaps(
+                            color: const Color(0xFF94A3B8))),
+                  ),
+                Expanded(
+                  flex: 2,
+                  child: Text('ESTADO',
+                      style: AppTypography.labelCaps(
+                          color: const Color(0xFF94A3B8))),
+                ),
+                const SizedBox(width: 80),
+              ],
+            ),
+          ),
+          // Rows
+          ...users.asMap().entries.map((entry) {
+            final i = entry.key;
+            final u = entry.value;
+            return Column(
+              children: [
+                if (i > 0) const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                _buildUserRow(u, isDesktop),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserRow(_UserData user, bool isDesktop) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Avatar with initial
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: user.roleColor.withValues(alpha: 0.12),
+            ),
+            child: Center(
+              child: Text(
+                user.name[0].toUpperCase(),
+                style: AppTypography.h3(color: user.roleColor),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name,
-                        style: AppTypography.bodyLg(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.onSurface)),
-                    Text(email,
-                        style: AppTypography.bodyMd(
-                            color: AppColors.secondary)),
-                  ],
-                ),
-              ),
-              Container(
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          // Name
+          Expanded(
+            flex: 4,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(user.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodyLg(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onSurface)),
+                if (!isDesktop)
+                  Text(user.email,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyMd(
+                          color: const Color(0xFF94A3B8))),
+              ],
+            ),
+          ),
+          // Email desktop
+          if (isDesktop)
+            Expanded(
+              flex: 4,
+              child: Text(user.email,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      AppTypography.bodyMd(color: const Color(0xFF64748B))),
+            ),
+          // Role
+          Expanded(
+            flex: 2,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
-                  color: roleColor.withValues(alpha: 0.1),
+                  color: user.roleColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
-                child: Text(role,
+                child: Text(user.role,
                     style: AppTypography.statusBadge(
-                        color: roleColor,
-                        fontSize: 10,
+                        color: user.roleColor,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold)),
               ),
-            ],
+            ),
           ),
-          const Spacer(),
-          const Divider(color: Color(0xFFF8FAFC)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('ÚLTIMA SESIÓN',
-                      style: AppTypography.labelCaps(
-                          color: const Color(0xFF94A3B8),
-                          fontSize: 10)),
-                  Text(lastLogin,
-                      style: AppTypography.bodyMd(
-                          fontWeight: FontWeight.w500)),
-                ],
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit,
-                        size: 20, color: Color(0xFF94A3B8)),
-                    onPressed: () {},
+          // Last login desktop
+          if (isDesktop)
+            Expanded(
+              flex: 3,
+              child: Text(user.lastLogin,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      AppTypography.bodyMd(color: const Color(0xFF64748B))),
+            ),
+          // Status
+          Expanded(
+            flex: 2,
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: user.isActive
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFF94A3B8),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete,
-                        size: 20, color: Color(0xFF94A3B8)),
-                    onPressed: () {},
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    user.isActive ? 'Activo' : 'Inactivo',
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodyMd(
+                      color: user.isActive
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFF94A3B8),
+                    ),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
+          ),
+          // Actions
+          SizedBox(
+            width: 80,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _iconBtn(Icons.edit_outlined, const Color(0xFF64748B), () {}),
+                _iconBtn(Icons.delete_outline, AppColors.error, () {}),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRoleDistribution() {
+  Widget _iconBtn(IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(icon, size: 18, color: color),
+      ),
+    );
+  }
+
+  Widget _buildRoleDistribution(bool isMobile) {
+    final roles = [
+      _RoleData('Administradores', '4', AppColors.primaryContainer),
+      _RoleData('Personal de Sala', '12', const Color(0xFF3B82F6)),
+      _RoleData('Personal de Cocina', '6', const Color(0xFF10B981)),
+      _RoleData('Gestion de Caja', '2', const Color(0xFF8B5CF6)),
+    ];
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(AppRadius.xl * 2),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [AppShadows.card],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Distribución de Roles',
-              style: AppTypography.h2(color: AppColors.onBackground)),
-          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
-              _buildRoleBadge('Administradores', '4', AppColors.primaryContainer),
+              Container(
+                width: 4,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                ),
+              ),
               const SizedBox(width: AppSpacing.sm),
-              _buildRoleBadge(
-                  'Personal de Sala', '12', const Color(0xFF3B82F6)),
-              const SizedBox(width: AppSpacing.sm),
-              _buildRoleBadge(
-                  'Personal de Cocina', '6', const Color(0xFF10B981)),
-              const SizedBox(width: AppSpacing.sm),
-              _buildRoleBadge(
-                  'Gestión de Caja', '2', const Color(0xFF8B5CF6)),
+              Text('Distribucion de Roles', style: AppTypography.h3()),
             ],
           ),
+          const SizedBox(height: AppSpacing.md),
+          if (isMobile)
+            Column(
+              children: roles
+                  .map((r) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: _buildRoleRow(r),
+                      ))
+                  .toList(),
+            )
+          else
+            Row(
+              children: roles
+                  .expand((r) => [
+                        Expanded(child: _buildRoleCard(r)),
+                        if (r != roles.last)
+                          const SizedBox(width: AppSpacing.sm),
+                      ])
+                  .toList(),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildRoleBadge(String label, String count, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
+  Widget _buildRoleRow(_RoleData role) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration:
+              BoxDecoration(shape: BoxShape.circle, color: role.color),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label,
-                style: AppTypography.bodyMd(
-                    color: const Color(0xFF475569))),
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(count,
-                    style: AppTypography.statusBadge(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12)),
-              ),
-            ),
-          ],
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(role.label,
+              style: AppTypography.bodyMd(color: const Color(0xFF475569))),
         ),
+        Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm, vertical: 2),
+          decoration: BoxDecoration(
+            color: role.color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppRadius.full),
+          ),
+          child: Text(role.count,
+              style: AppTypography.statusBadge(
+                  color: role.color, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoleCard(_RoleData role) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: role.color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: role.color.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration:
+                    BoxDecoration(color: role.color, shape: BoxShape.circle),
+                child: Center(
+                  child: Text(role.count,
+                      style: AppTypography.statusBadge(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: role.color, size: 18),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(role.label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.bodyMd(
+                  color: const Color(0xFF475569),
+                  fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }
+}
+
+class _UserData {
+  final String name;
+  final String email;
+  final String role;
+  final Color roleColor;
+  final String lastLogin;
+  final bool isActive;
+
+  const _UserData(this.name, this.email, this.role, this.roleColor,
+      this.lastLogin, this.isActive);
+}
+
+class _RoleData {
+  final String label;
+  final String count;
+  final Color color;
+
+  const _RoleData(this.label, this.count, this.color);
 }

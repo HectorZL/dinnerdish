@@ -17,6 +17,7 @@ import 'package:dinnerhome/models/cash_drawer_session.dart';
 import 'package:dinnerhome/models/payment_summary.dart';
 import 'package:dinnerhome/models/audit_entry.dart';
 import 'package:dinnerhome/router/app_router.dart';
+import 'package:dinnerhome/providers/providers.dart';
 
 Future<void> main() async {
   usePathUrlStrategy();
@@ -57,12 +58,20 @@ class MainApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
+    final currentUser = ref.watch(currentUserProvider).value;
+    final isAdmin = currentUser != null && currentUser.role == Role.admin;
+
     return MaterialApp.router(
       title: 'Dinnerhome',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFEA2A33)),
         useMaterial3: true,
+        snackBarTheme: SnackBarThemeData(
+          behavior: isAdmin
+              ? SnackBarBehavior.floating
+              : SnackBarBehavior.fixed,
+        ),
       ),
       routerConfig: router,
       builder: (context, child) {

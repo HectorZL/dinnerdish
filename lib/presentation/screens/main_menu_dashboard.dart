@@ -136,7 +136,7 @@ class _MainMenuDashboardScreenState
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: AppSpacing.md,
               mainAxisSpacing: AppSpacing.md,
-              childAspectRatio: isWide ? 2.5 : 1.3,
+              childAspectRatio: isWide ? 1.6 : 1.3,
               children: [
                 _buildStatCard('PEDIDOS ACTIVOS', '$activeCount', '+${todayOrders.length} hoy', AppColors.primaryContainer),
                 _buildStatCard('MESAS OCUPADAS', '$occupiedTables/$totalTables', null, AppColors.tertiaryContainer,

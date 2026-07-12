@@ -186,31 +186,45 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 768;
+    final isDesktop = MediaQuery.of(context).size.width > 1024;
     final isMobile = !isDesktop;
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            StitchTopAppBar(
-              title: 'Gestión de Menú',
-              showBack: true,
-              onBack: () => context.go('/menu'),
-              actions: [
-                TextButton.icon(
-                  onPressed: _showCreateDialog,
-                  icon: const Icon(Icons.add, color: AppColors.primaryContainer),
-                  label: const Text('Nuevo Item', style: TextStyle(color: AppColors.primaryContainer, fontWeight: FontWeight.bold)),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isDesktop) const StitchAdminSidebar(activeTab: 'Menú'),
+          Expanded(
+            child: Column(
+              children: [
+                StitchTopAppBar(
+                  title: 'Gestión de Menú',
+                  showBack: !isDesktop,
+                  onBack: () => context.go('/menu'),
+                  navLinks: isDesktop
+                      ? const [
+                          NavLink('Inicio', false, route: '/menu'),
+                          NavLink('Usuarios', false, route: '/admin/users'),
+                          NavLink('Menú', true, route: '/admin/menu'),
+                          NavLink('Reportes', false, route: '/admin/reports'),
+                        ]
+                      : null,
+                  actions: [
+                    TextButton.icon(
+                      onPressed: _showCreateDialog,
+                      icon: const Icon(Icons.add, color: AppColors.primaryContainer),
+                      label: const Text('Nuevo Item', style: TextStyle(color: AppColors.primaryContainer, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 ),
-                const SizedBox(width: 8),
+                Expanded(child: _buildBody()),
               ],
             ),
-            Expanded(child: _buildBody()),
-          ],
-        ),
+          ),
+        ],
       ),
-            floatingActionButton: isMobile
+      floatingActionButton: isMobile
           ? FloatingActionButton(
               onPressed: _showCreateDialog,
               backgroundColor: AppColors.primaryContainer,
@@ -339,6 +353,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
   Widget _buildCategoryChip(
       String label, bool isSelected, VoidCallback onTap) {
     return Padding(
+      key: Key('category_chip_$label'),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       child: Material(
         color: isSelected
@@ -575,6 +590,23 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.primaryContainer,
+                                ),
+                              ),
+                            ),
+                          // Modifiers count badge
+                          if (item.modifiers.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${item.modifiers.length} modificador(es)',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF2563EB),
                                 ),
                               ),
                             ),
@@ -1077,22 +1109,30 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
+                              Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: AppSpacing.sm,
                                 children: [
                                   Text('Precios y Variaciones', style: AppTypography.h3(color: AppColors.primaryContainer)),
-                                  const Spacer(),
-                                  Text('¿Tiene variaciones?', style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant)),
-                                  Switch(
-                                    value: _hasVariations,
-                                    onChanged: (v) {
-                                      setState(() {
-                                        _hasVariations = v;
-                                        if (_hasVariations && _variationEntries.isEmpty) {
-                                          _addVariationEntry();
-                                        }
-                                      });
-                                    },
-                                    activeColor: AppColors.primaryContainer,
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('¿Tiene variaciones?', style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant)),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      Switch(
+                                        value: _hasVariations,
+                                        onChanged: (v) {
+                                          setState(() {
+                                            _hasVariations = v;
+                                            if (_hasVariations && _variationEntries.isEmpty) {
+                                              _addVariationEntry();
+                                            }
+                                          });
+                                        },
+                                        activeColor: AppColors.primaryContainer,
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

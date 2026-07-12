@@ -184,7 +184,7 @@ class _PaymentProcessingScreenState
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              context.go('/cashier/payments');
+              context.go('/cashier/pending');
             },
             child: Text(
               'Volver a Solicitudes',

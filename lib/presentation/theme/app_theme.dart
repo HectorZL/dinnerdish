@@ -229,44 +229,53 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  if (showBack)
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Color(0xFF131D21)),
-                      onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+              Expanded(
+                child: Row(
+                  children: [
+                    if (showBack)
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Color(0xFF131D21)),
+                        onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+                      ),
+                    if (showBack) const SizedBox(width: 8),
+                    if (!showBack)
+                      IconButton(
+                        icon: const Icon(Icons.menu, color: AppColors.primaryContainer),
+                        onPressed: () {},
+                      ),
+                    if (!showBack) const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primaryContainer,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
                     ),
-                  if (showBack) const SizedBox(width: 8),
-                  if (!showBack)
-                    IconButton(
-                      icon: const Icon(Icons.menu, color: AppColors.primaryContainer),
-                      onPressed: () {},
-                    ),
-                  if (!showBack) const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primaryContainer,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Row(
                 children: [
                   if (navLinks != null && isDesktop) ...[
                     ...navLinks!.map((link) => Padding(
                           padding: const EdgeInsets.only(right: 24),
-                          child: Text(
-                            link.label,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: link.isActive ? FontWeight.bold : FontWeight.w600,
-                              color: link.isActive
-                                  ? AppColors.primaryContainer
-                                  : const Color(0xFF64748B),
-                              fontSize: 14,
+                          child: InkWell(
+                            onTap: link.route != null ? () => context.go(link.route!) : null,
+                            child: Text(
+                              link.label,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: link.isActive ? FontWeight.bold : FontWeight.w600,
+                                color: link.isActive
+                                    ? AppColors.primaryContainer
+                                    : const Color(0xFF64748B),
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         )),
@@ -354,6 +363,119 @@ class NavLink {
   const NavLink(this.label, this.isActive, {this.route});
 }
 
+class StitchAdminSidebar extends StatelessWidget {
+  final String activeTab;
+
+  const StitchAdminSidebar({
+    super.key,
+    required this.activeTab,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 320,
+      child: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.xl),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                    ),
+                    child: const Icon(Icons.admin_panel_settings,
+                        color: AppColors.primaryContainer),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Admin Principal',
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.h3(
+                                color: AppColors.primaryContainer,
+                                fontWeight: FontWeight.bold)),
+                        Text('Gestión Global • v1.0.4',
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.bodyMd(
+                                color: const Color(0xFF64748B))),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _buildNavItem(context, Icons.group_outlined, 'Usuarios', activeTab == 'Usuarios'),
+            _buildNavItem(context, Icons.restaurant_menu_outlined, 'Menú', activeTab == 'Menú'),
+            _buildNavItem(context, Icons.bar_chart_outlined, 'Reportes', activeTab == 'Reportes'),
+            _buildNavItem(context, Icons.history, 'Auditoría', activeTab == 'Auditoría'),
+            _buildNavItem(context, Icons.settings_outlined, 'Ajustes', activeTab == 'Ajustes'),
+            const Spacer(),
+            Text('Versión v1.0.4',
+                style: AppTypography.labelCaps(
+                    color: const Color(0xFF94A3B8))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(BuildContext context, IconData icon, String title, bool isActive) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.base),
+      decoration: BoxDecoration(
+        color: isActive ? const Color(0xFFFFF7ED) : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: isActive
+            ? const Border(
+                right: BorderSide(color: AppColors.primaryContainer, width: 4))
+            : null,
+      ),
+      child: ListTile(
+        leading: Icon(icon,
+            color: isActive
+                ? AppColors.primaryContainer
+                : const Color(0xFF475569)),
+        title: Text(title,
+            style: AppTypography.bodyMd(
+                color: isActive
+                    ? AppColors.primaryContainer
+                    : const Color(0xFF475569))),
+        onTap: () {
+          if (isActive) return;
+          switch (title) {
+            case 'Usuarios':
+              context.go('/admin/users');
+            case 'Menú':
+              context.go('/admin/menu');
+            case 'Reportes':
+              context.go('/admin/reports');
+            case 'Auditoría':
+              context.go('/audit');
+          }
+        },
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl)),
+      ),
+    );
+  }
+}
+
 /// Bottom Navigation Bar matching Stitch mobile pattern.
 class _NavItem {
   final IconData icon;
@@ -395,19 +517,25 @@ class StitchBottomNavBar extends StatelessWidget {
       items.add(_NavItem(Icons.restaurant_menu_outlined, 'Menú', '/admin/menu'));
     }
 
+    // Limit to max 5 items on mobile to keep the bar clean
+    final displayItems = items.take(5).toList();
+
     return Container(
-      padding: const EdgeInsets.only(top: 12, bottom: 24, left: 16, right: 16),
+      padding: const EdgeInsets.only(top: 10, bottom: 20, left: 8, right: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         border: const Border(top: BorderSide(color: Color(0xFFF1F5F9))),
         boxShadow: [AppShadows.bottomNav],
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: items.map((item) => _buildItem(context, item.icon, item.label, item.route)).toList(),
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: displayItems
+            .map((item) => Expanded(
+                  child: _buildItem(
+                      context, item.icon, item.label, item.route),
+                ))
+            .toList(),
       ),
     );
   }
@@ -428,33 +556,42 @@ class StitchBottomNavBar extends StatelessWidget {
       onTap: () {
         if (!isActive) context.go(route);
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: isActive ? 16 : 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: isActive ? const Color(0xFFFFF7ED) : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: isActive ? AppColors.primaryContainer : const Color(0xFF94A3B8),
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: EdgeInsets.symmetric(
+                horizontal: isActive ? 18 : 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? AppColors.primaryContainer.withValues(alpha: 0.12)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                color: isActive ? AppColors.primaryContainer : const Color(0xFF94A3B8),
-              ),
+            child: Icon(
+              icon,
+              size: 22,
+              color: isActive
+                  ? AppColors.primaryContainer
+                  : const Color(0xFF94A3B8),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight:
+                  isActive ? FontWeight.w700 : FontWeight.w500,
+              color: isActive
+                  ? AppColors.primaryContainer
+                  : const Color(0xFF94A3B8),
+            ),
+          ),
+        ],
       ),
     );
   }

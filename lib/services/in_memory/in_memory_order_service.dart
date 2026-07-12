@@ -249,6 +249,15 @@ class InMemoryOrderService implements OrderService {
           status: OrderStatus.ready,
           readyAt: DateTime.now(),
         );
+        auditService?.record(
+          action: 'order.status_updated',
+          userId: byUserId,
+          metadata: {
+            'orderId': orderId,
+            'fromStatus': order.status.name,
+            'toStatus': OrderStatus.ready.name,
+          },
+        );
       }
     }
 

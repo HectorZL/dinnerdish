@@ -16,7 +16,7 @@ class CashierPendingScreen extends ConsumerWidget {
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
 
     final readyOrders = activeOrdersAsync.value
-            ?.where((o) => o.status == OrderStatus.ready)
+            ?.where((o) => o.status == OrderStatus.ready || o.status == OrderStatus.billed)
             .toList() ??
         [];
 
@@ -28,7 +28,7 @@ class CashierPendingScreen extends ConsumerWidget {
             StitchTopAppBar(
               title: 'Pendientes de Cobro',
               showBack: false,
-              onBack: () => context.go('/cashier/payments'),
+              onBack: () => context.go('/menu'),
             ),
             // Header count badge
             Container(

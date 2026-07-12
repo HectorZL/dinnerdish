@@ -49,15 +49,18 @@ void main() {
       await tester.pump();
 
       // ── Verify summary ──
-      expect(find.text('3 Ítems seleccionados'), findsOneWidget);
+      expect(find.textContaining('3 Items'), findsOneWidget);
 
       // Pasta Carbonara (1200¢ × 2) + Ensalada César (850¢ × 1) = 3250¢
       expect(find.text('\$32.50'), findsAtLeastNWidgets(1));
 
       // ── Send to Kitchen ──
-      final sendButton = find.text('Enviar a Cocina');
-      await tester.ensureVisible(sendButton);
-      await tester.pump();
+      // Open bottom sheet
+      await tester.tap(find.textContaining('3 Items'));
+      await tester.pumpAndSettle();
+
+      // Tap confirm button
+      final sendButton = find.text('Confirmar y Enviar a Cocina');
       await tester.tap(sendButton);
       await tester.pumpAndSettle();
 
