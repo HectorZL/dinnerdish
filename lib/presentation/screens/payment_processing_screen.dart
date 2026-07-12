@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/providers.dart';
 import '../../models/order.dart';
 import '../../models/table.dart';
+import '../../models/menu_item.dart';
 import '../../models/payment_method.dart';
 import '../theme/app_theme.dart';
 
@@ -25,6 +26,14 @@ class _PaymentProcessingScreenState
   String? _error;
   PaymentMethod _selectedMethod = PaymentMethod.cash;
   final List<int> _splitAmounts = [];
+  Map<String, MenuItem> _menuItems = {};
+  int _discountAmountCents = 0;
+
+  int get _finalTotalCents {
+    if (_order == null) return 0;
+    int total = _order!.totalCents - _discountAmountCents;
+    return total < 0 ? 0 : total;
+  }
 
   @override
   void initState() {
@@ -40,10 +49,17 @@ class _PaymentProcessingScreenState
 
     try {
       final orderService = ref.read(orderServiceProvider);
+      final menuService = ref.read(menuServiceProvider);
       final order = await orderService.getOrder(widget.orderId);
+      final menuItems = await menuService.fetchMenu();
+      final Map<String, MenuItem> menuItemsMap = {
+        for (var item in menuItems) item.id: item
+      };
+      
       if (!mounted) return;
       setState(() {
         _order = order;
+        _menuItems = menuItemsMap;
         _isLoading = false;
       });
     } catch (e) {
@@ -92,7 +108,7 @@ class _PaymentProcessingScreenState
       } else {
         await paymentService.processPayment(
           orderId: widget.orderId,
-          amountCents: _order!.totalCents,
+          amountCents: _finalTotalCents,
           method: _selectedMethod,
           processedBy: currentUser.id,
         );
@@ -169,7 +185,7 @@ class _PaymentProcessingScreenState
             _buildSummaryRow(
               'Total',
               // F5-02: Fix — paréntesis correctos para la división
-              '\$${((_order?.totalCents ?? 0) / 100).toStringAsFixed(2)}',
+              '\$${(_finalTotalCents / 100).toStringAsFixed(2)}',
             ),
             if (_splitAmounts.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.base),
@@ -372,7 +388,7 @@ class _PaymentProcessingScreenState
                       child: Row(
                         children: [
                           Expanded(
-                              flex: 4,
+                              flex: 5,
                               child: Text('CONCEPTO',
                                   style: AppTypography.labelCaps())),
                           Expanded(
@@ -383,11 +399,6 @@ class _PaymentProcessingScreenState
                           Expanded(
                               flex: 3,
                               child: Text('PRECIO',
-                                  textAlign: TextAlign.right,
-                                  style: AppTypography.labelCaps())),
-                          Expanded(
-                              flex: 3,
-                              child: Text('TOTAL',
                                   textAlign: TextAlign.right,
                                   style: AppTypography.labelCaps())),
                         ],
@@ -404,12 +415,12 @@ class _PaymentProcessingScreenState
                           child: Row(
                             children: [
                               Expanded(
-                                flex: 4,
+                                flex: 5,
                                 child: Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                   children: [
-                                    Text('Item ${item.menuItemId}',
+                                    Text(_menuItems[item.menuItemId]?.name ?? 'Item ${item.menuItemId}',
                                         style: AppTypography.bodyLg(
                                             color: AppColors.onSurface)),
                                     if (item.modifierIds.isNotEmpty)
@@ -440,18 +451,6 @@ class _PaymentProcessingScreenState
                                           color: AppColors.onSurface)),
                                 ),
                               ),
-                              Expanded(
-                                flex: 3,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                      '\$${(item.priceCents * item.quantity / 100).toStringAsFixed(2)}',
-                                      textAlign: TextAlign.right,
-                                      style: AppTypography.h3(
-                                          color: AppColors.onSurface)),
-                                ),
-                              ),
                             ],
                           ),
                         )),
@@ -464,17 +463,17 @@ class _PaymentProcessingScreenState
                 children: [
                   Expanded(
                     child: _buildActionChip(
-                        Icons.percent, 'Descuento %', AppColors.primaryContainer),
+                        Icons.percent, 'Descuento', AppColors.primaryContainer, _showDiscountDialog),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: _buildActionChip(
-                        Icons.card_giftcard, 'Cortesia', AppColors.onSurfaceVariant),
+                        Icons.card_giftcard, 'Cortesia', AppColors.onSurfaceVariant, _applyCortesia),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: _buildActionChip(
-                        Icons.edit, 'Modificar', AppColors.onSurfaceVariant),
+                        Icons.edit, 'Modificar', AppColors.onSurfaceVariant, () {}),
                   ),
                 ],
               ),
@@ -498,12 +497,17 @@ class _PaymentProcessingScreenState
                     const SizedBox(height: AppSpacing.base),
                     _buildTotalRow('IVA (10%)',
                         '\$${(order.taxCents / 100).toStringAsFixed(2)}'),
+                    if (_discountAmountCents > 0) ...[
+                      const SizedBox(height: AppSpacing.base),
+                      _buildTotalRow('Descuento',
+                          '-\$${(_discountAmountCents / 100).toStringAsFixed(2)}', isDiscount: true),
+                    ],
                     const Divider(
                         height: 24,
                         color: Color(0xFFE2E8F0)),
                     _buildTotalRow(
                       'TOTAL A PAGAR',
-                      '\$${(order.totalCents / 100).toStringAsFixed(2)}',
+                      '\$${(_finalTotalCents / 100).toStringAsFixed(2)}',
                       isTotal: true,
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -577,9 +581,9 @@ class _PaymentProcessingScreenState
     );
   }
 
-  Widget _buildActionChip(IconData icon, String label, Color color) {
+  Widget _buildActionChip(IconData icon, String label, Color color, VoidCallback onTap) {
     return OutlinedButton.icon(
-      onPressed: () {},
+      onPressed: onTap,
       icon: Icon(icon, size: 18),
       label: Text(label, style: AppTypography.statusBadge(color: color)),
       style: OutlinedButton.styleFrom(
@@ -595,7 +599,7 @@ class _PaymentProcessingScreenState
     );
   }
 
-  Widget _buildTotalRow(String label, String value, {bool isTotal = false}) {
+  Widget _buildTotalRow(String label, String value, {bool isTotal = false, bool isDiscount = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -603,16 +607,96 @@ class _PaymentProcessingScreenState
           label,
           style: isTotal
               ? AppTypography.h2(color: AppColors.primaryContainer)
-              : AppTypography.bodyLg(color: AppColors.onSurfaceVariant),
+              : AppTypography.bodyLg(color: isDiscount ? AppColors.error : AppColors.onSurfaceVariant),
         ),
         Text(
           value,
           style: isTotal
               ? AppTypography.h2(color: AppColors.primaryContainer).copyWith(
                   fontWeight: FontWeight.w900)
-              : AppTypography.bodyLg(color: AppColors.onSurface),
+              : AppTypography.bodyLg(color: isDiscount ? AppColors.error : AppColors.onSurface),
         ),
       ],
+    );
+  }
+
+  void _applyCortesia() {
+    if (_order == null) return;
+    setState(() {
+      _discountAmountCents = _order!.totalCents;
+    });
+  }
+
+  void _showDiscountDialog() {
+    if (_order == null) return;
+    final controller = TextEditingController();
+    bool isPercentage = true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: Text('Aplicar Descuento', style: AppTypography.h3()),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<bool>(
+                      title: const Text('%'),
+                      value: true,
+                      groupValue: isPercentage,
+                      onChanged: (val) => setStateDialog(() => isPercentage = val!),
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<bool>(
+                      title: const Text('\$'),
+                      value: false,
+                      groupValue: isPercentage,
+                      onChanged: (val) => setStateDialog(() => isPercentage = val!),
+                    ),
+                  ),
+                ],
+              ),
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'Valor',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final val = double.tryParse(controller.text) ?? 0;
+                if (val > 0) {
+                  setState(() {
+                    if (isPercentage) {
+                      _discountAmountCents = (_order!.totalCents * (val / 100)).round();
+                    } else {
+                      _discountAmountCents = (val * 100).round();
+                    }
+                    if (_discountAmountCents > _order!.totalCents) {
+                      _discountAmountCents = _order!.totalCents;
+                    }
+                  });
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text('Aplicar'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
