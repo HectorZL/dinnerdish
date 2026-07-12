@@ -6,6 +6,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'models/user.dart';
 import 'providers/providers.dart';
 
+// ─── Design Tokens ────────────────────────────
+const _orange = Color(0xFFF26522);
+const _orangeDark = Color(0xFFA63B00);
+const _dark = Color(0xFF0D1117);
+const _darkBorder = Color(0xFF30363D);
+const _muted = Color(0xFF7D8590);
+const _white = Colors.white;
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -13,14 +21,44 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with TickerProviderStateMixin {
   bool _rememberMe = false;
   bool _obscurePassword = true;
+  bool _isLoading = false;
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  late AnimationController _fadeCtrl;
+  late AnimationController _slideCtrl;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
+    _slideCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+            begin: const Offset(0, 0.06), end: Offset.zero)
+        .animate(
+            CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOutCubic));
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _fadeCtrl.forward();
+        _slideCtrl.forward();
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _fadeCtrl.dispose();
+    _slideCtrl.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -29,651 +67,763 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleLogin() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
-
     if (username.isEmpty || password.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingrese usuario y contraseña')),
-      );
+      _showError('Ingrese usuario y contraseña');
       return;
     }
-
+    setState(() => _isLoading = true);
     try {
       await ref.read(currentUserProvider.notifier).login(username, password);
       if (!mounted) return;
       context.go('/menu');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      _showError('Credenciales incorrectas');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _handleTestUserLogin(User user) async {
+    setState(() => _isLoading = true);
     try {
       await ref.read(currentUserProvider.notifier).loginWithTestUser(user);
       if (!mounted) return;
       context.go('/menu');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      _showError('Error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg,
+          style: GoogleFonts.plusJakartaSans(color: _white)),
+      backgroundColor: const Color(0xFF21262D),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final bool isDesktop = size.width > 768;
+    final isDesktop = size.width > 860;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1FBFF),
-      body: Stack(
-        children: [
-          // Background Decorative Elements
-          Positioned(
-            top: -250,
-            right: -250,
-            child: Container(
-              width: 500,
-              height: 500,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF26522).withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -150,
-            left: -150,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                color: const Color(0xFF00A484).withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-
-          // Main Content
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1024),
-                child: Container(
-                    constraints: const BoxConstraints(minHeight: 640),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 32,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: SizedBox(
-                      height: isDesktop ? 640 : null,
-                      child: Flex(
-                      direction: isDesktop ? Axis.horizontal : Axis.vertical,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Branding Side (Only visible on Desktop)
-                      if (isDesktop)
-                        Expanded(
-                          flex: 1,
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF26522),
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                                bottomLeft: Radius.circular(12),
-                              ),
-                            ),
-                            child: Stack(
-                              children: [
-                                // Background Image
-                                Positioned.fill(
-                                  child: Opacity(
-                                    opacity: 0.3,
-                                    child: Image.network(
-                                      'https://lh3.googleusercontent.com/aida-public/AB6AXuBX3IkcN7Z4dxxcZa1RRNw2jVS2F3w6fpRVDa5MnDs3dfeXlPeMH7R1mf-CdORhKoEN0Fmhyh-No5p8Ba4JEqRpgVtAiRMCE38GEV-bbRYkyHxnmCNmqeDqGAtERsFtxdyP_ivR6b3jBXZyNZVlEgAsV5U4bydPoM7_OTX74-jJAKXW024jcnkikcuXNuXjFd7k-aiZYdJd_pNWoOlJ59IVERtpXGWItu9rV68am_07IN0fRFYtz6EOk7qKmCNw2UzMTywy4ZjhAZsZ',
-                                      fit: BoxFit.cover,
-                                      colorBlendMode: BlendMode.overlay,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(color: const Color(0xFFF26522));
-                                      },
-                                    ),
-                                  ),
-                                ),
-                                // Content
-                                Padding(
-                                  padding: const EdgeInsets.all(32.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              const Icon(Icons.restaurant, color: Colors.white, size: 36),
-                                              const SizedBox(width: 8),
-                                              Flexible(
-                                                child: Text(
-                                                  'GastroGestion',
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: GoogleFonts.plusJakartaSans(
-                                                    color: Colors.white,
-                                                    fontSize: 32,
-                                                    fontWeight: FontWeight.bold,
-                                                    letterSpacing: -0.5,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 32),
-                                          Text(
-                                            'Control total de su restaurante en un solo lugar.',
-                                            style: GoogleFonts.plusJakartaSans(
-                                              color: Colors.white,
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.w600,
-                                              height: 1.3,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            'Gestione pedidos, inventario y personal con la eficiencia de un sistema diseñado para la alta cocina.',
-                                            style: GoogleFonts.plusJakartaSans(
-                                              color: Colors.white.withValues(alpha: 0.9),
-                                              fontSize: 16,
-                                              height: 1.6,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        children: [
-                                          _buildFeatureBadge('100%', 'EFICIENCIA'),
-                                          const SizedBox(width: 16),
-                                          _buildFeatureBadge('24/7', 'SOPORTE'),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                      // Login Form Side
-                      isDesktop
-                          ? Expanded(
-                              flex: 1,
-                              child: _buildFormSide(isDesktop, context),
-                            )
-                          : _buildFormSide(isDesktop, context),
-                    ],
-                  ),
-                ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: _dark,
+      body: isDesktop
+          ? _buildDesktopLayout()
+          : _buildMobileLayout(),
     );
   }
 
-  Widget _buildFormSide(bool isDesktop, BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.all(isDesktop ? 64.0 : 32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-                              // Mobile Header
-                              if (!isDesktop) ...[
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.restaurant, color: Color(0xFFF26522), size: 28),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'GastroGestion',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: const Color(0xFFF26522),
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: -0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 32),
-                              ],
-
-                              Text(
-                                'Bienvenido',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF131D21),
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Ingrese sus credenciales para acceder al panel.',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF586062),
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 32),
-
-                              // Username
-                              Text(
-                                'USUARIO',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF594138),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.6,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              TextFormField(
-                                controller: _usernameController,
-                                decoration: InputDecoration(
-                                  prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF586062)),
-                                  hintText: 'nombre.apellido',
-                                  hintStyle: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF586062).withValues(alpha: 0.5),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFFE1BFB3)),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFFE1BFB3)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFFF26522), width: 2),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Password
-                              Wrap(
-                                alignment: WrapAlignment.spaceBetween,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  Text(
-                                    'CONTRASEÑA',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: const Color(0xFF594138),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.6,
-                                    ),
-                                  ),
-                                  MouseRegion(
-                                    cursor: SystemMouseCursors.click,
-                                    child: GestureDetector(
-                                      onTap: () {},
-                                      child: Text(
-                                        '¿Olvidó su contraseña?',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: const Color(0xFFF26522),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                decoration: InputDecoration(
-                                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF586062)),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                      color: const Color(0xFF586062),
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                  ),
-                                  hintText: '••••••••',
-                                  hintStyle: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF586062).withValues(alpha: 0.5),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFFE1BFB3)),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFFE1BFB3)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFFF26522), width: 2),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-
-                               // Remember me
-                              Row(
-                                children: [
-                                  SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: Checkbox(
-                                      value: _rememberMe,
-                                      activeColor: const Color(0xFFF26522),
-                                      side: const BorderSide(color: Color(0xFFE1BFB3)),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _rememberMe = value ?? false;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Recordar mi sesión',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: const Color(0xFF586062),
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 32),
-
-                              // Login Button
-                              ElevatedButton(
-                                onPressed: _handleLogin,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFF26522),
-                                  foregroundColor: Colors.white,
-                                  elevation: 8,
-                                  shadowColor: const Color(0xFFF26522).withValues(alpha: 0.5),
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        'Iniciar Sesión',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Icon(Icons.arrow_forward, size: 20),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 32),
-
-                              // Footer links
-                              Container(
-                                padding: const EdgeInsets.only(top: 24),
-                                decoration: const BoxDecoration(
-                                  border: Border(
-                                    top: BorderSide(color: Color(0xFFE4F0F4)),
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      '¿No tiene una cuenta corporativa?',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: const Color(0xFF586062),
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    OutlinedButton(
-                                      onPressed: () {},
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: const Color(0xFF594138),
-                                        side: const BorderSide(color: Color(0xFFE1BFB3)),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(30),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'CONTACTAR CON SOPORTE',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.6,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const SizedBox(height: 32),
-                              // Role Selector for Testing
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Text(
-                                      'Acceso Rápido (Testing)',
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    GridView.count(
-                                      crossAxisCount: 2,
-                                      shrinkWrap: true,
-                                      mainAxisSpacing: 8,
-                                      crossAxisSpacing: 8,
-                                      childAspectRatio: 1.5,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      children: [
-                                        _buildTestUserCard(
-                                          label: 'Mesero',
-                                          name: 'Juan Pérez',
-                                          icon: Icons.person_outline,
-                                          color: Colors.orange,
-                                          user: const User(
-                                            id: 'user-mesero-1',
-                                            username: 'mesero',
-                                            name: 'Juan Pérez',
-                                            role: Role.mesero,
-                                            token: 'mock-token-mesero',
-                                          ),
-                                        ),
-                                        _buildTestUserCard(
-                                          label: 'Cajero',
-                                          name: 'María García',
-                                          icon: Icons.attach_money,
-                                          color: Colors.green,
-                                          user: const User(
-                                            id: 'user-cajero-1',
-                                            username: 'cajero',
-                                            name: 'María García',
-                                            role: Role.cajero,
-                                            token: 'mock-token-cajero',
-                                          ),
-                                        ),
-                                        _buildTestUserCard(
-                                          label: 'Cocina/Chef',
-                                          name: 'Carlos López',
-                                          icon: Icons.soup_kitchen_outlined,
-                                          color: Colors.blue,
-                                          user: const User(
-                                            id: 'user-cocinero-1',
-                                            username: 'cocinero',
-                                            name: 'Carlos López',
-                                            role: Role.cocinero,
-                                            token: 'mock-token-cocinero',
-                                          ),
-                                        ),
-                                        _buildTestUserCard(
-                                          label: 'Admin',
-                                          name: 'Ana Martínez',
-                                          icon: Icons.admin_panel_settings_outlined,
-                                          color: Colors.purple,
-                                          user: const User(
-                                            id: 'user-admin-1',
-                                            username: 'admin',
-                                            name: 'Ana Martínez',
-                                            role: Role.admin,
-                                            token: 'mock-token-admin',
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-        ],
-      ),
-      ),
+  // ─── DESKTOP: two-column ─────────────────────
+  Widget _buildDesktopLayout() {
+    return Row(
+      children: [
+        // Left: dark branding panel
+        Expanded(
+          flex: 5,
+          child: _buildBrandingPanel(),
+        ),
+        // Right: form
+        Expanded(
+          flex: 4,
+          child: Container(
+            color: _white,
+            child: _buildFormPanel(isDesktop: true),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildTestUserCard({
-    required String label,
-    required String name,
-    required IconData icon,
-    required Color color,
-    required User user,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _handleTestUserLogin(user),
-        borderRadius: BorderRadius.circular(8),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withValues(alpha: 0.3)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Row(
-              children: [
-                Icon(icon, size: 20, color: color),
-                const SizedBox(width: 8),
-                Expanded(
+  // ─── MOBILE: dark bg + card ──────────────────
+  Widget _buildMobileLayout() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0D1117), Color(0xFF161B22), Color(0xFF0D1117)],
+        ),
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Logo area
+              Padding(
+                padding: const EdgeInsets.fromLTRB(32, 48, 32, 0),
+                child: FadeTransition(
+                  opacity: _fadeAnim,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
+                      _buildLogo(size: 52),
+                      const SizedBox(height: 8),
                       Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        'Panel de Operaciones',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                        ),
-                      ),
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          color: Colors.grey.shade600,
+                          color: _muted,
+                          fontSize: 13,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 32),
+              // Card
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                child: SlideTransition(
+                  position: _slideAnim,
+                  child: FadeTransition(
+                    opacity: _fadeAnim,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            blurRadius: 48,
+                            offset: const Offset(0, 16),
+                          ),
+                        ],
+                      ),
+                      child: _buildFormPanel(isDesktop: false),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFeatureBadge(String value, String label) {
+  // ─── BRANDING PANEL ──────────────────────────
+  Widget _buildBrandingPanel() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-        borderRadius: BorderRadius.circular(8),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0D1117), Color(0xFF1A0F00), Color(0xFF0D1117)],
+          stops: [0.0, 0.5, 1.0],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
+          // Warm glow behind center
+          Positioned(
+            top: -120,
+            left: -80,
+            child: Container(
+              width: 500,
+              height: 500,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    _orange.withValues(alpha: 0.18),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
             ),
           ),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.6,
+          Positioned(
+            bottom: -100,
+            right: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    _orangeDark.withValues(alpha: 0.12),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Subtle grid lines
+          Positioned.fill(
+            child: CustomPaint(painter: _GridPainter()),
+          ),
+          // Content
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: Padding(
+                padding: const EdgeInsets.all(52),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLogo(size: 44),
+                    const Spacer(),
+                    // Big headline
+                    Text(
+                      'Gestiona tu\nrestaurante\ncon precision.',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: _white,
+                        fontSize: 42,
+                        fontWeight: FontWeight.w800,
+                        height: 1.15,
+                        letterSpacing: -1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Pedidos, cocina, caja y personal\nen un solo sistema operativo.',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: _muted,
+                        fontSize: 16,
+                        height: 1.6,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    // Feature pills
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _buildPill(Icons.bolt_outlined, 'Tiempo real'),
+                        _buildPill(Icons.shield_outlined, 'Roles y accesos'),
+                        _buildPill(Icons.bar_chart_outlined, 'Reportes'),
+                        _buildPill(Icons.kitchen_outlined, 'KDS integrado'),
+                      ],
+                    ),
+                    const SizedBox(height: 52),
+                    // Version
+                    Text(
+                      'GastroGestion v1.0.4',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF3D444D),
+                        fontSize: 12,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildLogo({double size = 36}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: size * 1.1,
+          height: size * 1.1,
+          decoration: BoxDecoration(
+            color: _orange,
+            borderRadius: BorderRadius.circular(size * 0.28),
+          ),
+          child: Icon(Icons.restaurant_menu,
+              color: _white, size: size * 0.58),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          'GastroGestion',
+          style: GoogleFonts.plusJakartaSans(
+            color: _white,
+            fontSize: size,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1.2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPill(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: _white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _darkBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: _orange, size: 15),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              color: const Color(0xFFCDD9E5),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── FORM PANEL ──────────────────────────────
+  Widget _buildFormPanel({required bool isDesktop}) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktop ? 56 : 28,
+        vertical: isDesktop ? 0 : 36,
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: isDesktop ? MediaQuery.of(context).size.height : 0,
+        ),
+        child: Column(
+          mainAxisAlignment: isDesktop
+              ? MainAxisAlignment.center
+              : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isDesktop) const SizedBox(height: 80),
+            // Section label
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: _orange.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: _orange.withValues(alpha: 0.2)),
+              ),
+              child: Text(
+                'ACCESO AL SISTEMA',
+                style: GoogleFonts.plusJakartaSans(
+                  color: _orange,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Big title — replaces "Bienvenido"
+            Text(
+              'Iniciar sesion',
+              style: GoogleFonts.plusJakartaSans(
+                color: _dark,
+                fontSize: isDesktop ? 40 : 34,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -1.0,
+                height: 1.1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Ingrese sus credenciales para continuar.',
+              style: GoogleFonts.plusJakartaSans(
+                color: _muted,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 36),
+
+            // ── USERNAME ──
+            _buildLabel('Usuario'),
+            const SizedBox(height: 8),
+            _buildTextField(
+              controller: _usernameController,
+              hint: 'nombre.apellido',
+              prefix: Icons.person_outline_rounded,
+              keyboardType: TextInputType.text,
+            ),
+            const SizedBox(height: 20),
+
+            // ── PASSWORD ──
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildLabel('Contrasena'),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: Text(
+                      'Olvide mi contrasena',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: _orange,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildTextField(
+              controller: _passwordController,
+              hint: '••••••••',
+              prefix: Icons.lock_outline_rounded,
+              obscure: _obscurePassword,
+              suffix: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 20,
+                  color: _muted,
+                ),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── REMEMBER ME ──
+            GestureDetector(
+              onTap: () => setState(() => _rememberMe = !_rememberMe),
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: _rememberMe ? _orange : Colors.transparent,
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        color: _rememberMe ? _orange : const Color(0xFFD0D7DE),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: _rememberMe
+                        ? const Icon(Icons.check, size: 13, color: _white)
+                        : null,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Recordar mi sesion',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFF3B434B),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // ── LOGIN BUTTON ──
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _handleLogin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _orange,
+                  disabledBackgroundColor: _orange.withValues(alpha: 0.5),
+                  foregroundColor: _white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: _white,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Iniciar Sesion',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward_rounded, size: 18),
+                        ],
+                      ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── SUPPORT LINK ──
+            Center(
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {},
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13, color: _muted),
+                      children: [
+                        const TextSpan(text: 'Sin acceso corporativo? '),
+                        TextSpan(
+                          text: 'Contactar soporte',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: _orange,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 36),
+            // ── DIVIDER ──
+            Row(
+              children: [
+                const Expanded(child: Divider(color: Color(0xFFEAECF0))),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'ACCESO RAPIDO',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: _muted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+                const Expanded(child: Divider(color: Color(0xFFEAECF0))),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // ── QUICK ACCESS ──
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 2.6,
+              children: [
+                _buildTestCard(
+                  label: 'Mesero',
+                  name: 'Juan Perez',
+                  icon: Icons.person_outline_rounded,
+                  accentColor: const Color(0xFFF59E0B),
+                  user: const User(
+                    id: 'user-mesero-1',
+                    username: 'mesero',
+                    name: 'Juan Perez',
+                    role: Role.mesero,
+                    token: 'mock-token-mesero',
+                  ),
+                ),
+                _buildTestCard(
+                  label: 'Cajero',
+                  name: 'Maria Garcia',
+                  icon: Icons.point_of_sale_outlined,
+                  accentColor: const Color(0xFF10B981),
+                  user: const User(
+                    id: 'user-cajero-1',
+                    username: 'cajero',
+                    name: 'Maria Garcia',
+                    role: Role.cajero,
+                    token: 'mock-token-cajero',
+                  ),
+                ),
+                _buildTestCard(
+                  label: 'Chef',
+                  name: 'Carlos Lopez',
+                  icon: Icons.soup_kitchen_outlined,
+                  accentColor: const Color(0xFF3B82F6),
+                  user: const User(
+                    id: 'user-cocinero-1',
+                    username: 'cocinero',
+                    name: 'Carlos Lopez',
+                    role: Role.cocinero,
+                    token: 'mock-token-cocinero',
+                  ),
+                ),
+                _buildTestCard(
+                  label: 'Admin',
+                  name: 'Ana Martinez',
+                  icon: Icons.admin_panel_settings_outlined,
+                  accentColor: _orange,
+                  user: const User(
+                    id: 'user-admin-1',
+                    username: 'admin',
+                    name: 'Ana Martinez',
+                    role: Role.admin,
+                    token: 'mock-token-admin',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 36),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text.toUpperCase(),
+      style: GoogleFonts.plusJakartaSans(
+        color: const Color(0xFF3B434B),
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.6,
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData prefix,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscure = false,
+    Widget? suffix,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      keyboardType: keyboardType,
+      style: GoogleFonts.plusJakartaSans(
+        color: _dark,
+        fontSize: 15,
+        fontWeight: FontWeight.w500,
+      ),
+      decoration: InputDecoration(
+        prefixIcon: Icon(prefix, color: _muted, size: 20),
+        suffixIcon: suffix,
+        hintText: hint,
+        hintStyle: GoogleFonts.plusJakartaSans(
+          color: const Color(0xFFD0D7DE),
+          fontSize: 15,
+        ),
+        filled: true,
+        fillColor: const Color(0xFFF6F8FA),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFD0D7DE)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFD0D7DE)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _orange, width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestCard({
+    required String label,
+    required String name,
+    required IconData icon,
+    required Color accentColor,
+    required User user,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _handleTestUserLogin(user),
+        borderRadius: BorderRadius.circular(10),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: accentColor.withValues(alpha: 0.25),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 16, color: accentColor),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: accentColor,
+                      ),
+                    ),
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: _muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Subtle Grid Background ──────────────────
+class _GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.025)
+      ..strokeWidth = 0.5;
+    const step = 48.0;
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GridPainter old) => false;
 }
