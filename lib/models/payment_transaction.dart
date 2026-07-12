@@ -32,7 +32,7 @@ class PaymentTransaction {
     required this.status,
     required this.createdAt,
     this.notes,
-  }) : assert(amountCents > 0, 'amountCents must be > 0');
+  }) : assert(amountCents >= 0, 'amountCents must be >= 0');
 
   PaymentTransaction copyWith({
     PaymentStatus? status,
