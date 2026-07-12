@@ -29,10 +29,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  late AnimationController _fadeCtrl;
-  late AnimationController _slideCtrl;
-  late Animation<double> _fadeAnim;
-  late Animation<Offset> _slideAnim;
+  // Animations — pre-initialized to "already done" so build() is always safe
+  AnimationController? _fadeCtrl;
+  AnimationController? _slideCtrl;
+  Animation<double> _fadeAnim = const AlwaysStoppedAnimation(1.0);
+  Animation<Offset> _slideAnim = const AlwaysStoppedAnimation(Offset.zero);
 
   @override
   void initState() {
@@ -41,24 +42,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         vsync: this, duration: const Duration(milliseconds: 700));
     _slideCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 600));
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl!, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(
             begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(
-            CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOutCubic));
+        .animate(CurvedAnimation(
+            parent: _slideCtrl!, curve: Curves.easeOutCubic));
 
-    Future.delayed(const Duration(milliseconds: 100), () {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _fadeCtrl.forward();
-        _slideCtrl.forward();
+        _fadeCtrl?.forward();
+        _slideCtrl?.forward();
       }
     });
   }
 
   @override
   void dispose() {
-    _fadeCtrl.dispose();
-    _slideCtrl.dispose();
+    _fadeCtrl?.dispose();
+    _slideCtrl?.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
