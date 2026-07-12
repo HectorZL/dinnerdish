@@ -342,38 +342,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildLogo({double size = 36, bool onDark = false}) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: size * 1.1,
-          height: size * 1.1,
-          decoration: BoxDecoration(
-            color: onDark
-                ? _white.withValues(alpha: 0.2)
-                : _orange.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(size * 0.28),
-            border: onDark
-                ? Border.all(color: _white.withValues(alpha: 0.3))
-                : null,
-          ),
-          child: Icon(
-            Icons.restaurant_menu,
-            color: onDark ? _white : _orange,
-            size: size * 0.58,
-          ),
+    final logoHeight = size * 1.6;
+    if (onDark) {
+      return SizedBox(
+        height: logoHeight,
+        child: Image.asset(
+          'assets/images/logo.png',
+          fit: BoxFit.contain,
+          color: _white,
+          colorBlendMode: BlendMode.modulate,
         ),
-        const SizedBox(width: 12),
-        Text(
-          'GastroGestion',
-          style: GoogleFonts.plusJakartaSans(
-            color: onDark ? _white : _ink,
-            fontSize: size,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -1.0,
-          ),
-        ),
-      ],
+      );
+    }
+    return SizedBox(
+      height: logoHeight,
+      child: Image.asset(
+        'assets/images/logo.png',
+        fit: BoxFit.contain,
+      ),
     );
   }
 
