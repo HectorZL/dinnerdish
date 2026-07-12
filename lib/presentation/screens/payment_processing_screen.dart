@@ -99,6 +99,10 @@ class _PaymentProcessingScreenState
         return;
       }
 
+      if (_finalTotalCents == 0 && _discountAmountCents != _order!.totalCents) {
+        throw Exception('El total a pagar no puede ser 0 a menos que sea una cortesía del 100%.');
+      }
+
       if (_splitAmounts.isNotEmpty) {
         await paymentService.splitPayment(
           orderId: widget.orderId,
@@ -343,8 +347,16 @@ class _PaymentProcessingScreenState
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text('Mesa ${order.tableId} • Cuenta Detallada',
-                              style: AppTypography.h2()),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Mesa ${order.tableId}',
+                                  style: AppTypography.h2()),
+                              const SizedBox(height: 4),
+                              Text('Cuenta Detallada',
+                                  style: AppTypography.h3(color: AppColors.onSurfaceVariant)),
+                            ],
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Container(

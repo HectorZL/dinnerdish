@@ -67,9 +67,9 @@ class InMemoryPaymentService implements PaymentService {
     required PaymentMethod method,
     required String processedBy,
   }) async {
-    if (amountCents <= 0) {
+    if (amountCents < 0) {
       throw const PaymentException(
-        'Amount must be greater than zero',
+        'Amount cannot be negative',
         code: 'INVALID_AMOUNT',
       );
     }
