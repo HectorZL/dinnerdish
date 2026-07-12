@@ -163,29 +163,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Logo area on orange
+              // Logo area — big, centered on orange
               Padding(
-                padding: const EdgeInsets.fromLTRB(32, 44, 32, 0),
+                padding: const EdgeInsets.fromLTRB(24, 52, 24, 0),
                 child: FadeTransition(
                   opacity: _fadeAnim,
-                  child: Column(
-                    children: [
-                      _buildLogo(size: 48, onDark: true),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Panel de Operaciones',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: _white.withValues(alpha: 0.85),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: _buildLogo(size: 90, onDark: true),
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 32),
               // White card
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
@@ -288,7 +274,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLogo(size: 40, onDark: true),
+                    _buildLogo(size: 60, onDark: true),
                     const Spacer(),
                     // Big headline
                     Text(
@@ -342,20 +328,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildLogo({double size = 36, bool onDark = false}) {
-    final logoHeight = size * 1.6;
-    if (onDark) {
-      return SizedBox(
-        height: logoHeight,
-        child: Image.asset(
-          'assets/images/logo.png',
-          fit: BoxFit.contain,
-          color: _white,
-          colorBlendMode: BlendMode.modulate,
-        ),
-      );
-    }
+    // logoHeight uses the size as height directly; width scales with aspect ratio
     return SizedBox(
-      height: logoHeight,
+      height: size,
       child: Image.asset(
         'assets/images/logo.png',
         fit: BoxFit.contain,
