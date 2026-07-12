@@ -526,6 +526,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     final query = _searchController.text.toLowerCase();
     final selectedCat = _categories[_selectedCategoryIndex];
     final filteredItems = _menuItems.where((item) {
+      if (!item.available) return false;
       final matchesSearch = query.isEmpty ||
           item.name.toLowerCase().contains(query) ||
           item.id.toLowerCase().contains(query);

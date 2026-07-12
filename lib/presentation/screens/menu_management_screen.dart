@@ -1001,8 +1001,9 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
       ),
       backgroundColor: const Color(0xFFF8FAFC),
       child: Container(
-        width: 600,
+        width: MediaQuery.of(context).size.width * 0.95,
         constraints: BoxConstraints(
+          maxWidth: 600,
           maxHeight: MediaQuery.of(context).size.height * 0.9,
         ),
         child: Column(
@@ -1143,8 +1144,8 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                   controller: _priceController,
                                   style: AppTypography.bodyMd(color: AppColors.onSurface),
                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  decoration: _inputDecoration('Precio Base (€)').copyWith(
-                                    prefixIcon: const Icon(Icons.euro, size: 16, color: Color(0xFFF26522)),
+                                  decoration: _inputDecoration('Precio Base (\$)').copyWith(
+                                    prefixIcon: const Icon(Icons.attach_money, size: 16, color: Color(0xFFF26522)),
                                   ),
                                   validator: (v) {
                                     if (v == null || v.trim().isEmpty) return 'Requerido';
@@ -1211,7 +1212,7 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                           controller: modifier.priceController,
                                           style: AppTypography.bodyMd(color: AppColors.onSurface),
                                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                          decoration: _inputDecoration('Precio (+€)'),
+                                          decoration: _inputDecoration('Precio (+\$)'),
                                         ),
                                       ),
                                       IconButton(
@@ -1355,8 +1356,8 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                           ),
                           keyboardType:
                               const TextInputType.numberWithOptions(decimal: true),
-                          decoration: _inputDecoration('Precio (€)').copyWith(
-                            prefixIcon: const Icon(Icons.euro, size: 16, color: Color(0xFFF26522)),
+                          decoration: _inputDecoration('Precio (\$)').copyWith(
+                            prefixIcon: const Icon(Icons.attach_money, size: 16, color: Color(0xFFF26522)),
                           ),
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) return 'Requerido';
@@ -1485,16 +1486,26 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
           ),
           // Count display
           Container(
-            width: 52,
+            width: 60,
             height: 36,
             alignment: Alignment.center,
-            child: Text(
-              '$current',
+            child: TextField(
+              controller: controller,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF131D21),
               ),
+              onChanged: (val) {
+                setState(() {});
+              },
             ),
           ),
           // Plus button

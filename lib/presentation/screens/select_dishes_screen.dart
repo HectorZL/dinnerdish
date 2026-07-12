@@ -32,7 +32,7 @@ class _SelectDishesScreenState extends ConsumerState<SelectDishesScreen> {
       final menuService = ref.read(menuServiceProvider);
       final menu = await menuService.fetchMenu();
       setState(() {
-        _menuItems = menu;
+        _menuItems = menu.where((item) => item.available).toList();
         _isLoading = false;
       });
     } catch (e) {
