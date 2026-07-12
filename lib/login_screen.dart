@@ -9,9 +9,8 @@ import 'providers/providers.dart';
 // ─── Design Tokens ────────────────────────────
 const _orange      = Color(0xFFF26522);
 const _orangeDark  = Color(0xFFA63B00);
-const _ink         = Color(0xFF131D21);   // near-black for text
-const _muted       = Color(0xFF586062);   // warm grey
-const _bg          = Color(0xFFF1FBFF);   // brand light bg
+const _ink         = Color(0xFF0F1518);   // pure dark for text
+const _muted       = Color(0xFF40484B);   // darker grey for contrast
 const _white       = Colors.white;
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -116,7 +115,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final isDesktop = size.width > 860;
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _white,
       body: isDesktop
           ? _buildDesktopLayout()
           : _buildMobileLayout(),
@@ -144,65 +143,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
-  // ─── MOBILE: warm gradient bg + white card ───
+  // ─── MOBILE: pure white, logo on top ──────────────
   Widget _buildMobileLayout() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFF26522), // orange top
-            Color(0xFFFF8C42), // lighter mid
-            Color(0xFFF1FBFF), // brand light at bottom
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Logo — big and clean on white
+            Padding(
+              padding: const EdgeInsets.fromLTRB(32, 48, 32, 4),
+              child: FadeTransition(
+                opacity: _fadeAnim,
+                child: Center(
+                  child: _buildLogo(size: 140),
+                ),
+              ),
+            ),
+            // Thin divider after logo
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Divider(
+                color: const Color(0xFFEEEEEE),
+                thickness: 1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Form directly on white — no card needed
+            SlideTransition(
+              position: _slideAnim,
+              child: FadeTransition(
+                opacity: _fadeAnim,
+                child: _buildFormPanel(isDesktop: false),
+              ),
+            ),
           ],
-          stops: [0.0, 0.35, 0.75],
-        ),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Logo area — big, centered on orange
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 52, 24, 0),
-                child: FadeTransition(
-                  opacity: _fadeAnim,
-                  child: _buildLogo(size: 90, onDark: true),
-                ),
-              ),
-              const SizedBox(height: 32),
-              // White card
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
-                child: SlideTransition(
-                  position: _slideAnim,
-                  child: FadeTransition(
-                    opacity: _fadeAnim,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _orange.withValues(alpha: 0.18),
-                            blurRadius: 40,
-                            offset: const Offset(0, 12),
-                          ),
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 20,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: _buildFormPanel(isDesktop: false),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -406,9 +381,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               'Iniciar sesion',
               style: GoogleFonts.plusJakartaSans(
                 color: _ink,
-                fontSize: isDesktop ? 40 : 34,
+                fontSize: isDesktop ? 32 : 26,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -1.0,
+                letterSpacing: -0.5,
                 height: 1.1,
               ),
             ),
@@ -416,8 +391,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             Text(
               'Ingrese sus credenciales para continuar.',
               style: GoogleFonts.plusJakartaSans(
-                color: _muted,
-                fontSize: 14,
+                color: _ink,
+                fontSize: 15,
                 height: 1.5,
               ),
             ),
