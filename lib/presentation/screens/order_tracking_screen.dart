@@ -30,8 +30,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
         child: Column(
           children: [
             StitchTopAppBar(
-              title: 'Pedidos',
-              showBack: true,
+              title: 'Gestión de Pedidos',
+              showBack: false,
               onBack: () => context.go('/menu'),
               navLinks: isDesktop
                   ? [

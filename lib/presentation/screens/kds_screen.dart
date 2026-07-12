@@ -136,7 +136,8 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
           children: [
             // TopAppBar
             StitchTopAppBar(
-              showBack: true,
+              title: 'Monitor de Cocina',
+              showBack: false,
               onBack: () {
                   if (context.canPop()) {
                     context.pop();
