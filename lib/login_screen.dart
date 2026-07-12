@@ -156,7 +156,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               child: FadeTransition(
                 opacity: _fadeAnim,
                 child: Center(
-                  child: _buildLogo(size: 140),
+                  child: _buildLogo(size: 110),
                 ),
               ),
             ),
@@ -357,25 +357,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (isDesktop) const SizedBox(height: 80),
-            // Section label
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: _orange.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: _orange.withValues(alpha: 0.2)),
-              ),
-              child: Text(
-                'ACCESO AL SISTEMA',
-                style: GoogleFonts.plusJakartaSans(
-                  color: _orange,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
             // Big title — replaces "Bienvenido"
             Text(
               'Iniciar sesion',
@@ -385,15 +366,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
                 height: 1.1,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Ingrese sus credenciales para continuar.',
-              style: GoogleFonts.plusJakartaSans(
-                color: _ink,
-                fontSize: 15,
-                height: 1.5,
               ),
             ),
             const SizedBox(height: 36),
