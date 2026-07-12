@@ -158,48 +158,91 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         );
       }
 
+      // Calculate differences instead of clearing all items
+      final existingItemsByKey = <String, List<order_item.OrderItem>>{};
       if (widget.existingOrderId != null) {
-        for (var existing in _currentOrder!.items.toList()) {
-          await orderService.removeItem(
-            orderId: _currentOrder!.id,
-            itemId: existing.id,
-            byUserId: currentUser.id,
-          );
+        for (var existing in _currentOrder!.items) {
+          final key = existing.variationId != null && existing.variationId!.isNotEmpty
+              ? '${existing.menuItemId}_${existing.variationId}'
+              : existing.menuItemId;
+          existingItemsByKey.putIfAbsent(key, () => []).add(existing);
         }
       }
 
-      for (final entry in _selectedQuantities.entries) {
-        if (entry.value <= 0) continue;
-        
-        final parts = entry.key.split('_');
-        final itemId = parts[0];
-        final variationId = parts.length > 1 ? parts[1] : null;
+      final allKeys = _selectedQuantities.keys.toSet().union(existingItemsByKey.keys.toSet());
+      for (final key in allKeys) {
+        final desiredQty = _selectedQuantities[key] ?? 0;
+        final existingItems = existingItemsByKey[key] ?? [];
+        final existingQty = existingItems.fold(0, (sum, item) => sum + item.quantity);
+        final diff = desiredQty - existingQty;
 
-        final item = _menuItems.firstWhere((m) => m.id == itemId);
-        
-        String displayName = item.name;
-        int priceCents = item.priceCents;
-        
-        if (variationId != null) {
-          final variation = item.variations.firstWhere((v) => v.id == variationId);
-          displayName = '${item.name} (${variation.name})';
-          priceCents = variation.priceCents;
+        if (diff > 0) {
+          // Need to add new items
+          final parts = key.split('_');
+          final itemId = parts[0];
+          final variationId = parts.length > 1 ? parts[1] : null;
+          final item = _menuItems.firstWhere((m) => m.id == itemId);
+          
+          String displayName = item.name;
+          int priceCents = item.priceCents;
+          
+          if (variationId != null) {
+            final variation = item.variations.firstWhere((v) => v.id == variationId);
+            displayName = '${item.name} (${variation.name})';
+            priceCents = variation.priceCents;
+          }
+
+          final orderItem = order_item.OrderItem(
+            id: 'item-${DateTime.now().millisecondsSinceEpoch}-${key}',
+            menuItemId: item.id,
+            name: displayName,
+            quantity: diff,
+            priceCents: priceCents,
+            status: order_item.OrderStatus.pending,
+            modifierIds: [],
+            variationId: variationId,
+          );
+          await orderService.addItem(
+            orderId: _currentOrder!.id,
+            item: orderItem,
+          );
+        } else if (diff < 0) {
+          // Need to remove items
+          int toRemove = -diff;
+          
+          // Sort so we remove pending first, then prepping, etc.
+          existingItems.sort((a, b) {
+            final orderMap = {
+              order_item.OrderStatus.pending: 0,
+              order_item.OrderStatus.prepping: 1,
+              order_item.OrderStatus.ready: 2,
+              order_item.OrderStatus.billed: 3,
+              order_item.OrderStatus.closed: 4,
+            };
+            return orderMap[a.status]!.compareTo(orderMap[b.status]!);
+          });
+
+          for (var existing in existingItems) {
+            if (toRemove <= 0) break;
+            
+            if (existing.quantity <= toRemove) {
+              await orderService.removeItem(
+                orderId: _currentOrder!.id,
+                itemId: existing.id,
+                byUserId: currentUser.id,
+              );
+              toRemove -= existing.quantity;
+            } else {
+              final updatedItem = existing.copyWith(quantity: existing.quantity - toRemove);
+              await orderService.updateItem(
+                orderId: _currentOrder!.id,
+                item: updatedItem,
+                byUserId: currentUser.id,
+              );
+              toRemove = 0;
+            }
+          }
         }
-
-        final orderItem = order_item.OrderItem(
-          id: 'item-${DateTime.now().millisecondsSinceEpoch}-${entry.key}',
-          menuItemId: item.id,
-          name: displayName,
-          quantity: entry.value,
-          priceCents: priceCents,
-          status: order_item.OrderStatus.pending,
-          modifierIds: [],
-          variationId: variationId,
-        );
-        await orderService.addItem(
-          orderId: _currentOrder!.id,
-          item: orderItem,
-        );
       }
 
       final sentOrder = await orderService.sendToKitchen(
