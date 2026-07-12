@@ -311,7 +311,7 @@ class _PaymentProcessingScreenState
     final order = _order!;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
@@ -363,16 +363,16 @@ class _PaymentProcessingScreenState
                   children: [
                     // Header
                     Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        border: const Border(
+                      padding: const EdgeInsets.all(16),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8FAFC),
+                        border: Border(
                             bottom: BorderSide(color: Color(0xFFF1F5F9))),
                       ),
                       child: Row(
                         children: [
                           Expanded(
-                              flex: 5,
+                              flex: 4,
                               child: Text('CONCEPTO',
                                   style: AppTypography.labelCaps())),
                           Expanded(
@@ -381,12 +381,12 @@ class _PaymentProcessingScreenState
                                   textAlign: TextAlign.center,
                                   style: AppTypography.labelCaps())),
                           Expanded(
-                              flex: 2,
+                              flex: 3,
                               child: Text('PRECIO',
                                   textAlign: TextAlign.right,
                                   style: AppTypography.labelCaps())),
                           Expanded(
-                              flex: 2,
+                              flex: 3,
                               child: Text('TOTAL',
                                   textAlign: TextAlign.right,
                                   style: AppTypography.labelCaps())),
@@ -395,7 +395,7 @@ class _PaymentProcessingScreenState
                     ),
                     // Items
                     ...order.items.map((item) => Container(
-                          padding: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(16),
                           decoration: const BoxDecoration(
                             border: Border(
                                 bottom: BorderSide(
@@ -404,7 +404,7 @@ class _PaymentProcessingScreenState
                           child: Row(
                             children: [
                               Expanded(
-                                flex: 5,
+                                flex: 4,
                                 child: Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
@@ -412,13 +412,12 @@ class _PaymentProcessingScreenState
                                     Text('Item ${item.menuItemId}',
                                         style: AppTypography.bodyLg(
                                             color: AppColors.onSurface)),
-                                    Text(
-                                      item.modifierIds.isEmpty
-                                          ? ''
-                                          : 'Mod: ${item.modifierIds.length}',
-                                      style: AppTypography.statusBadge(
-                                          color: AppColors.onSurfaceVariant),
-                                    ),
+                                    if (item.modifierIds.isNotEmpty)
+                                      Text(
+                                        'Mod: ${item.modifierIds.length}',
+                                        style: AppTypography.statusBadge(
+                                            color: AppColors.onSurfaceVariant),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -430,20 +429,28 @@ class _PaymentProcessingScreenState
                                         color: AppColors.onSurface)),
                               ),
                               Expanded(
-                                flex: 2,
-                                child: Text(
-                                    '\$${(item.priceCents / 100).toStringAsFixed(2)}',
-                                    textAlign: TextAlign.right,
-                                    style: AppTypography.bodyLg(
-                                        color: AppColors.onSurface)),
+                                flex: 3,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                      '\$${(item.priceCents / 100).toStringAsFixed(2)}',
+                                      textAlign: TextAlign.right,
+                                      style: AppTypography.bodyLg(
+                                          color: AppColors.onSurface)),
+                                ),
                               ),
                               Expanded(
-                                flex: 2,
-                                child: Text(
-                                    '\$${(item.priceCents * item.quantity / 100).toStringAsFixed(2)}',
-                                    textAlign: TextAlign.right,
-                                    style: AppTypography.h3(
-                                        color: AppColors.onSurface)),
+                                flex: 3,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                      '\$${(item.priceCents * item.quantity / 100).toStringAsFixed(2)}',
+                                      textAlign: TextAlign.right,
+                                      style: AppTypography.h3(
+                                          color: AppColors.onSurface)),
+                                ),
                               ),
                             ],
                           ),
