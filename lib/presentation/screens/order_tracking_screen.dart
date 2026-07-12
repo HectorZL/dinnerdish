@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/models/menu_item.dart';
+import 'package:dinnerhome/models/user.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import '../theme/app_theme.dart';
 
@@ -56,7 +57,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                         const SizedBox(height: AppSpacing.xl),
                         _buildFilters(activeOrdersAsync),
                         const SizedBox(height: AppSpacing.xl),
-                        _buildOrderGrid(isDesktop, activeOrdersAsync, menuItemsAsync.value ?? []),
+                        _buildOrderGrid(isDesktop, activeOrdersAsync, menuItemsAsync.value ?? [], currentUser),
                         const SizedBox(height: 100),
                       ],
                     ),
@@ -147,7 +148,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       }),
     );
   }
-  Widget _buildOrderGrid(bool isDesktop, AsyncValue<List<Order>> activeOrdersAsync, List<MenuItem> menuItems) {
+  Widget _buildOrderGrid(bool isDesktop, AsyncValue<List<Order>> activeOrdersAsync, List<MenuItem> menuItems, User? currentUser) {
     return activeOrdersAsync.when(
       data: (orders) {
         final filteredOrders = orders.where((order) {
@@ -276,7 +277,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   ),
                 if (order.status == OrderStatus.ready)
                   _buildActionBtn('Servir', Icons.check, true, onTap: () => ref.read(orderServiceProvider).updateStatus(orderId: order.id, status: OrderStatus.billed, byUserId: ref.read(currentUserProvider).value?.id ?? 'user')),
-                if (order.status == OrderStatus.billed)
+                if (order.status == OrderStatus.billed && (currentUser?.role == Role.cajero || currentUser?.role == Role.admin))
                   _buildActionBtn('Cobrar', Icons.payment, true, onTap: () => context.go('/orders/pay/${order.id}')),
               ],
             );
