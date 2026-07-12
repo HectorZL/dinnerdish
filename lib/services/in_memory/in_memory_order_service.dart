@@ -157,8 +157,8 @@ class InMemoryOrderService implements OrderService {
     }
 
     final updatedOrder = order.copyWith(
-      status: OrderStatus.sentToKitchen,
-      sentToKitchenAt: DateTime.now(),
+      status: order.status == OrderStatus.prepping ? OrderStatus.prepping : OrderStatus.sentToKitchen,
+      sentToKitchenAt: order.sentToKitchenAt ?? DateTime.now(),
     );
     _orders[orderId] = updatedOrder;
     _emitEvent(updatedOrder, 'sent_to_kitchen');
