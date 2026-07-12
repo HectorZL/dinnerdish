@@ -233,7 +233,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               bgColor: bgColor,
               items: items,
               actions: [
-                if (order.status == OrderStatus.sentToKitchen)
+                if (order.status == OrderStatus.sentToKitchen || order.status == OrderStatus.prepping)
                   _buildActionBtn('Editar', Icons.edit, false, onTap: () => context.go('/orders/${order.id}/edit')),
                 if (order.status == OrderStatus.sentToKitchen)
                   _buildActionBtn(
