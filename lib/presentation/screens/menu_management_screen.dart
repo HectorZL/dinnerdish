@@ -199,7 +199,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
               children: [
                 StitchTopAppBar(
                   title: 'Gestión de Menú',
-                  showBack: false,
+                  showBack: !isDesktop,
                   onBack: () => context.go('/menu'),
                   navLinks: isDesktop
                       ? const [

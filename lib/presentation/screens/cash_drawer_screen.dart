@@ -345,8 +345,9 @@ class _CashDrawerScreenState extends ConsumerState<CashDrawerScreen> {
         child: Column(
           children: [
             StitchTopAppBar(
-              showBack: false,
-              title: 'Arqueo de Caja',
+              showBack: true,
+              onBack: () => context.go('/menu'),
+              title: 'Caja',
             ),
             Expanded(child: _buildBody()),
           ],
