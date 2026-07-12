@@ -28,6 +28,49 @@ class _MainMenuDashboardScreenState
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: (isLoggedIn && RouteGuard.canAccessAdmin(currentUser)) 
+          ? Drawer(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  const DrawerHeader(
+                    decoration: BoxDecoration(color: AppColors.primaryContainer),
+                    child: Text('SABOR Y HOGAR', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.home),
+                    title: const Text('Inicio'),
+                    onTap: () { context.go('/menu'); Navigator.pop(context); },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.receipt_long),
+                    title: const Text('Pedidos'),
+                    onTap: () { context.go('/orders/tracking'); Navigator.pop(context); },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.restaurant_menu),
+                    title: const Text('Cocina'),
+                    onTap: () { context.go('/kds'); Navigator.pop(context); },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.table_restaurant),
+                    title: const Text('Mesas'),
+                    onTap: () { context.go('/tables'); Navigator.pop(context); },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.menu_book),
+                    title: const Text('Menú'),
+                    onTap: () { context.go('/admin/menu'); Navigator.pop(context); },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.people),
+                    title: const Text('Usuarios'),
+                    onTap: () { context.go('/admin/users'); Navigator.pop(context); },
+                  ),
+                ],
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: [
@@ -70,10 +113,12 @@ class _MainMenuDashboardScreenState
           ],
         ),
       ),
-      bottomNavigationBar: !isDesktop ? StitchBottomNavBar(
-        currentRoute: '/menu',
-        currentUser: currentUser,
-      ) : null,
+      bottomNavigationBar: (!isDesktop && !(isLoggedIn && RouteGuard.canAccessAdmin(currentUser))) 
+        ? StitchBottomNavBar(
+            currentRoute: '/menu',
+            currentUser: currentUser,
+          ) 
+        : null,
     );
   }
 
@@ -796,9 +841,11 @@ class _MainMenuDashboardScreenState
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Text(status,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.statusBadge(color: statusColor)),
+                  Expanded(
+                    child: Text(status,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.statusBadge(color: statusColor)),
+                  ),
                 ],
               ),
             ),

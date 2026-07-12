@@ -285,7 +285,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     ),
                     const SizedBox(height: 48),
                     Text(
-                      'GastroGestion v1.0.4',
+                      'SABOR Y HOGAR v1.0.4',
                       style: GoogleFonts.plusJakartaSans(
                         color: _white.withValues(alpha: 0.45),
                         fontSize: 12,

@@ -241,7 +241,9 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                     if (!showBack)
                       IconButton(
                         icon: const Icon(Icons.menu, color: AppColors.primaryContainer),
-                        onPressed: () {},
+                        onPressed: () {
+                          Scaffold.of(context).openDrawer();
+                        },
                       ),
                     if (!showBack) const SizedBox(width: 8),
                     Flexible(
