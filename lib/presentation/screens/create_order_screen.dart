@@ -214,10 +214,10 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
           existingItems.sort((a, b) {
             final orderMap = {
               order_item.OrderStatus.pending: 0,
-              order_item.OrderStatus.prepping: 1,
-              order_item.OrderStatus.ready: 2,
-              order_item.OrderStatus.billed: 3,
-              order_item.OrderStatus.closed: 4,
+              order_item.OrderStatus.sent: 1,
+              order_item.OrderStatus.preparing: 2,
+              order_item.OrderStatus.ready: 3,
+              order_item.OrderStatus.served: 4,
             };
             return orderMap[a.status]!.compareTo(orderMap[b.status]!);
           });

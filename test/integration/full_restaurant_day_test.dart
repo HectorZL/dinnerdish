@@ -6,7 +6,7 @@ import 'package:dinnerhome/models/user.dart';
 import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/providers/providers.dart';
 
-import 'package:go_router/go_router.dart';
+
 import 'integration_test_helpers.dart';
 
 void main() {

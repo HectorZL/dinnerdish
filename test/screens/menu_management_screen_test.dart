@@ -243,7 +243,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap "Nuevo Item" button (in AppBar)
-      await tester.tap(find.text('Nuevo Item').first);
+      await tester.tap(find.byIcon(Icons.add).first);
       await tester.pumpAndSettle();
 
       // Dialog should appear

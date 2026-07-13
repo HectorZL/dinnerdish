@@ -10,6 +10,22 @@ import 'package:dinnerhome/models/payment_transaction.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import 'package:dinnerhome/services/auth_service.dart';
 import 'package:dinnerhome/services/payment_service.dart';
+import 'package:dinnerhome/presentation/screens/cashier_pending_screen.dart';
+import 'package:dinnerhome/models/order.dart';
+
+Widget buildCashierApp(MockCashierPaymentService paymentService) {
+  final authService = MockCashierAuthService();
+  return ProviderScope(
+    overrides: [
+      paymentServiceProvider.overrideWithValue(paymentService),
+      authServiceProvider.overrideWithValue(authService),
+      activeOrdersProvider.overrideWith((ref) => Stream.value(<Order>[])),
+    ],
+    child: const MaterialApp(
+      home: CashierPendingScreen(),
+    ),
+  );
+}
 
 // ── Mock Services ──────────────────────────────────────────────
 
@@ -115,7 +131,6 @@ PaymentTransaction makePendingRequest({
   );
 }
 
-// ── ProviderScope builder ──────────────────────────────────────
 
 
 // ── Tests ──────────────────────────────────────────────────────
