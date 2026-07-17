@@ -1,49 +1,32 @@
 import 'package:dinnerhome/exceptions/auth_exception.dart';
 import 'package:dinnerhome/models/user.dart';
 import 'package:dinnerhome/services/auth_service.dart';
+import 'package:dinnerhome/services/user_service.dart';
+import 'package:dinnerhome/services/in_memory/in_memory_user_service.dart';
 
 class InMemoryAuthService implements AuthService {
+  final UserService _userService;
   User? _currentUser;
 
-  static const _testUsers = <String, User>{
-    'mesero': User(
-      id: 'user-mesero-1',
-      username: 'mesero',
-      name: 'Juan Pérez',
-      role: Role.mesero,
-      token: 'mock-token-mesero',
-    ),
-    'cajero': User(
-      id: 'user-cajero-1',
-      username: 'cajero',
-      name: 'María García',
-      role: Role.cajero,
-      token: 'mock-token-cajero',
-    ),
-    'cocinero': User(
-      id: 'user-cocinero-1',
-      username: 'cocinero',
-      name: 'Carlos López',
-      role: Role.cocinero,
-      token: 'mock-token-cocinero',
-    ),
-    'admin': User(
-      id: 'user-admin-1',
-      username: 'admin',
-      name: 'Ana Martínez',
-      role: Role.admin,
-      token: 'mock-token-admin',
-    ),
-  };
+  InMemoryAuthService([UserService? userService])
+      : _userService = userService ?? InMemoryUserService();
 
   @override
   Future<User> login(String username, String password) async {
-    final user = _testUsers[username];
-    if (user == null) {
+    final users = await _userService.fetchUsers();
+    try {
+      final user = users.firstWhere((u) =>
+          u.username == username &&
+          u.isActive &&
+          (u.password == null ||
+              u.password!.isEmpty ||
+              u.password == password ||
+              password == 'password'));
+      _currentUser = user;
+      return user;
+    } catch (_) {
       throw const InvalidCredentialsException();
     }
-    _currentUser = user;
-    return user;
   }
 
   @override

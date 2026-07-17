@@ -12,6 +12,8 @@ import 'package:dinnerhome/services/payment_service.dart';
 import 'package:dinnerhome/services/socket_service.dart';
 import 'package:dinnerhome/services/audit_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_auth_service.dart';
+import 'package:dinnerhome/services/user_service.dart';
+import 'package:dinnerhome/services/in_memory/in_memory_user_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_cash_drawer_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_menu_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_order_service.dart';
@@ -29,8 +31,13 @@ final socketServiceProvider = Provider<SocketService>((ref) {
   return InMemorySocketService();
 });
 
+final userServiceProvider = Provider<UserService>((ref) {
+  return InMemoryUserService();
+});
+
 final authServiceProvider = Provider<AuthService>((ref) {
-  return InMemoryAuthService();
+  final userService = ref.watch(userServiceProvider);
+  return InMemoryAuthService(userService);
 });
 
 final menuServiceProvider = Provider<MenuService>((ref) {
