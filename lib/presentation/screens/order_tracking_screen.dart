@@ -184,15 +184,21 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     return activeOrdersAsync.when(
       data: (orders) {
         final filteredOrders = orders.where((order) {
-          if (_selectedFilterIndex == 0) return true;
-          if (_selectedFilterIndex == 1)
+          if (_selectedFilterIndex == 0) {
+            return true;
+          }
+          if (_selectedFilterIndex == 1) {
             return order.status == OrderStatus.sentToKitchen;
-          if (_selectedFilterIndex == 2)
+          }
+          if (_selectedFilterIndex == 2) {
             return order.status == OrderStatus.prepping;
-          if (_selectedFilterIndex == 3)
+          }
+          if (_selectedFilterIndex == 3) {
             return order.status == OrderStatus.ready;
-          if (_selectedFilterIndex == 4)
+          }
+          if (_selectedFilterIndex == 4) {
             return order.status == OrderStatus.billed;
+          }
           return true;
         }).toList();
 

@@ -229,7 +229,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            '${item.name ?? 'Item ${item.menuItemId}'}',
+                                            item.name ??
+                                                'Item ${item.menuItemId}',
                                             style:
                                                 AppTypography.bodyMd(
                                                   color: AppColors.onSurface,

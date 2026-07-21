@@ -30,13 +30,15 @@ class InMemoryAuditService implements AuditService {
     DateTime? timestamp,
   }) async {
     _counter++;
-    _entries.add(AuditEntry(
-      id: 'audit-$_counter',
-      action: action,
-      userId: userId,
-      timestamp: timestamp ?? DateTime.now(),
-      metadata: metadata,
-    ));
+    _entries.add(
+      AuditEntry(
+        id: 'audit-$_counter',
+        action: action,
+        userId: userId,
+        timestamp: timestamp ?? DateTime.now(),
+        metadata: metadata,
+      ),
+    );
   }
 
   @override
@@ -127,7 +129,9 @@ class TestServices {
       socket: resolvedSocket,
       menu: resolvedMenu,
       auth: resolvedAuth,
-      order: order ?? InMemoryOrderService(resolvedSocket, auditService: resolvedAudit),
+      order:
+          order ??
+          InMemoryOrderService(resolvedSocket, auditService: resolvedAudit),
       payment: payment ?? InMemoryPaymentService(auditService: resolvedAudit),
     );
   }
@@ -154,7 +158,11 @@ class TestScrollBehavior extends MaterialScrollBehavior {
   const TestScrollBehavior();
 
   @override
-  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
     return child;
   }
 }
@@ -192,24 +200,16 @@ Future<void> loginViaProvider(WidgetTester tester, User user) async {
 }
 
 Future<void> switchUser(WidgetTester tester, User user) async {
-  // Logout current user (via provider)
   final ctx = tester.element(find.byType(MaterialApp));
   final container = ProviderScope.containerOf(ctx, listen: false);
-  print('DEBUG: switchUser started for ${user.username}');
   await container.read(currentUserProvider.notifier).logout();
   await tester.pumpAndSettle();
-  print('DEBUG: switchUser logged out');
 
-  // Login new user
   await container.read(currentUserProvider.notifier).loginWithTestUser(user);
   await tester.pumpAndSettle();
-  print('DEBUG: switchUser logged in');
 
-  // Force navigate to dashboard so tests start from a clean state
-  print('DEBUG: switchUser forcing navigation to /menu');
   container.read(goRouterProvider).go('/menu');
   await tester.pumpAndSettle();
-  print('DEBUG: switchUser completed');
 }
 
 // ──────────────────────────────────────────────────────────────

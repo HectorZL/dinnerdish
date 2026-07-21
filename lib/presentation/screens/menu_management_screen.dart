@@ -1205,7 +1205,8 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                     value: _available,
                                     onChanged: (v) =>
                                         setState(() => _available = v),
-                                    activeColor: AppColors.primaryContainer,
+                                    activeThumbColor:
+                                        AppColors.primaryContainer,
                                   ),
                                 ],
                               ),
@@ -1260,7 +1261,8 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                             }
                                           });
                                         },
-                                        activeColor: AppColors.primaryContainer,
+                                        activeThumbColor:
+                                            AppColors.primaryContainer,
                                       ),
                                     ],
                                   ),
@@ -1289,13 +1291,15 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                         ),
                                       ),
                                   validator: (v) {
-                                    if (v == null || v.trim().isEmpty)
+                                    if (v == null || v.trim().isEmpty) {
                                       return 'Requerido';
+                                    }
                                     final parsed = double.tryParse(
                                       v.replaceAll(',', '.'),
                                     );
-                                    if (parsed == null || parsed < 0)
+                                    if (parsed == null || parsed < 0) {
                                       return 'Inválido';
+                                    }
                                     return null;
                                   },
                                 ),
@@ -1568,10 +1572,13 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty)
+                            if (v == null || v.trim().isEmpty) {
                               return 'Requerido';
-                            if (double.tryParse(v.replaceAll(',', '.')) == null)
+                            }
+                            if (double.tryParse(v.replaceAll(',', '.')) ==
+                                null) {
                               return 'Inválido';
+                            }
                             return null;
                           },
                         ),

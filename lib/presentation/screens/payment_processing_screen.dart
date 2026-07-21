@@ -911,21 +911,20 @@ class _PaymentProcessingScreenState
               Row(
                 children: [
                   Expanded(
-                    child: RadioListTile<bool>(
-                      title: const Text('%'),
-                      value: true,
-                      groupValue: isPercentage,
-                      onChanged: (val) =>
-                          setStateDialog(() => isPercentage = val!),
+                    child: ChoiceChip(
+                      label: const Text('%'),
+                      selected: isPercentage,
+                      onSelected: (_) =>
+                          setStateDialog(() => isPercentage = true),
                     ),
                   ),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
-                    child: RadioListTile<bool>(
-                      title: const Text('\$'),
-                      value: false,
-                      groupValue: isPercentage,
-                      onChanged: (val) =>
-                          setStateDialog(() => isPercentage = val!),
+                    child: ChoiceChip(
+                      label: const Text('\$'),
+                      selected: !isPercentage,
+                      onSelected: (_) =>
+                          setStateDialog(() => isPercentage = false),
                     ),
                   ),
                 ],

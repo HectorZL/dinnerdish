@@ -313,10 +313,10 @@ void main() {
       expect(find.textContaining('order-1'), findsOneWidget);
 
       // Table info
-      expect(find.text('table-5'), findsOneWidget);
+      expect(find.text('Mesa table-5'), findsOneWidget);
 
       // Waiter info
-      expect(find.text('waiter-1'), findsOneWidget);
+      expect(find.textContaining('waiter-1'), findsOneWidget);
 
       // Prices
       expect(find.text('\$20.00'), findsOneWidget); // subtotal

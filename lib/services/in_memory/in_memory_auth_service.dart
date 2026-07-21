@@ -16,9 +16,11 @@ class InMemoryAuthService implements AuthService {
   Future<User> login(String username, String password) async {
     final users = await _userService.fetchUsers();
     try {
+      final identifier = username.trim().toLowerCase();
       final user = users.firstWhere(
         (candidate) =>
-            candidate.username.toLowerCase() == username.trim().toLowerCase() &&
+            (candidate.username.toLowerCase() == identifier ||
+                candidate.email?.toLowerCase() == identifier) &&
             candidate.isActive &&
             PasswordHasher.verify(password, candidate.password),
       );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dinnerhome/models/user.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import 'package:dinnerhome/router/route_guards.dart';
 
@@ -291,10 +292,20 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                   if (actions != null) ...actions!,
                   Consumer(
                     builder: (context, ref, child) {
+                      final currentUser = ref.watch(currentUserProvider).value;
                       return PopupMenuButton<String>(
-                        offset: const Offset(0, 50),
+                        tooltip: 'Opciones de usuario',
+                        position: PopupMenuPosition.under,
+                        offset: const Offset(-196, 8),
+                        constraints: const BoxConstraints.tightFor(width: 236),
+                        color: Colors.white,
+                        surfaceTintColor: Colors.white,
+                        shadowColor: Colors.black.withValues(alpha: 0.18),
+                        elevation: 10,
+                        menuPadding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.xl),
+                          side: const BorderSide(color: Color(0xFFF1F5F9)),
                         ),
                         onSelected: (value) async {
                           if (value == 'logout') {
@@ -305,70 +316,58 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                               context.go('/login');
                             }
                           } else if (value == 'profile') {
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Perfil'),
-                                content: const Text(
-                                  'Detalles del usuario irán aquí.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx),
-                                    child: const Text('Cerrar'),
-                                  ),
-                                ],
-                              ),
-                            );
+                            _showProfileDetails(context, currentUser);
                           }
                         },
                         itemBuilder: (context) => [
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'profile',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.person,
-                                  color: Color(0xFF64748B),
-                                  size: 20,
-                                ),
-                                SizedBox(width: 8),
-                                Text('Detalles del Usuario'),
-                              ],
+                            height: 60,
+                            padding: EdgeInsets.zero,
+                            child: const _ProfileMenuAction(
+                              icon: Icons.person_outline,
+                              label: 'Detalles del usuario',
+                              iconColor: AppColors.primaryContainer,
+                              foregroundColor: AppColors.onSurface,
+                              backgroundColor: Color(0xFFFFF7F3),
                             ),
                           ),
-                          const PopupMenuItem(
+                          const PopupMenuDivider(height: 1),
+                          PopupMenuItem(
                             value: 'logout',
-                            child: Row(
-                              children: [
-                                Icon(Icons.logout, color: Colors.red, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Salir',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ],
+                            height: 60,
+                            padding: EdgeInsets.zero,
+                            child: const _ProfileMenuAction(
+                              icon: Icons.logout_rounded,
+                              label: 'Salir',
+                              iconColor: AppColors.error,
+                              foregroundColor: AppColors.error,
+                              backgroundColor: Color(0xFFFFF5F5),
                             ),
                           ),
                         ],
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.primaryContainer,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 24,
+                        child: Semantics(
+                          button: true,
+                          label: 'Abrir menú de usuario',
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primaryContainer,
+                              border: Border.all(color: Colors.white, width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                           ),
                         ),
                       );
@@ -379,6 +378,283 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+void _showProfileDetails(BuildContext context, User? user) {
+  final displayName = user?.name.trim().isNotEmpty == true
+      ? user!.name.trim()
+      : 'Usuario Dinnerhome';
+  final storedEmail = user?.email?.trim() ?? '';
+  final email = storedEmail.isNotEmpty
+      ? storedEmail
+      : (user?.username ?? 'Sin correo registrado');
+  final initials = displayName
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .take(2)
+      .map((part) => part[0].toUpperCase())
+      .join();
+
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl * 1.5),
+      ),
+      backgroundColor: const Color(0xFFF8FAFC),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.xl * 1.5),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    child: const Icon(
+                      Icons.person_outline,
+                      color: AppColors.primaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Detalles del usuario',
+                    style: AppTypography.h3(color: AppColors.onSurface),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Cerrar',
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primaryContainer,
+                    ),
+                    child: Text(
+                      initials.isEmpty ? 'U' : initials,
+                      style: AppTypography.h2(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    displayName,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.h3(
+                      color: AppColors.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    email,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.bodyMd(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(color: const Color(0xFFF1F5F9)),
+                    ),
+                    child: Column(
+                      children: [
+                        _ProfileDetailRow(
+                          icon: Icons.badge_outlined,
+                          label: 'Rol',
+                          value: _profileRoleLabel(user?.role),
+                        ),
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        _ProfileDetailRow(
+                          icon: Icons.verified_user_outlined,
+                          label: 'Estado',
+                          value: user?.isActive == false
+                              ? 'Inactivo'
+                              : 'Activo',
+                          valueColor: user?.isActive == false
+                              ? AppColors.error
+                              : AppColors.statusReady,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(AppRadius.xl * 1.5),
+                ),
+              ),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(
+                    'Cerrar',
+                    style: AppTypography.statusBadge(
+                      color: AppColors.primaryContainer,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+String _profileRoleLabel(Role? role) {
+  switch (role) {
+    case Role.admin:
+      return 'Administrador';
+    case Role.mesero:
+      return 'Personal de sala';
+    case Role.cocinero:
+      return 'Cocina';
+    case Role.cajero:
+      return 'Caja';
+    case null:
+      return 'Usuario';
+  }
+}
+
+class _ProfileMenuAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color iconColor;
+  final Color foregroundColor;
+  final Color backgroundColor;
+
+  const _ProfileMenuAction({
+    required this.icon,
+    required this.label,
+    required this.iconColor,
+    required this.foregroundColor,
+    required this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+            ),
+            child: Icon(icon, color: iconColor, size: 19),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            label,
+            style: AppTypography.bodyMd(
+              color: foregroundColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileDetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _ProfileDetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 19, color: AppColors.primaryContainer),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant),
+            ),
+          ),
+          Text(
+            value,
+            style: AppTypography.bodyMd(
+              color: valueColor ?? AppColors.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

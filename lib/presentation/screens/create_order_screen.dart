@@ -1644,10 +1644,11 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                     );
                                   }).toList(),
                                   onChanged: (val) {
-                                    if (val != null)
+                                    if (val != null) {
                                       setModalState(
                                         () => selectedTableId = val,
                                       );
+                                    }
                                   },
                                 )
                               else

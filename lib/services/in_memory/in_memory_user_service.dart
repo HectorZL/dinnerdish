@@ -161,7 +161,10 @@ class InMemoryUserService implements UserService {
     if (password != null &&
         password.isNotEmpty &&
         !PasswordHasher.isHash(password)) {
-      if (!PasswordHasher.isStrong(password)) throw WeakPasswordException();
+      final isAllowedPassword = isNewUser
+          ? PasswordHasher.isAllowedForNewStaffAccount(password)
+          : PasswordHasher.isStrong(password);
+      if (!isAllowedPassword) throw WeakPasswordException();
       return user.copyWith(
         username: username,
         email: email,

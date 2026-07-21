@@ -13,11 +13,10 @@ class MockUserService implements UserService {
   final List<User> _users;
   final bool shouldThrow;
   int callCount = 0;
+  User? createdUser;
 
-  MockUserService({
-    List<User>? users,
-    this.shouldThrow = false,
-  }) : _users = users ?? [];
+  MockUserService({List<User>? users, this.shouldThrow = false})
+    : _users = users ?? [];
 
   @override
   Future<List<User>> fetchUsers() async {
@@ -39,6 +38,7 @@ class MockUserService implements UserService {
 
   @override
   Future<User> createUser(User user) async {
+    createdUser = user;
     _users.add(user);
     return user;
   }
@@ -63,9 +63,7 @@ class MockUserService implements UserService {
 Widget buildUserApp(MockUserService userService) {
   GoogleFonts.config.allowRuntimeFetching = false;
   return ProviderScope(
-    overrides: [
-      userServiceProvider.overrideWith((ref) => userService),
-    ],
+    overrides: [userServiceProvider.overrideWith((ref) => userService)],
     child: const MaterialApp(home: UserManagementScreen()),
   );
 }
@@ -128,46 +126,70 @@ void main() {
 
       // Check stats: Total=2, Activos Ahora=1
       expect(find.text('Total Usuarios'), findsOneWidget);
-      final totalCard = find.ancestor(of: find.text('Total Usuarios'), matching: find.byType(Container));
-      expect(find.descendant(of: totalCard.first, matching: find.text('2')), findsOneWidget);
+      final totalCard = find.ancestor(
+        of: find.text('Total Usuarios'),
+        matching: find.byType(Container),
+      );
+      expect(
+        find.descendant(of: totalCard.first, matching: find.text('2')),
+        findsOneWidget,
+      );
 
       expect(find.text('Activos Ahora'), findsOneWidget);
-      final activeCard = find.ancestor(of: find.text('Activos Ahora'), matching: find.byType(Container));
-      expect(find.descendant(of: activeCard.first, matching: find.text('1')), findsOneWidget);
+      final activeCard = find.ancestor(
+        of: find.text('Activos Ahora'),
+        matching: find.byType(Container),
+      );
+      expect(
+        find.descendant(of: activeCard.first, matching: find.text('1')),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('opens and saves create dialog', (tester) async {
+    testWidgets('creates staff with generated Dinnerhome credentials', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1280, 800));
       userService = MockUserService(users: []);
 
       await tester.pumpWidget(buildUserApp(userService));
       await tester.pumpAndSettle();
 
-      // Tap "Nuevo Usuario" button (either mobile or desktop variant)
-      final nuevoUsuarioFinder = find.text('Nuevo Usuario');
-      
-      await tester.tap(nuevoUsuarioFinder.first);
+      await tester.tap(find.text('Nuevo Usuario').first);
       await tester.pumpAndSettle();
 
-      // Dialog should be open
-      expect(find.text('Datos de Cuenta'), findsOneWidget);
+      expect(find.text('Datos del personal'), findsOneWidget);
 
-      // Fill in details
-      await tester.enterText(find.widgetWithText(TextFormField, 'Nombre completo'), 'Nuevo Empleado');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Nombre de usuario (Login)'), 'new.emp');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Correo electrónico'), 'new@email.com');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Contraseña'), 'mypassword');
-
-      // Save
-      final saveBtn = find.text('Crear Usuario');
-      await tester.ensureVisible(saveBtn);
-      await tester.pumpAndSettle();
-      await tester.tap(saveBtn);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nombre'),
+        'Nuevo',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Apellido'),
+        'Empleado',
+      );
       await tester.pumpAndSettle();
 
-      // Check if user is created and dialog closed
-      expect(find.text('Datos de Cuenta'), findsNothing);
+      expect(find.text('Correo: nuevo@dinner.com'), findsOneWidget);
+      expect(find.text('Contraseña inicial: 123456789'), findsOneWidget);
+
+      await tester.tap(find.byType(DropdownButtonFormField<Role>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Caja').last);
+      await tester.pumpAndSettle();
+
+      final saveButton = find.text('Crear Usuario');
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Datos del personal'), findsNothing);
       expect(find.text('Nuevo Empleado'), findsOneWidget);
+      expect(userService.createdUser, isNotNull);
+      expect(userService.createdUser!.username, 'nuevo');
+      expect(userService.createdUser!.email, 'nuevo@dinner.com');
+      expect(userService.createdUser!.role, Role.cajero);
+      expect(userService.createdUser!.password, '123456789');
     });
   });
 }

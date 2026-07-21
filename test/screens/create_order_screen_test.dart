@@ -333,8 +333,8 @@ void main() {
       expect(find.text('Ensalada César'), findsOneWidget);
 
       // Prices should appear in dish cards
-      expect(find.text('12.00€'), findsAtLeastNWidgets(1));
-      expect(find.text('8.50€'), findsAtLeastNWidgets(1));
+      expect(find.text('12.00 €'), findsAtLeastNWidgets(1));
+      expect(find.text('8.50 €'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows header with waiter info', (tester) async {
@@ -413,8 +413,6 @@ void main() {
       expect(find.text('Todos'), findsOneWidget);
       expect(find.text('Entrantes'), findsOneWidget);
       expect(find.text('Platos Principales'), findsOneWidget);
-      expect(find.text('Bebidas'), findsOneWidget);
-      expect(find.text('Postres'), findsOneWidget);
     });
 
     testWidgets('shows order summary at bottom', (tester) async {

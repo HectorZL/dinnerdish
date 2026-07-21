@@ -31,9 +31,20 @@ class MockKdsSocketService implements SocketService {
 }
 
 class MockKdsOrderService implements OrderService {
+  final MockKdsSocketService _socket;
+  final Map<String, Order> _orders = {};
+
+  MockKdsOrderService(this._socket);
+
   @override
   Future<List<Order>> getActiveOrders() async {
-    return [];
+    return _orders.values
+        .where(
+          (order) =>
+              order.status != OrderStatus.draft &&
+              order.status != OrderStatus.closed,
+        )
+        .toList();
   }
 
   @override
@@ -131,7 +142,12 @@ class MockKdsOrderService implements OrderService {
   Future<Order?> getOrder(String orderId) async => null;
 
   @override
-  Stream<OrderEvent> watchOrders() => const Stream.empty();
+  Stream<OrderEvent> watchOrders() async* {
+    await for (final event in _socket.orderEvents) {
+      _orders[event.orderId] = event.order;
+      yield event;
+    }
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -167,7 +183,7 @@ ProviderScope buildKdsApp(MockKdsSocketService socket) {
   return ProviderScope(
     overrides: [
       socketServiceProvider.overrideWith((ref) => socket),
-      orderServiceProvider.overrideWith((ref) => MockKdsOrderService()),
+      orderServiceProvider.overrideWith((ref) => MockKdsOrderService(socket)),
     ],
     child: const MaterialApp(home: KdsScreen()),
   );
@@ -196,10 +212,10 @@ void main() {
       expect(find.byIcon(Icons.restaurant_menu), findsOneWidget);
     });
 
-    testWidgets('shows disconnected indicator initially', (tester) async {
+    testWidgets('shows connected indicator initially', (tester) async {
       await tester.pumpWidget(buildKdsApp(socketService));
 
-      expect(find.text('Desconectado'), findsOneWidget);
+      expect(find.text('Conectado'), findsOneWidget);
     });
 
     testWidgets('shows 3 tabs when a ticket arrives', (tester) async {

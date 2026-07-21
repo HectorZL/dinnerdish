@@ -1,244 +1,73 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:dinnerhome/models/user.dart';
-import 'package:dinnerhome/models/payment_method.dart';
-import 'package:dinnerhome/models/payment_status.dart';
-import 'package:dinnerhome/models/payment_summary.dart';
-import 'package:dinnerhome/models/payment_transaction.dart';
-import 'package:dinnerhome/providers/providers.dart';
-import 'package:dinnerhome/services/auth_service.dart';
-import 'package:dinnerhome/services/payment_service.dart';
-import 'package:dinnerhome/presentation/screens/cashier_pending_screen.dart';
-import 'package:dinnerhome/models/order.dart';
 
-Widget buildCashierApp(MockCashierPaymentService paymentService) {
-  final authService = MockCashierAuthService();
+import 'package:dinnerhome/models/order.dart';
+import 'package:dinnerhome/presentation/screens/cashier_pending_screen.dart';
+import 'package:dinnerhome/providers/providers.dart';
+
+Widget buildCashierApp(List<Order> orders) {
+  GoogleFonts.config.allowRuntimeFetching = false;
   return ProviderScope(
     overrides: [
-      paymentServiceProvider.overrideWithValue(paymentService),
-      authServiceProvider.overrideWithValue(authService),
-      activeOrdersProvider.overrideWith((ref) => Stream.value(<Order>[])),
+      activeOrdersProvider.overrideWith((ref) => Stream.value(orders)),
     ],
-    child: const MaterialApp(
-      home: CashierPendingScreen(),
-    ),
+    child: const MaterialApp(home: CashierPendingScreen()),
   );
 }
 
-// ── Mock Services ──────────────────────────────────────────────
-
-class MockCashierAuthService implements AuthService {
-  @override
-  Future<User> login(String username, String password) async => _mockUser;
-
-  @override
-  Future<User> loginWithTestUser(User user) async => user;
-
-  @override
-  Future<void> logout() async {}
-
-  @override
-  Future<User?> getCurrentUser() async => _mockUser;
-}
-
-const _mockUser = User(
-  id: 'user-cajero-1',
-  username: 'cajero',
-  name: 'María García',
-  role: Role.cajero,
-);
-
-class MockCashierPaymentService implements PaymentService {
-  final List<PaymentTransaction> pendingRequests;
-  final bool shouldThrow;
-  int callCount = 0;
-  final bool failThenSucceed;
-
-  MockCashierPaymentService({
-    this.pendingRequests = const [],
-    this.shouldThrow = false,
-    this.failThenSucceed = false,
-  });
-
-  @override
-  List<PaymentTransaction> watchPendingRequests() {
-    callCount++;
-    if (shouldThrow) {
-      throw Exception('Simulated payment error');
-    }
-    if (failThenSucceed && callCount == 1) {
-      throw Exception('Simulated payment error');
-    }
-    return pendingRequests;
-  }
-
-  @override
-  Future<void> requestPayment({
-    required String orderId,
-    required String requestedBy,
-    String? reason,
-  }) async {}
-
-  @override
-  Future<PaymentTransaction> processPayment({
-    required String orderId,
-    required int amountCents,
-    required PaymentMethod method,
-    required String processedBy,
-  }) async {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<List<PaymentTransaction>> getPaymentHistory(String orderId) async => [];
-
-  @override
-  Future<List<PaymentTransaction>> splitPayment({
-    required String orderId,
-    required List<int> splitAmountsCents,
-    required String processedBy,
-  }) async {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<PaymentTransaction> refundPayment(String transactionId) async {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<List<PaymentSummary>> getPaymentSummaryByMethod({
-    required DateTime startDate,
-    required DateTime endDate,
-  }) async => [];
-}
-
-PaymentTransaction makePendingRequest({
+Order makeBilledOrder({
   required String id,
-  required String orderId,
-  String requestedBy = 'waiter-1',
+  required String tableId,
+  int totalCents = 1200,
 }) {
-  return PaymentTransaction(
+  return Order(
     id: id,
-    orderId: orderId,
-    processedBy: requestedBy,
-    amountCents: 1,
-    method: PaymentMethod.cash,
-    status: PaymentStatus.requested,
+    tableId: tableId,
+    waiterId: 'waiter-1',
+    items: const [],
+    status: OrderStatus.billed,
+    subtotalCents: totalCents,
+    taxCents: 0,
+    totalCents: totalCents,
     createdAt: DateTime(2026, 5, 8, 14, 30),
   );
 }
 
-
-
-// ── Tests ──────────────────────────────────────────────────────
-
 void main() {
-  setUp(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
+  group('CashierPendingScreen', () {
+    testWidgets('renders the billed orders screen', (tester) async {
+      await tester.pumpWidget(buildCashierApp([]));
+      await tester.pumpAndSettle();
 
-  group('CashierScreen', () {
-    testWidgets('renders without crashing', (tester) async {
-      final paymentService = MockCashierPaymentService(pendingRequests: []);
-
-      await tester.pumpWidget(buildCashierApp(paymentService));
-      await tester.pump();
-
-      // Screen renders without crash - app bar title
-      expect(find.text('Solicitudes de Pago'), findsOneWidget);
+      expect(find.text('Pendientes de Cobro'), findsOneWidget);
     });
 
-    testWidgets('shows empty state when no pending requests', (tester) async {
-      final paymentService = MockCashierPaymentService(pendingRequests: []);
+    testWidgets('shows the empty state when no order is billed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildCashierApp([]));
+      await tester.pumpAndSettle();
 
-      await tester.pumpWidget(buildCashierApp(paymentService));
-      await tester.pump();
-      await tester.pump();
-
-      expect(
-        find.text('No hay solicitudes de pago pendientes'),
-        findsOneWidget,
-      );
+      expect(find.text('Sin órdenes pendientes'), findsOneWidget);
     });
 
-    testWidgets('renders list of pending payment requests', (tester) async {
-      final paymentService = MockCashierPaymentService(
-        pendingRequests: [
-          makePendingRequest(id: 'req-1', orderId: 'order-1'),
-          makePendingRequest(id: 'req-2', orderId: 'order-2'),
-        ],
-      );
+    testWidgets('renders billed orders and ignores orders in other states', (
+      tester,
+    ) async {
+      final billedOrder = makeBilledOrder(id: 'order-1', tableId: 'table-5');
+      final readyOrder = makeBilledOrder(
+        id: 'order-2',
+        tableId: 'table-6',
+      ).copyWith(status: OrderStatus.ready);
 
-      await tester.pumpWidget(buildCashierApp(paymentService));
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpWidget(buildCashierApp([billedOrder, readyOrder]));
+      await tester.pumpAndSettle();
 
-      // Order IDs displayed
-      expect(find.textContaining('order-1'), findsOneWidget);
-      expect(find.textContaining('order-2'), findsOneWidget);
-
-      // Requested by info
-      expect(find.textContaining('waiter-1'), findsAtLeastNWidgets(1));
-
-      // Date/time displayed
-      expect(find.textContaining('08/05/2026'), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('shows error state when service throws', (tester) async {
-      final paymentService = MockCashierPaymentService(shouldThrow: true);
-
-      await tester.pumpWidget(buildCashierApp(paymentService));
-      await tester.pump();
-      await tester.pump();
-
-      // Error message is displayed
-      expect(find.textContaining('Simulated payment error'), findsOneWidget);
-
-      // Retry button is present
-      expect(find.text('Reintentar'), findsOneWidget);
-    });
-
-    testWidgets('retry button triggers reload after error', (tester) async {
-      final paymentService = MockCashierPaymentService(
-        failThenSucceed: true,
-        pendingRequests: [
-          makePendingRequest(id: 'req-3', orderId: 'order-3'),
-        ],
-      );
-
-      await tester.pumpWidget(buildCashierApp(paymentService));
-      await tester.pump();
-      await tester.pump();
-
-      // First call throws → error state with retry button
-      expect(find.text('Reintentar'), findsOneWidget);
-
-      // Tap retry → triggers _loadPendingRequests again
-      await tester.tap(find.text('Reintentar'));
-      await tester.pump();
-      await tester.pump();
-
-      // Now the request should appear
-      expect(find.textContaining('order-3'), findsOneWidget);
-      expect(find.text('No hay solicitudes de pago pendientes'), findsNothing);
-    });
-
-    testWidgets('tapping a request card triggers navigation', (tester) async {
-      final paymentService = MockCashierPaymentService(
-        pendingRequests: [
-          makePendingRequest(id: 'req-1', orderId: 'order-42'),
-        ],
-      );
-
-      await tester.pumpWidget(buildCashierApp(paymentService));
-      await tester.pump();
-      await tester.pump();
-
-      // Verify the card is rendered with the order ID
-      expect(find.textContaining('order-42'), findsOneWidget);
+      expect(find.text('Mesa table-5'), findsOneWidget);
+      expect(find.text('Mesa table-6'), findsNothing);
+      expect(find.text(r'$12.00'), findsOneWidget);
     });
   });
 }

@@ -17,7 +17,6 @@ class MainMenuDashboardScreen extends ConsumerStatefulWidget {
 
 class _MainMenuDashboardScreenState
     extends ConsumerState<MainMenuDashboardScreen> {
-
   @override
   Widget build(BuildContext context) {
     final currentUser = ref.watch(currentUserProvider).value;
@@ -28,44 +27,71 @@ class _MainMenuDashboardScreenState
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      drawer: (isLoggedIn && RouteGuard.canAccessAdmin(currentUser)) 
+      drawer: (isLoggedIn && RouteGuard.canAccessAdmin(currentUser))
           ? Drawer(
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
                   const DrawerHeader(
-                    decoration: BoxDecoration(color: AppColors.primaryContainer),
-                    child: Text('SABOR Y HOGAR', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                    ),
+                    child: Text(
+                      'SABOR Y HOGAR',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   ListTile(
                     leading: const Icon(Icons.home),
                     title: const Text('Inicio'),
-                    onTap: () { context.go('/menu'); Navigator.pop(context); },
+                    onTap: () {
+                      context.go('/menu');
+                      Navigator.pop(context);
+                    },
                   ),
                   ListTile(
                     leading: const Icon(Icons.receipt_long),
                     title: const Text('Pedidos'),
-                    onTap: () { context.go('/orders/tracking'); Navigator.pop(context); },
+                    onTap: () {
+                      context.go('/orders/tracking');
+                      Navigator.pop(context);
+                    },
                   ),
                   ListTile(
                     leading: const Icon(Icons.restaurant_menu),
                     title: const Text('Cocina'),
-                    onTap: () { context.go('/kds'); Navigator.pop(context); },
+                    onTap: () {
+                      context.go('/kds');
+                      Navigator.pop(context);
+                    },
                   ),
                   ListTile(
                     leading: const Icon(Icons.table_restaurant),
                     title: const Text('Mesas'),
-                    onTap: () { context.go('/tables'); Navigator.pop(context); },
+                    onTap: () {
+                      context.go('/tables');
+                      Navigator.pop(context);
+                    },
                   ),
                   ListTile(
                     leading: const Icon(Icons.menu_book),
                     title: const Text('Menú'),
-                    onTap: () { context.go('/admin/menu'); Navigator.pop(context); },
+                    onTap: () {
+                      context.go('/admin/menu');
+                      Navigator.pop(context);
+                    },
                   ),
                   ListTile(
                     leading: const Icon(Icons.people),
                     title: const Text('Usuarios'),
-                    onTap: () { context.go('/admin/users'); Navigator.pop(context); },
+                    onTap: () {
+                      context.go('/admin/users');
+                      Navigator.pop(context);
+                    },
                   ),
                 ],
               ),
@@ -79,7 +105,11 @@ class _MainMenuDashboardScreenState
               navLinks: isDesktop
                   ? [
                       const NavLink('Inicio', true, route: '/menu'),
-                      const NavLink('Pedidos', false, route: '/orders/tracking'),
+                      const NavLink(
+                        'Pedidos',
+                        false,
+                        route: '/orders/tracking',
+                      ),
                       const NavLink('Mesas', false, route: '/tables'),
                       if (RouteGuard.canAccessAdmin(currentUser))
                         const NavLink('Menú', false, route: '/admin/menu'),
@@ -97,7 +127,7 @@ class _MainMenuDashboardScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Quick Summary Section
-                        _buildQuickSummary(activeOrders, ref),
+                        _buildQuickSummary(activeOrders, ref, currentUser),
                         const SizedBox(height: AppSpacing.lg),
                         // Bento Style Module Grid
                         _buildModuleGrid(isLoggedIn, currentUser),
@@ -113,25 +143,37 @@ class _MainMenuDashboardScreenState
           ],
         ),
       ),
-      bottomNavigationBar: (!isDesktop && !(isLoggedIn && RouteGuard.canAccessAdmin(currentUser))) 
-        ? StitchBottomNavBar(
-            currentRoute: '/menu',
-            currentUser: currentUser,
-          ) 
-        : null,
+      bottomNavigationBar:
+          (!isDesktop &&
+              !(isLoggedIn && RouteGuard.canAccessAdmin(currentUser)))
+          ? StitchBottomNavBar(currentRoute: '/menu', currentUser: currentUser)
+          : null,
     );
   }
 
-  Widget _buildQuickSummary(List<Order> activeOrders, WidgetRef ref) {
+  Widget _buildQuickSummary(
+    List<Order> activeOrders,
+    WidgetRef ref,
+    dynamic currentUser,
+  ) {
     final activeCount = activeOrders.length;
-    final todayOrders = activeOrders.where((o) => o.createdAt.day == DateTime.now().day).toList();
-    final revenue = todayOrders.fold<int>(0, (sum, o) => sum + o.totalCents) / 100;
+    final todayOrders = activeOrders
+        .where((o) => o.createdAt.day == DateTime.now().day)
+        .toList();
+    final revenue =
+        todayOrders.fold<int>(0, (sum, o) => sum + o.totalCents) / 100;
+    final canViewRevenue = RouteGuard.canAccessPayment(
+      currentUser,
+      ref.watch(rolePermissionsProvider),
+    );
 
     final tablesAsync = ref.watch(tablesProvider);
     final tables = tablesAsync.value ?? [];
     final totalTables = tables.length;
-    final occupiedTables = tables.where((t) => t.status != table_model.TableStatus.available).length;
-    
+    final occupiedTables = tables
+        .where((t) => t.status != table_model.TableStatus.available)
+        .length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -161,7 +203,10 @@ class _MainMenuDashboardScreenState
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryContainer,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.xl),
                 ),
@@ -176,20 +221,44 @@ class _MainMenuDashboardScreenState
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 600;
             return GridView.count(
-              crossAxisCount: isWide ? 4 : 2,
+              crossAxisCount: isWide ? (canViewRevenue ? 4 : 3) : 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: AppSpacing.md,
               mainAxisSpacing: AppSpacing.md,
               childAspectRatio: isWide ? 1.6 : 1.3,
               children: [
-                _buildStatCard('PEDIDOS ACTIVOS', '$activeCount', '+${todayOrders.length} hoy', AppColors.primaryContainer),
-                _buildStatCard('MESAS OCUPADAS', '$occupiedTables/$totalTables', null, AppColors.tertiaryContainer,
-                    showProgress: true, progressValue: totalTables > 0 ? occupiedTables / totalTables : 0),
-                _buildStatCard('FACTURACIÓN', '${revenue.toStringAsFixed(2)}€', null, AppColors.tertiary,
-                    showIcon: Icons.trending_up),
-                _buildStatCard('TIEMPO MEDIO', '12 min', null, AppColors.error,
-                    showIcon: Icons.timer),
+                _buildStatCard(
+                  'PEDIDOS ACTIVOS',
+                  '$activeCount',
+                  '+${todayOrders.length} hoy',
+                  AppColors.primaryContainer,
+                ),
+                _buildStatCard(
+                  'MESAS OCUPADAS',
+                  '$occupiedTables/$totalTables',
+                  null,
+                  AppColors.tertiaryContainer,
+                  showProgress: true,
+                  progressValue: totalTables > 0
+                      ? occupiedTables / totalTables
+                      : 0,
+                ),
+                if (canViewRevenue)
+                  _buildStatCard(
+                    'FACTURACIÓN',
+                    '${revenue.toStringAsFixed(2)}€',
+                    null,
+                    AppColors.tertiary,
+                    showIcon: Icons.trending_up,
+                  ),
+                _buildStatCard(
+                  'TIEMPO MEDIO',
+                  '12 min',
+                  null,
+                  AppColors.error,
+                  showIcon: Icons.timer,
+                ),
               ],
             );
           },
@@ -218,16 +287,29 @@ class _MainMenuDashboardScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(value, style: AppTypography.h2()))),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(value, style: AppTypography.h2()),
+                ),
+              ),
               if (badge != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primaryFixed,
                     borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
-                  child: Text(badge,
-                      style: AppTypography.statusBadge(color: AppColors.primaryContainer)),
+                  child: Text(
+                    badge,
+                    style: AppTypography.statusBadge(
+                      color: AppColors.primaryContainer,
+                    ),
+                  ),
                 ),
               if (showIcon != null)
                 Icon(showIcon, color: accentColor, size: 24),
@@ -252,19 +334,19 @@ class _MainMenuDashboardScreenState
 
   Widget _buildModuleGrid(bool isLoggedIn, dynamic currentUser) {
     final modules = <Widget>[];
-    
+
     if (RouteGuard.canAccessOrders(currentUser)) {
       modules.add(_buildOrdersModule(isLoggedIn, currentUser));
     }
-    
+
     if (RouteGuard.canAccessKds(currentUser)) {
       modules.add(_buildKdsModule(isLoggedIn, currentUser));
     }
-    
+
     if (RouteGuard.canAccessPayment(currentUser)) {
       modules.add(_buildCashierModule(isLoggedIn, currentUser));
     }
-    
+
     if (RouteGuard.canAccessAdmin(currentUser)) {
       modules.add(_buildAdminModule(isLoggedIn, currentUser));
       modules.add(_buildReportModule(isLoggedIn, currentUser));
@@ -288,16 +370,11 @@ class _MainMenuDashboardScreenState
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    flex: 12,
-                    child: Column(children: spacedModules),
-                  ),
+                  Expanded(flex: 12, child: Column(children: spacedModules)),
                 ],
               )
             else
-              Column(
-                children: spacedModules,
-              ),
+              Column(children: spacedModules),
           ],
         );
       },
@@ -308,9 +385,13 @@ class _MainMenuDashboardScreenState
     final canAccess = isLoggedIn && RouteGuard.canAccessOrders(currentUser);
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
     final activeOrders = activeOrdersAsync.value ?? [];
-    
-    final inKitchenOrders = activeOrders.where((o) => o.status == OrderStatus.prepping).length;
-    final readyOrders = activeOrders.where((o) => o.status == OrderStatus.ready).length;
+
+    final inKitchenOrders = activeOrders
+        .where((o) => o.status == OrderStatus.prepping)
+        .length;
+    final readyOrders = activeOrders
+        .where((o) => o.status == OrderStatus.ready)
+        .length;
 
     return GestureDetector(
       onTap: canAccess ? () => context.go('/orders/create') : null,
@@ -333,15 +414,20 @@ class _MainMenuDashboardScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primaryFixed,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                       ),
-                      child: Text('MÓDULO CRÍTICO',
-                          style: AppTypography.labelCaps(
-                              color: AppColors.primaryContainer)),
-
+                      child: Text(
+                        'MÓDULO CRÍTICO',
+                        style: AppTypography.labelCaps(
+                          color: AppColors.primaryContainer,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.base),
                     Text('Gestión de Pedidos', style: AppTypography.h2()),
@@ -350,7 +436,9 @@ class _MainMenuDashboardScreenState
                       width: 280,
                       child: Text(
                         'Supervisa las comandas en tiempo real, desde la entrada hasta el servicio.',
-                        style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
+                        style: AppTypography.bodyMd(
+                          color: const Color(0xFF64748B),
+                        ),
                       ),
                     ),
                   ],
@@ -369,20 +457,31 @@ class _MainMenuDashboardScreenState
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.outdoor_grill, color: AppColors.primaryContainer, size: 20),
+                        Icon(
+                          Icons.outdoor_grill,
+                          color: AppColors.primaryContainer,
+                          size: 20,
+                        ),
                         const SizedBox(width: AppSpacing.base),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('EN COCINA',
-                                  style: AppTypography.statusBadge(
-                                      color: const Color(0xFF94A3B8))),
+                              Text(
+                                'EN COCINA',
+                                style: AppTypography.statusBadge(
+                                  color: const Color(0xFF94A3B8),
+                                ),
+                              ),
                               FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
-                                child: Text('$inKitchenOrders Pedidos',
-                                    style: AppTypography.h3(color: AppColors.onSurface)),
+                                child: Text(
+                                  '$inKitchenOrders Pedidos',
+                                  style: AppTypography.h3(
+                                    color: AppColors.onSurface,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -401,20 +500,31 @@ class _MainMenuDashboardScreenState
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.check_circle, color: AppColors.tertiary, size: 20),
+                        Icon(
+                          Icons.check_circle,
+                          color: AppColors.tertiary,
+                          size: 20,
+                        ),
                         const SizedBox(width: AppSpacing.base),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('POR SERVIR',
-                                  style: AppTypography.statusBadge(
-                                      color: const Color(0xFF94A3B8))),
+                              Text(
+                                'POR SERVIR',
+                                style: AppTypography.statusBadge(
+                                  color: const Color(0xFF94A3B8),
+                                ),
+                              ),
                               FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
-                                child: Text('$readyOrders Listos',
-                                    style: AppTypography.h3(color: AppColors.onSurface)),
+                                child: Text(
+                                  '$readyOrders Listos',
+                                  style: AppTypography.h3(
+                                    color: AppColors.onSurface,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -435,8 +545,14 @@ class _MainMenuDashboardScreenState
     final canAccess = isLoggedIn && RouteGuard.canAccessKds(currentUser);
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
     final activeOrders = activeOrdersAsync.value ?? [];
-    
-    final inKitchenOrders = activeOrders.where((o) => o.status == OrderStatus.sentToKitchen || o.status == OrderStatus.prepping).length;
+
+    final inKitchenOrders = activeOrders
+        .where(
+          (o) =>
+              o.status == OrderStatus.sentToKitchen ||
+              o.status == OrderStatus.prepping,
+        )
+        .length;
 
     return GestureDetector(
       onTap: canAccess ? () => context.go('/kds') : null,
@@ -459,7 +575,10 @@ class _MainMenuDashboardScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Pantalla KDS - Cocina', style: AppTypography.h2(color: Colors.black87)),
+                Text(
+                  'Pantalla KDS - Cocina',
+                  style: AppTypography.h2(color: Colors.black87),
+                ),
                 const Icon(Icons.kitchen, color: Colors.black87, size: 32),
               ],
             ),
@@ -492,8 +611,10 @@ class _MainMenuDashboardScreenState
     final canAccess = isLoggedIn && RouteGuard.canAccessPayment(currentUser);
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
     final activeOrders = activeOrdersAsync.value ?? [];
-    
-    final pendingPaymentOrders = activeOrders.where((o) => o.status == OrderStatus.ready).length;
+
+    final pendingPaymentOrders = activeOrders
+        .where((o) => o.status == OrderStatus.ready)
+        .length;
 
     return GestureDetector(
       onTap: canAccess ? () => context.go('/cashier/pending') : null,
@@ -516,7 +637,10 @@ class _MainMenuDashboardScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Caja y Cobros', style: AppTypography.h2(color: Colors.white)),
+                Text(
+                  'Caja y Cobros',
+                  style: AppTypography.h2(color: Colors.white),
+                ),
                 const Icon(Icons.point_of_sale, color: Colors.white, size: 32),
               ],
             ),
@@ -545,9 +669,6 @@ class _MainMenuDashboardScreenState
     );
   }
 
-
-
-
   Widget _buildReportModule(bool isLoggedIn, dynamic currentUser) {
     final canAccess = isLoggedIn && RouteGuard.canAccessAdmin(currentUser);
     return GestureDetector(
@@ -574,9 +695,16 @@ class _MainMenuDashboardScreenState
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Administración', style: AppTypography.h3(color: Colors.white)),
-                    Text('Reportes y Configuración',
-                        style: AppTypography.bodyMd(color: const Color(0xFF94A3B8))),
+                    Text(
+                      'Administración',
+                      style: AppTypography.h3(color: Colors.white),
+                    ),
+                    Text(
+                      'Reportes y Configuración',
+                      style: AppTypography.bodyMd(
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   ],
                 ),
                 Icon(Icons.settings, color: const Color(0xFF94A3B8), size: 24),
@@ -586,10 +714,18 @@ class _MainMenuDashboardScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Rendimiento Mensual',
-                    style: AppTypography.statusBadge(color: const Color(0xFF94A3B8))),
-                Text('+12.4%',
-                    style: AppTypography.statusBadge(color: AppColors.primaryContainer)),
+                Text(
+                  'Rendimiento Mensual',
+                  style: AppTypography.statusBadge(
+                    color: const Color(0xFF94A3B8),
+                  ),
+                ),
+                Text(
+                  '+12.4%',
+                  style: AppTypography.statusBadge(
+                    color: AppColors.primaryContainer,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.base),
@@ -639,9 +775,16 @@ class _MainMenuDashboardScreenState
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Administración', style: AppTypography.h3(color: Colors.white)),
-                    Text('Administrar menu',
-                        style: AppTypography.bodyMd(color: const Color(0xFF94A3B8))),
+                    Text(
+                      'Administración',
+                      style: AppTypography.h3(color: Colors.white),
+                    ),
+                    Text(
+                      'Administrar menu',
+                      style: AppTypography.bodyMd(
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   ],
                 ),
                 Icon(Icons.settings, color: const Color(0xFF94A3B8), size: 24),
@@ -651,8 +794,12 @@ class _MainMenuDashboardScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Añadir, editar y eliminar platos',
-                    style: AppTypography.statusBadge(color: const Color(0xFF94A3B8))),
+                Text(
+                  'Añadir, editar y eliminar platos',
+                  style: AppTypography.statusBadge(
+                    color: const Color(0xFF94A3B8),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.base),
@@ -662,7 +809,7 @@ class _MainMenuDashboardScreenState
     );
   }
 
-    Widget _buildUserManagementModule(bool isLoggedIn, dynamic currentUser) {
+  Widget _buildUserManagementModule(bool isLoggedIn, dynamic currentUser) {
     final canAccess = isLoggedIn && RouteGuard.canAccessAdmin(currentUser);
     return GestureDetector(
       onTap: canAccess ? () => context.go('/admin/users') : null,
@@ -688,9 +835,16 @@ class _MainMenuDashboardScreenState
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Administración', style: AppTypography.h3(color: Colors.white)),
-                    Text('Administrar usuarios',
-                        style: AppTypography.bodyMd(color: const Color(0xFF94A3B8))),
+                    Text(
+                      'Administración',
+                      style: AppTypography.h3(color: Colors.white),
+                    ),
+                    Text(
+                      'Administrar usuarios',
+                      style: AppTypography.bodyMd(
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   ],
                 ),
                 Icon(Icons.settings, color: const Color(0xFF94A3B8), size: 24),
@@ -700,8 +854,12 @@ class _MainMenuDashboardScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Añadir, editar y eliminar usuarios',
-                    style: AppTypography.statusBadge(color: const Color(0xFF94A3B8))),
+                Text(
+                  'Añadir, editar y eliminar usuarios',
+                  style: AppTypography.statusBadge(
+                    color: const Color(0xFF94A3B8),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.base),
@@ -735,29 +893,48 @@ class _MainMenuDashboardScreenState
             children: [
               // Table Header
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 color: const Color(0xFFF8FAFC),
                 child: Row(
                   children: [
                     Expanded(
                       flex: 3,
-                      child: Text('MESA',
-                          style: AppTypography.labelCaps(color: const Color(0xFF64748B))),
+                      child: Text(
+                        'MESA',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
                     ),
                     Expanded(
                       flex: 3,
-                      child: Text('ESTADO',
-                          style: AppTypography.labelCaps(color: const Color(0xFF64748B))),
+                      child: Text(
+                        'ESTADO',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
                     ),
                     Expanded(
                       flex: 2,
-                      child: Text('TOTAL',
-                          style: AppTypography.labelCaps(color: const Color(0xFF64748B))),
+                      child: Text(
+                        'TOTAL',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
                     ),
                     Expanded(
                       flex: 1,
-                      child: Text('ACCIÓN',
-                          style: AppTypography.labelCaps(color: const Color(0xFF64748B))),
+                      child: Text(
+                        'ACCIÓN',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -767,7 +944,10 @@ class _MainMenuDashboardScreenState
                 const Padding(
                   padding: EdgeInsets.all(24.0),
                   child: Center(
-                    child: Text('No hay pedidos recientes', style: TextStyle(color: Color(0xFF64748B))),
+                    child: Text(
+                      'No hay pedidos recientes',
+                      style: TextStyle(color: Color(0xFF64748B)),
+                    ),
                   ),
                 )
               else
@@ -775,12 +955,12 @@ class _MainMenuDashboardScreenState
                   return Column(
                     children: [
                       _buildOrderRow(
-                        'Mesa ${order.tableId.isEmpty ? 'S/A' : order.tableId}', 
-                        'Salón', 
-                        order.status.name, 
-                        AppColors.primaryContainer, 
-                        '${(order.totalCents / 100).toStringAsFixed(2)}€', 
-                        Icons.visibility
+                        'Mesa ${order.tableId.isEmpty ? 'S/A' : order.tableId}',
+                        'Salón',
+                        order.status.name,
+                        AppColors.primaryContainer,
+                        '${(order.totalCents / 100).toStringAsFixed(2)}€',
+                        Icons.visibility,
                       ),
                       const Divider(height: 1, color: Color(0xFFF8FAFC)),
                     ],
@@ -810,14 +990,20 @@ class _MainMenuDashboardScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tableName,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodyMd(
-                        color: AppColors.onSurface).copyWith(fontWeight: FontWeight.bold)),
-                Text(location,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.statusBadge(
-                        color: const Color(0xFF94A3B8))),
+                Text(
+                  tableName,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodyMd(
+                    color: AppColors.onSurface,
+                  ).copyWith(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  location,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.statusBadge(
+                    color: const Color(0xFF94A3B8),
+                  ),
+                ),
               ],
             ),
           ),
@@ -842,9 +1028,11 @@ class _MainMenuDashboardScreenState
                   ),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(status,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.statusBadge(color: statusColor)),
+                    child: Text(
+                      status,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.statusBadge(color: statusColor),
+                    ),
                   ),
                 ],
               ),
@@ -852,14 +1040,21 @@ class _MainMenuDashboardScreenState
           ),
           Expanded(
             flex: 2,
-            child: Text(total,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.bodyMd(
-                    color: AppColors.onSurface).copyWith(fontWeight: FontWeight.bold)),
+            child: Text(
+              total,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.bodyMd(
+                color: AppColors.onSurface,
+              ).copyWith(fontWeight: FontWeight.bold),
+            ),
           ),
           Expanded(
             flex: 1,
-            child: Icon(actionIcon, color: AppColors.primaryContainer, size: 20),
+            child: Icon(
+              actionIcon,
+              color: AppColors.primaryContainer,
+              size: 20,
+            ),
           ),
         ],
       ),

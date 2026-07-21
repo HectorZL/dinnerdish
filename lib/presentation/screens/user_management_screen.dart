@@ -1074,9 +1074,12 @@ class _UserFormDialog extends StatefulWidget {
 }
 
 class _UserFormDialogState extends State<_UserFormDialog> {
+  static const _initialStaffPassword = '123456789';
+
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _usernameController;
   late TextEditingController _nameController;
+  late TextEditingController _lastNameController;
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
   late Role _role;
@@ -1084,12 +1087,18 @@ class _UserFormDialogState extends State<_UserFormDialog> {
 
   bool get _isEditing => widget.existingUser != null;
 
+  String get _generatedUsername => _normaliseForAccount(_nameController.text);
+
+  String get _generatedEmail =>
+      _generatedUsername.isEmpty ? '' : '$_generatedUsername@dinner.com';
+
   @override
   void initState() {
     super.initState();
     final user = widget.existingUser;
     _usernameController = TextEditingController(text: user?.username ?? '');
     _nameController = TextEditingController(text: user?.name ?? '');
+    _lastNameController = TextEditingController();
     _emailController = TextEditingController(text: user?.email ?? '');
     _passwordController = TextEditingController();
     _role = user?.role ?? Role.mesero;
@@ -1100,26 +1109,60 @@ class _UserFormDialogState extends State<_UserFormDialog> {
   void dispose() {
     _usernameController.dispose();
     _nameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  String _normaliseForAccount(String value) {
+    const replacements = {
+      'á': 'a',
+      'é': 'e',
+      'í': 'i',
+      'ó': 'o',
+      'ú': 'u',
+      'ü': 'u',
+      'ñ': 'n',
+    };
+    var normalised = value.trim().toLowerCase();
+    replacements.forEach((source, replacement) {
+      normalised = normalised.replaceAll(source, replacement);
+    });
+    return normalised.replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+
+  String? _validateFirstName(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Requerido';
+    if (_generatedUsername.length < 3 || _generatedUsername.length > 32) {
+      return 'El nombre debe generar entre 3 y 32 caracteres para el acceso.';
+    }
+    return null;
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    final password = _passwordController.text.trim().isNotEmpty
-        ? _passwordController.text.trim()
-        : widget.existingUser?.password;
+    final password = _isEditing
+        ? (_passwordController.text.trim().isNotEmpty
+              ? _passwordController.text.trim()
+              : widget.existingUser?.password)
+        : _initialStaffPassword;
+    final fullName = _isEditing
+        ? _nameController.text.trim()
+        : '${_nameController.text.trim()} ${_lastNameController.text.trim()}'
+              .trim();
 
     final user = User(
       id:
           widget.existingUser?.id ??
           'user-${DateTime.now().millisecondsSinceEpoch}',
-      username: _usernameController.text.trim(),
-      name: _nameController.text.trim(),
+      username: _isEditing
+          ? _usernameController.text.trim()
+          : _generatedUsername,
+      name: fullName,
       role: _role,
-      email: _emailController.text.trim(),
+      email: _isEditing ? _emailController.text.trim() : _generatedEmail,
       isActive: _isActive,
       lastLogin: widget.existingUser?.lastLogin ?? 'Nunca',
       token: widget.existingUser?.token,
@@ -1246,78 +1289,142 @@ class _UserFormDialogState extends State<_UserFormDialog> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Datos de Cuenta',
+                                _isEditing
+                                    ? 'Datos de Cuenta'
+                                    : 'Datos del personal',
                                 style: AppTypography.h3(
                                   color: AppColors.primaryContainer,
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.md),
-                              TextFormField(
-                                controller: _nameController,
-                                style: AppTypography.bodyMd(
-                                  color: AppColors.onSurface,
+                              if (_isEditing) ...[
+                                TextFormField(
+                                  controller: _nameController,
+                                  style: AppTypography.bodyMd(
+                                    color: AppColors.onSurface,
+                                  ),
+                                  decoration: _inputDecoration(
+                                    'Nombre completo',
+                                  ),
+                                  validator: (v) =>
+                                      (v == null || v.trim().isEmpty)
+                                      ? 'Requerido'
+                                      : null,
                                 ),
-                                decoration: _inputDecoration('Nombre completo'),
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty)
-                                    ? 'Requerido'
-                                    : null,
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              TextFormField(
-                                controller: _usernameController,
-                                style: AppTypography.bodyMd(
-                                  color: AppColors.onSurface,
+                                const SizedBox(height: AppSpacing.md),
+                                TextFormField(
+                                  controller: _usernameController,
+                                  style: AppTypography.bodyMd(
+                                    color: AppColors.onSurface,
+                                  ),
+                                  decoration: _inputDecoration(
+                                    'Nombre de usuario (Login)',
+                                  ),
+                                  validator: (v) =>
+                                      (v == null || v.trim().isEmpty)
+                                      ? 'Requerido'
+                                      : null,
                                 ),
-                                decoration: _inputDecoration(
-                                  'Nombre de usuario (Login)',
+                                const SizedBox(height: AppSpacing.md),
+                                TextFormField(
+                                  controller: _emailController,
+                                  style: AppTypography.bodyMd(
+                                    color: AppColors.onSurface,
+                                  ),
+                                  decoration: _inputDecoration(
+                                    'Correo electrónico',
+                                  ),
+                                  keyboardType: TextInputType.emailAddress,
+                                  validator: (v) {
+                                    if (v == null || v.trim().isEmpty) {
+                                      return 'Requerido';
+                                    }
+                                    if (!v.contains('@')) {
+                                      return 'Email no válido';
+                                    }
+                                    return null;
+                                  },
                                 ),
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty)
-                                    ? 'Requerido'
-                                    : null,
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              TextFormField(
-                                controller: _emailController,
-                                style: AppTypography.bodyMd(
-                                  color: AppColors.onSurface,
+                                const SizedBox(height: AppSpacing.md),
+                                TextFormField(
+                                  controller: _passwordController,
+                                  style: AppTypography.bodyMd(
+                                    color: AppColors.onSurface,
+                                  ),
+                                  decoration: _inputDecoration(
+                                    'Nueva contraseña (opcional)',
+                                  ),
+                                  obscureText: true,
                                 ),
-                                decoration: _inputDecoration(
-                                  'Correo electrónico',
+                                const SizedBox(height: AppSpacing.md),
+                              ] else ...[
+                                TextFormField(
+                                  controller: _nameController,
+                                  style: AppTypography.bodyMd(
+                                    color: AppColors.onSurface,
+                                  ),
+                                  decoration: _inputDecoration('Nombre'),
+                                  onChanged: (_) => setState(() {}),
+                                  validator: _validateFirstName,
                                 ),
-                                keyboardType: TextInputType.emailAddress,
-                                validator: (v) {
-                                  if (v == null || v.trim().isEmpty)
-                                    return 'Requerido';
-                                  if (!v.contains('@'))
-                                    return 'Email no válido';
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              TextFormField(
-                                controller: _passwordController,
-                                style: AppTypography.bodyMd(
-                                  color: AppColors.onSurface,
+                                const SizedBox(height: AppSpacing.md),
+                                TextFormField(
+                                  controller: _lastNameController,
+                                  style: AppTypography.bodyMd(
+                                    color: AppColors.onSurface,
+                                  ),
+                                  decoration: _inputDecoration('Apellido'),
+                                  validator: (v) =>
+                                      (v == null || v.trim().isEmpty)
+                                      ? 'Requerido'
+                                      : null,
                                 ),
-                                decoration: _inputDecoration(
-                                  _isEditing
-                                      ? 'Nueva contraseña (opcional)'
-                                      : 'Contraseña',
+                                const SizedBox(height: AppSpacing.md),
+                                Container(
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryContainer
+                                        .withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.lg,
+                                    ),
+                                    border: Border.all(
+                                      color: AppColors.primaryContainer
+                                          .withValues(alpha: 0.2),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Credenciales de acceso',
+                                        style: AppTypography.bodyMd(
+                                          color: AppColors.onSurface,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Text(
+                                        'Correo: ${_generatedEmail.isEmpty ? 'Completa el nombre' : _generatedEmail}',
+                                        style: AppTypography.bodyMd(
+                                          color: AppColors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Contraseña inicial: $_initialStaffPassword',
+                                        style: AppTypography.bodyMd(
+                                          color: AppColors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                obscureText: true,
-                                validator: (v) {
-                                  if (!_isEditing &&
-                                      (v == null || v.trim().isEmpty)) {
-                                    return 'Requerido';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: AppSpacing.md),
+                                const SizedBox(height: AppSpacing.md),
+                              ],
                               DropdownButtonFormField<Role>(
-                                value: _role,
+                                initialValue: _role,
                                 dropdownColor: Colors.white,
                                 style: AppTypography.bodyMd(
                                   color: AppColors.onSurface,
@@ -1349,7 +1456,8 @@ class _UserFormDialogState extends State<_UserFormDialog> {
                                     value: _isActive,
                                     onChanged: (v) =>
                                         setState(() => _isActive = v),
-                                    activeColor: AppColors.primaryContainer,
+                                    activeThumbColor:
+                                        AppColors.primaryContainer,
                                   ),
                                 ],
                               ),

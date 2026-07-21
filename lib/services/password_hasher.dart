@@ -29,15 +29,27 @@ class PasswordHasher {
     if (!isHash(storedValue)) return _constantTimeEquals(password, storedValue);
 
     final parts = storedValue.split(':');
-    final candidate = sha256.convert(utf8.encode('${parts[0]}:$password')).toString();
+    final candidate = sha256
+        .convert(utf8.encode('${parts[0]}:$password'))
+        .toString();
     return _constantTimeEquals(candidate, parts[1]);
   }
+
+  /// Contraseña inicial asignada por el alta administrativa de personal.
+  ///
+  /// Debe comunicarse de forma segura al empleado y cambiarse en cuanto se
+  /// incorpore una política de cambio obligatorio de contraseña.
+  static const initialStaffPassword = '123456789';
 
   static bool isStrong(String password) {
     return password.length >= 8 &&
         RegExp(r'[a-z]').hasMatch(password) &&
         RegExp(r'[A-Z]').hasMatch(password) &&
         RegExp(r'\d').hasMatch(password);
+  }
+
+  static bool isAllowedForNewStaffAccount(String password) {
+    return password == initialStaffPassword || isStrong(password);
   }
 
   static bool _constantTimeEquals(String left, String right) {

@@ -322,58 +322,268 @@ class _GlobalAdditionalFormDialogState
     Navigator.of(context).pop(additional);
   }
 
+  bool get _isEditing => widget.existing != null;
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(
+        color: Color(0xFF594138),
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFE2D5D0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFE2D5D0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFF26522), width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.error),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
-        widget.existing == null ? 'Nuevo adicional' : 'Editar adicional',
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl * 1.5),
       ),
-      content: Form(
-        key: _formKey,
+      backgroundColor: const Color(0xFFF8FAFC),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.95,
+        constraints: BoxConstraints(
+          maxWidth: 560,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nombre'),
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Ingresa un nombre'
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _priceController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.xl * 1.5),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-              decoration: const InputDecoration(labelText: 'Precio'),
-              validator: (value) {
-                final parsed = double.tryParse(
-                  (value ?? '').replaceAll(',', '.'),
-                );
-                if (parsed == null || parsed < 0) {
-                  return 'Ingresa un precio válido';
-                }
-                return null;
-              },
+              child: Row(
+                children: [
+                  Icon(
+                    _isEditing ? Icons.edit_note : Icons.add_circle_outline,
+                    color: AppColors.primaryContainer,
+                    size: 28,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    _isEditing ? 'Editar adicional' : 'Nuevo adicional',
+                    style: AppTypography.h2(color: AppColors.onSurface),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Cerrar',
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Disponible para pedidos y Caja'),
-              value: _available,
-              onChanged: (value) => setState(() => _available = value),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Form(
+                  key: _formKey,
+                  child: Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Detalles del adicional',
+                            style: AppTypography.h3(
+                              color: AppColors.primaryContainer,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'Se podrá añadir a cualquier plato, pedido y cobro.',
+                            style: AppTypography.bodyMd(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          TextFormField(
+                            controller: _nameController,
+                            style: AppTypography.bodyMd(
+                              color: AppColors.onSurface,
+                            ),
+                            decoration: _inputDecoration(
+                              'Nombre del adicional',
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                ? 'Ingresa un nombre'
+                                : null,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          TextFormField(
+                            controller: _priceController,
+                            style: AppTypography.bodyMd(
+                              color: AppColors.onSurface,
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: _inputDecoration('Precio (€)').copyWith(
+                              prefixIcon: const Icon(
+                                Icons.euro_rounded,
+                                size: 18,
+                                color: AppColors.primaryContainer,
+                              ),
+                            ),
+                            validator: (value) {
+                              final parsed = double.tryParse(
+                                (value ?? '').replaceAll(',', '.'),
+                              );
+                              if (parsed == null || parsed < 0) {
+                                return 'Ingresa un precio válido';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.sm,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: const Color(0xFFE2D5D0),
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.point_of_sale_outlined,
+                                  color: AppColors.primaryContainer,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Disponible para pedidos y Caja',
+                                        style: AppTypography.bodyMd(
+                                          color: AppColors.onSurface,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        _available
+                                            ? 'El personal puede añadirlo ahora.'
+                                            : 'No se mostrará al tomar pedidos.',
+                                        style: AppTypography.bodyMd(
+                                          color: AppColors.onSurfaceVariant,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Switch(
+                                  value: _available,
+                                  onChanged: (value) =>
+                                      setState(() => _available = value),
+                                  activeThumbColor: AppColors.primaryContainer,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(AppRadius.xl * 1.5),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      'Cancelar',
+                      style: AppTypography.statusBadge(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  ElevatedButton.icon(
+                    onPressed: _save,
+                    icon: const Icon(Icons.save),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryContainer,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                    label: Text(
+                      _isEditing ? 'Guardar cambios' : 'Crear adicional',
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(onPressed: _save, child: const Text('Guardar')),
-      ],
     );
   }
 }

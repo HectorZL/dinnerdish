@@ -7,11 +7,11 @@ import 'models/user.dart';
 import 'providers/providers.dart';
 
 // ─── Design Tokens ────────────────────────────
-const _orange      = Color(0xFFF26522);
-const _orangeDark  = Color(0xFFA63B00);
-const _ink         = Color(0xFF0F1518);   // pure dark for text
-const _muted       = Color(0xFF40484B);   // darker grey for contrast
-const _white       = Colors.white;
+const _orange = Color(0xFFF26522);
+const _orangeDark = Color(0xFFA63B00);
+const _ink = Color(0xFF0F1518); // pure dark for text
+const _muted = Color(0xFF40484B); // darker grey for contrast
+const _white = Colors.white;
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -38,14 +38,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   void initState() {
     super.initState();
     _fadeCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 700));
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
     _slideCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 600));
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl!, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(
-            begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(CurvedAnimation(
-            parent: _slideCtrl!, curve: Curves.easeOutCubic));
+      begin: const Offset(0, 0.06),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideCtrl!, curve: Curves.easeOutCubic));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -68,7 +72,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
     if (username.isEmpty || password.isEmpty) {
-      _showError('Ingrese usuario y contraseña');
+      _showError('Ingrese correo y contraseña');
       return;
     }
     setState(() => _isLoading = true);
@@ -99,14 +103,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          msg,
           style: GoogleFonts.plusJakartaSans(
-              color: _white, fontWeight: FontWeight.w600)),
-      backgroundColor: _orangeDark,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    ));
+            color: _white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: _orangeDark,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
@@ -116,9 +126,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     return Scaffold(
       backgroundColor: _white,
-      body: isDesktop
-          ? _buildDesktopLayout()
-          : _buildMobileLayout(),
+      body: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
     );
   }
 
@@ -127,10 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return Row(
       children: [
         // Left: orange branding panel
-        Expanded(
-          flex: 5,
-          child: _buildBrandingPanel(),
-        ),
+        Expanded(flex: 5, child: _buildBrandingPanel()),
         // Right: form on light bg
         Expanded(
           flex: 4,
@@ -155,18 +160,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               padding: const EdgeInsets.fromLTRB(32, 48, 32, 4),
               child: FadeTransition(
                 opacity: _fadeAnim,
-                child: Center(
-                  child: _buildLogo(size: 110),
-                ),
+                child: Center(child: _buildLogo(size: 110)),
               ),
             ),
             // Thin divider after logo
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Divider(
-                color: const Color(0xFFEEEEEE),
-                thickness: 1,
-              ),
+              child: Divider(color: const Color(0xFFEEEEEE), thickness: 1),
             ),
             const SizedBox(height: 8),
             // Form directly on white — no card needed
@@ -190,11 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF26522),
-            Color(0xFFD94F0A),
-            Color(0xFFAD3800),
-          ],
+          colors: [Color(0xFFF26522), Color(0xFFD94F0A), Color(0xFFAD3800)],
           stops: [0.0, 0.55, 1.0],
         ),
       ),
@@ -210,10 +206,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [
-                    _white.withValues(alpha: 0.15),
-                    Colors.transparent,
-                  ],
+                  colors: [_white.withValues(alpha: 0.15), Colors.transparent],
                 ),
               ),
             ),
@@ -238,7 +231,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ),
           // Subtle grid
           Positioned.fill(
-            child: CustomPaint(painter: _GridPainter(lineColor: _white.withValues(alpha: 0.06))),
+            child: CustomPaint(
+              painter: _GridPainter(lineColor: _white.withValues(alpha: 0.06)),
+            ),
           ),
           // Content
           SafeArea(
@@ -306,10 +301,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     // logoHeight uses the size as height directly; width scales with aspect ratio
     return SizedBox(
       height: size,
-      child: Image.asset(
-        'assets/images/logo.png',
-        fit: BoxFit.contain,
-      ),
+      child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
     );
   }
 
@@ -370,14 +362,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
             const SizedBox(height: 36),
 
-            // ── USERNAME ──
-            _buildLabel('Usuario'),
+            // ── DINNERHOME EMAIL ──
+            _buildLabel('Correo de Dinnerhome'),
             const SizedBox(height: 8),
             _buildTextField(
               controller: _usernameController,
-              hint: 'nombre.apellido',
-              prefix: Icons.person_outline_rounded,
-              keyboardType: TextInputType.text,
+              hint: 'nombre@dinner.com',
+              prefix: Icons.alternate_email_rounded,
+              keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 20),
 
@@ -508,7 +500,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   child: RichText(
                     text: TextSpan(
                       style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13, color: _muted),
+                        fontSize: 13,
+                        color: _muted,
+                      ),
                       children: [
                         const TextSpan(text: 'Sin acceso corporativo? '),
                         TextSpan(
@@ -657,8 +651,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ),
         filled: true,
         fillColor: const Color(0xFFF6F8FA),
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFD0D7DE)),
@@ -691,9 +687,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           decoration: BoxDecoration(
             color: accentColor.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: accentColor.withValues(alpha: 0.25),
-            ),
+            border: Border.all(color: accentColor.withValues(alpha: 0.25)),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
