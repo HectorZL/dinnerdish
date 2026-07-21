@@ -13,6 +13,7 @@ import '../presentation/screens/audit_log_screen.dart';
 import '../presentation/screens/payment_processing_screen.dart';
 import '../presentation/screens/cash_drawer_screen.dart';
 import '../presentation/screens/menu_management_screen.dart';
+import '../presentation/screens/global_additional_management_screen.dart';
 import '../presentation/screens/cashier_pending_screen.dart';
 import '../presentation/screens/table_management_screen.dart';
 import '../presentation/screens/order_tracking_screen.dart';
@@ -30,6 +31,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final routerNotifier = RouterNotifier();
 
   ref.listen<AsyncValue<User?>>(currentUserProvider, (previous, next) {
+    routerNotifier.notify();
+  });
+  ref.listen(rolePermissionsProvider, (previous, next) {
     routerNotifier.notify();
   });
 
@@ -51,7 +55,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       if (!isLoggedIn && !isOnLogin) return '/login';
       if (isLoggedIn && isOnLogin) return '/menu';
 
-      if (!RouteGuard.canAccessRoute(currentUser, uri)) return '/menu';
+      if (!RouteGuard.canAccessRoute(
+        currentUser,
+        uri,
+        ref.read(rolePermissionsProvider),
+      )) {
+        return '/menu';
+      }
 
       return null;
     },
@@ -61,32 +71,63 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     ),
     routes: [
       GoRoute(path: '/login', builder: (ctx, state) => const LoginScreen()),
-      GoRoute(path: '/menu', builder: (ctx, state) => const MainMenuDashboardScreen()),
-      GoRoute(path: '/orders/create', builder: (ctx, state) => const CreateOrderScreen()),
+      GoRoute(
+        path: '/menu',
+        builder: (ctx, state) => const MainMenuDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/orders/create',
+        builder: (ctx, state) => const CreateOrderScreen(),
+      ),
       GoRoute(
         path: '/orders/:id/edit',
-        builder: (ctx, state) => CreateOrderScreen(
-          existingOrderId: state.pathParameters['id'],
-        ),
+        builder: (ctx, state) =>
+            CreateOrderScreen(existingOrderId: state.pathParameters['id']),
       ),
-      GoRoute(path: '/orders/tracking', builder: (ctx, state) => const OrderTrackingScreen()),
-      GoRoute(path: '/orders/:id', builder: (ctx, state) => OrderDetailScreen(
-        orderId: state.pathParameters['id']!,
-      )),
-      GoRoute(path: '/tables', builder: (ctx, state) => const TableManagementScreen()),
+      GoRoute(
+        path: '/orders/tracking',
+        builder: (ctx, state) => const OrderTrackingScreen(),
+      ),
+      GoRoute(
+        path: '/orders/:id',
+        builder: (ctx, state) =>
+            OrderDetailScreen(orderId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/tables',
+        builder: (ctx, state) => const TableManagementScreen(),
+      ),
       GoRoute(path: '/kds', builder: (ctx, state) => const KdsScreen()),
       GoRoute(path: '/audit', builder: (ctx, state) => const AuditLogScreen()),
-      GoRoute(path: '/cashier/pending', builder: (ctx, state) => const CashierPendingScreen()),
+      GoRoute(
+        path: '/cashier/pending',
+        builder: (ctx, state) => const CashierPendingScreen(),
+      ),
       GoRoute(
         path: '/orders/:id/payment',
-        builder: (ctx, state) => PaymentProcessingScreen(
-          orderId: state.pathParameters['id']!,
-        ),
+        builder: (ctx, state) =>
+            PaymentProcessingScreen(orderId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/cash-drawer', builder: (ctx, state) => const CashDrawerScreen()),
-      GoRoute(path: '/admin/menu', builder: (ctx, state) => const MenuManagementScreen()),
-      GoRoute(path: '/admin/users', builder: (ctx, state) => const UserManagementScreen()),
-      GoRoute(path: '/admin/reports', builder: (ctx, state) => const ReportsScreen()),
+      GoRoute(
+        path: '/cash-drawer',
+        builder: (ctx, state) => const CashDrawerScreen(),
+      ),
+      GoRoute(
+        path: '/admin/menu',
+        builder: (ctx, state) => const MenuManagementScreen(),
+      ),
+      GoRoute(
+        path: '/admin/additionals',
+        builder: (ctx, state) => const GlobalAdditionalManagementScreen(),
+      ),
+      GoRoute(
+        path: '/admin/users',
+        builder: (ctx, state) => const UserManagementScreen(),
+      ),
+      GoRoute(
+        path: '/admin/reports',
+        builder: (ctx, state) => const ReportsScreen(),
+      ),
     ],
   );
 });

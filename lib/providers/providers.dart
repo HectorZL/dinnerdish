@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'package:dinnerhome/models/user.dart';
+import 'package:dinnerhome/models/role_permissions.dart';
 import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/models/audit_entry.dart';
 import 'package:dinnerhome/models/menu_item.dart';
+import 'package:dinnerhome/models/global_additional.dart';
 import 'package:dinnerhome/services/auth_service.dart';
 import 'package:dinnerhome/services/menu_service.dart';
 import 'package:dinnerhome/services/order_service.dart';
@@ -11,7 +13,10 @@ import 'package:dinnerhome/services/cash_drawer_service.dart';
 import 'package:dinnerhome/services/payment_service.dart';
 import 'package:dinnerhome/services/socket_service.dart';
 import 'package:dinnerhome/services/audit_service.dart';
+import 'package:dinnerhome/services/additional_service.dart';
+import 'package:dinnerhome/services/hive/hive_additional_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_auth_service.dart';
+import 'package:dinnerhome/services/role_permissions_service.dart';
 import 'package:dinnerhome/services/user_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_user_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_cash_drawer_service.dart';
@@ -31,6 +36,11 @@ final socketServiceProvider = Provider<SocketService>((ref) {
   return InMemorySocketService();
 });
 
+final rolePermissionsProvider =
+    StateNotifierProvider<RolePermissionsNotifier, RolePermissions>((ref) {
+      return RolePermissionsNotifier();
+    });
+
 final userServiceProvider = Provider<UserService>((ref) {
   return InMemoryUserService();
 });
@@ -44,6 +54,18 @@ final menuServiceProvider = Provider<MenuService>((ref) {
   return InMemoryMenuService();
 });
 
+final additionalServiceProvider = Provider<AdditionalService>((ref) {
+  return HiveAdditionalService();
+});
+
+final availableAdditionsProvider = FutureProvider<List<GlobalAdditional>>((
+  ref,
+) {
+  return ref
+      .watch(additionalServiceProvider)
+      .fetchAdditions(onlyAvailable: true);
+});
+
 final menuItemsProvider = FutureProvider<List<MenuItem>>((ref) async {
   final menuService = ref.watch(menuServiceProvider);
   return menuService.fetchMenu();
@@ -52,8 +74,14 @@ final menuItemsProvider = FutureProvider<List<MenuItem>>((ref) async {
 final orderServiceProvider = Provider<OrderService>((ref) {
   final socketService = ref.watch(socketServiceProvider);
   final menuService = ref.watch(menuServiceProvider);
+  final additionalService = ref.watch(additionalServiceProvider);
   final auditService = ref.watch(auditServiceProvider);
-  return InMemoryOrderService(socketService, menuService: menuService, auditService: auditService);
+  return InMemoryOrderService(
+    socketService,
+    menuService: menuService,
+    additionalService: additionalService,
+    auditService: auditService,
+  );
 });
 
 final activeOrdersProvider = StreamProvider<List<Order>>((ref) async* {
@@ -137,6 +165,6 @@ class CurrentUserNotifier extends StateNotifier<AsyncValue<User?>> {
 
 final currentUserProvider =
     StateNotifierProvider<CurrentUserNotifier, AsyncValue<User?>>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  return CurrentUserNotifier(authService);
-});
+      final authService = ref.watch(authServiceProvider);
+      return CurrentUserNotifier(authService);
+    });

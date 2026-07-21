@@ -50,6 +50,7 @@ Future<void> initHive() async {
   Hive.registerAdapter(AuditEntryAdapter());
 
   await Hive.openBox<AuditEntry>('audit');
+  await Hive.openBox('settings');
 }
 
 class MainApp extends ConsumerWidget {

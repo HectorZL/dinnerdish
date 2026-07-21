@@ -1,68 +1,79 @@
-import 'package:dinnerhome/models/user.dart';
+import '../models/role_permissions.dart';
+import '../models/user.dart';
 
 class RouteGuard {
-  static bool canAccessAdmin(User? user) {
+  static bool _has(
+    User? user,
+    AppPermission permission, [
+    RolePermissions? permissions,
+  ]) {
     if (user == null) return false;
-    return user.role == Role.admin;
+    return (permissions ?? RolePermissions.defaults()).allows(
+      user.role,
+      permission,
+    );
   }
 
-  static bool canAccessPayment(User? user) {
-    if (user == null) return false;
-    return user.role == Role.cajero || user.role == Role.admin;
-  }
+  static bool canAccessAdmin(User? user, [RolePermissions? permissions]) =>
+      _has(user, AppPermission.manageUsers, permissions);
 
-  static bool canAccessKds(User? user) {
-    if (user == null) return false;
-    return user.role == Role.cocinero || user.role == Role.admin;
-  }
+  static bool canAccessPayment(User? user, [RolePermissions? permissions]) =>
+      _has(user, AppPermission.processPayments, permissions);
 
-  static bool canAccessOrders(User? user) {
-    if (user == null) return false;
-    return user.role == Role.mesero ||
-        user.role == Role.cajero ||
-        user.role == Role.cocinero ||
-        user.role == Role.admin;
-  }
+  static bool canAccessKds(User? user, [RolePermissions? permissions]) =>
+      _has(user, AppPermission.useKitchenDisplay, permissions);
 
-  static bool canAccessTables(User? user) {
-    if (user == null) return false;
-    return user.role == Role.mesero || user.role == Role.admin;
-  }
+  static bool canAccessOrders(User? user, [RolePermissions? permissions]) =>
+      _has(user, AppPermission.manageOrders, permissions);
 
-  static bool canAccessMenuManagement(User? user) {
-    if (user == null) return false;
-    return user.role == Role.admin;
-  }
+  static bool canAccessTables(User? user, [RolePermissions? permissions]) =>
+      _has(user, AppPermission.manageTables, permissions);
 
-  static bool canAccessCashDrawer(User? user) {
-    if (user == null) return false;
-    return user.role == Role.cajero || user.role == Role.admin;
-  }
+  static bool canAccessMenuManagement(
+    User? user, [
+    RolePermissions? permissions,
+  ]) => _has(user, AppPermission.manageMenu, permissions);
 
-  static bool canAccessInventory(User? user) {
-    if (user == null) return false;
-    return user.role == Role.admin;
-  }
+  static bool canAccessCashDrawer(User? user, [RolePermissions? permissions]) =>
+      canAccessPayment(user, permissions);
 
-  static bool canAccessReports(User? user) {
-    if (user == null) return false;
-    return user.role == Role.admin;
-  }
+  static bool canAccessInventory(User? user, [RolePermissions? permissions]) =>
+      canAccessMenuManagement(user, permissions);
 
-  static bool canAccessRoute(User? user, String route) {
-    if (route.startsWith('/kds')) return canAccessKds(user);
-    if (route.startsWith('/audit')) return canAccessAdmin(user);
+  static bool canAccessReports(User? user, [RolePermissions? permissions]) =>
+      _has(user, AppPermission.viewReports, permissions);
+
+  static bool canAccessAudit(User? user, [RolePermissions? permissions]) =>
+      _has(user, AppPermission.viewAudit, permissions);
+
+  static bool canAccessRoute(
+    User? user,
+    String route, [
+    RolePermissions? permissions,
+  ]) {
+    if (route.startsWith('/kds')) return canAccessKds(user, permissions);
+    if (route.startsWith('/audit')) return canAccessAudit(user, permissions);
     if (route.startsWith('/orders/create') || route.startsWith('/orders/')) {
-      return canAccessOrders(user);
+      return canAccessOrders(user, permissions);
     }
-    if (route.startsWith('/tables')) return canAccessTables(user);
-    if (route.startsWith('/cashier/')) return canAccessPayment(user);
-    if (route.startsWith('/cash-drawer')) return canAccessCashDrawer(user);
-    if (route.startsWith('/admin/menu')) return canAccessMenuManagement(user);
-    if (route.startsWith('/admin/users')) return canAccessAdmin(user);
-    if (route.startsWith('/admin/inventory')) return canAccessInventory(user);
-    if (route.startsWith('/admin/ingredient-assignment')) return canAccessAdmin(user);
-    if (route.startsWith('/admin/reports')) return canAccessReports(user);
+    if (route.startsWith('/tables')) return canAccessTables(user, permissions);
+    if (route.startsWith('/cashier/'))
+      return canAccessPayment(user, permissions);
+    if (route.startsWith('/cash-drawer'))
+      return canAccessCashDrawer(user, permissions);
+    if (route.startsWith('/admin/menu') ||
+        route.startsWith('/admin/additionals')) {
+      return canAccessMenuManagement(user, permissions);
+    }
+    if (route.startsWith('/admin/users'))
+      return canAccessAdmin(user, permissions);
+    if (route.startsWith('/admin/inventory'))
+      return canAccessInventory(user, permissions);
+    if (route.startsWith('/admin/ingredient-assignment')) {
+      return canAccessMenuManagement(user, permissions);
+    }
+    if (route.startsWith('/admin/reports'))
+      return canAccessReports(user, permissions);
     return true;
   }
 }

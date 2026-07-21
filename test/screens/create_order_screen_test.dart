@@ -26,25 +26,23 @@ import 'package:dinnerhome/services/socket_service.dart';
 class MockMenuService implements MenuService {
   @override
   Future<List<MenuItem>> fetchMenu() async => [
-        MenuItem(
-          id: 'item-1',
-          name: 'Pasta Carbonara',
-          priceCents: 1200,
-          modifiers: [
-            Modifier(id: 'mod-1', name: 'Sin queso', priceCents: 0),
-          ],
-          available: true,
-          category: 'Platos Principales',
-        ),
-        MenuItem(
-          id: 'item-2',
-          name: 'Ensalada César',
-          priceCents: 850,
-          modifiers: [],
-          available: true,
-          category: 'Entrantes',
-        ),
-      ];
+    MenuItem(
+      id: 'item-1',
+      name: 'Pasta Carbonara',
+      priceCents: 1200,
+      modifiers: [Modifier(id: 'mod-1', name: 'Sin queso', priceCents: 0)],
+      available: true,
+      category: 'Platos Principales',
+    ),
+    MenuItem(
+      id: 'item-2',
+      name: 'Ensalada César',
+      priceCents: 850,
+      modifiers: [],
+      available: true,
+      category: 'Entrantes',
+    ),
+  ];
 
   @override
   Future<MenuItem?> getMenuItem(String id) async => null;
@@ -59,10 +57,17 @@ class MockMenuService implements MenuService {
   Future<void> deleteMenuItem(String id) async {}
 
   @override
-  Future<List<String>> getCategories() async => ['Entrantes', 'Platos Principales'];
+  Future<List<String>> getCategories() async => [
+    'Entrantes',
+    'Platos Principales',
+  ];
 
   @override
-  Future<void> adjustStock(String itemId, String? variationId, int quantityChange) async {}
+  Future<void> adjustStock(
+    String itemId,
+    String? variationId,
+    int quantityChange,
+  ) async {}
 }
 
 class MockOrderService implements OrderService {
@@ -89,10 +94,7 @@ class MockOrderService implements OrderService {
   }
 
   @override
-  Future<Order> createDraft({
-    required String waiterId,
-    String? tableId,
-  }) async {
+  Future<Order> createDraft({required String waiterId, String? tableId}) async {
     _counter++;
     return Order(
       id: 'order-$_counter',
@@ -121,6 +123,16 @@ class MockOrderService implements OrderService {
     required order_item.OrderItem item,
   }) async {
     throw UnimplementedError('addItem not expected in basic tests');
+  }
+
+  @override
+  Future<Order> addCashierAdditional({
+    required String orderId,
+    required String additionalId,
+    required int quantity,
+    required String byUserId,
+  }) async {
+    throw UnimplementedError('Not used in create-order tests');
   }
 
   @override
@@ -168,11 +180,11 @@ class MockOrderService implements OrderService {
 class MockAuthService implements AuthService {
   @override
   Future<User> login(String username, String password) async => User(
-        id: 'user-1',
-        username: 'test',
-        name: 'Test Waiter',
-        role: Role.mesero,
-      );
+    id: 'user-1',
+    username: 'test',
+    name: 'Test Waiter',
+    role: Role.mesero,
+  );
 
   @override
   Future<User> loginWithTestUser(User user) async => user;
@@ -182,11 +194,11 @@ class MockAuthService implements AuthService {
 
   @override
   Future<User?> getCurrentUser() async => User(
-        id: 'user-1',
-        username: 'test',
-        name: 'Test Waiter',
-        role: Role.mesero,
-      );
+    id: 'user-1',
+    username: 'test',
+    name: 'Test Waiter',
+    role: Role.mesero,
+  );
 }
 
 const _mockUser = User(
@@ -228,7 +240,8 @@ class MockPaymentService implements PaymentService {
   }
 
   @override
-  Future<List<PaymentTransaction>> getPaymentHistory(String orderId) async => [];
+  Future<List<PaymentTransaction>> getPaymentHistory(String orderId) async =>
+      [];
 
   @override
   Future<List<PaymentTransaction>> splitPayment({
@@ -333,8 +346,7 @@ void main() {
       expect(find.textContaining('Test Waiter'), findsOneWidget);
     });
 
-    testWidgets('allows adding an item via the counter button',
-        (tester) async {
+    testWidgets('allows adding an item via the counter button', (tester) async {
       await tester.pumpWidget(createTestApp());
       await tester.pump();
       await tester.pump();

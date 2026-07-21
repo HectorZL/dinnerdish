@@ -48,7 +48,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
         'Bebidas',
         'Jugos',
         'Especiales',
-        'Vinos'
+        'Vinos',
       }.toList()..sort();
 
       setState(() {
@@ -78,9 +78,9 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
     } catch (e, st) {
       debugPrint('Error creating menu item: $e\n$st');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al crear: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al crear: $e')));
     }
   }
 
@@ -92,9 +92,9 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
     } catch (e, st) {
       debugPrint('Error updating menu item: $e\n$st');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al actualizar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al actualizar: $e')));
     }
   }
 
@@ -106,15 +106,15 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
     } on MenuItemNotFoundException catch (e) {
       debugPrint('Delete failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } catch (e, st) {
       debugPrint('Error deleting menu item: $e\n$st');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
     }
   }
 
@@ -122,7 +122,6 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
     final updated = item.copyWith(available: !item.available);
     await _updateItem(item.id, updated);
   }
-
 
   void _showCreateDialog() {
     showDialog(
@@ -166,7 +165,8 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
             child: Text(
               'Cancelar',
               style: AppTypography.statusBadge(
-                  color: AppColors.onSurfaceVariant),
+                color: AppColors.onSurfaceVariant,
+              ),
             ),
           ),
           TextButton(
@@ -174,8 +174,9 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
             child: Text(
               'Eliminar',
               style: AppTypography.statusBadge(
-                  color: AppColors.error,
-                  fontWeight: FontWeight.bold),
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -209,14 +210,48 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                           NavLink('Reportes', false, route: '/admin/reports'),
                         ]
                       : null,
-                  actions: isDesktop ? [
-                    TextButton.icon(
-                      onPressed: _showCreateDialog,
-                      icon: const Icon(Icons.add, color: AppColors.primaryContainer),
-                      label: const Text('Nuevo Item', style: TextStyle(color: AppColors.primaryContainer, fontWeight: FontWeight.bold)),
-                    ),
+                  actions: [
+                    if (isDesktop)
+                      TextButton.icon(
+                        onPressed: () => context.go('/admin/additionals'),
+                        icon: const Icon(
+                          Icons.add_circle_outline,
+                          color: AppColors.primaryContainer,
+                        ),
+                        label: const Text(
+                          'Adicionales',
+                          style: TextStyle(
+                            color: AppColors.primaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    else
+                      IconButton(
+                        tooltip: 'Adicionales globales',
+                        onPressed: () => context.go('/admin/additionals'),
+                        icon: const Icon(
+                          Icons.add_circle_outline,
+                          color: AppColors.primaryContainer,
+                        ),
+                      ),
+                    if (isDesktop)
+                      TextButton.icon(
+                        onPressed: _showCreateDialog,
+                        icon: const Icon(
+                          Icons.add,
+                          color: AppColors.primaryContainer,
+                        ),
+                        label: const Text(
+                          'Nuevo Item',
+                          style: TextStyle(
+                            color: AppColors.primaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     const SizedBox(width: 8),
-                  ] : null,
+                  ],
                 ),
                 Expanded(child: _buildBody()),
               ],
@@ -229,7 +264,8 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
               onPressed: _showCreateDialog,
               backgroundColor: AppColors.primaryContainer,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30)),
+                borderRadius: BorderRadius.circular(30),
+              ),
               elevation: 8,
               child: const Icon(Icons.add, color: Colors.white),
             )
@@ -265,13 +301,11 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline,
-                color: AppColors.error, size: 48),
+            const Icon(Icons.error_outline, color: AppColors.error, size: 48),
             const SizedBox(height: AppSpacing.md),
             Text(
               _errorMessage!,
-              style: AppTypography.bodyMd(
-                  color: AppColors.onSurfaceVariant),
+              style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -297,9 +331,11 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.restaurant_menu,
-                size: 64,
-                color: AppColors.outline.withValues(alpha: 0.3)),
+            Icon(
+              Icons.restaurant_menu,
+              size: 64,
+              color: AppColors.outline.withValues(alpha: 0.3),
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'No hay platos en el menú',
@@ -308,8 +344,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
             const SizedBox(height: AppSpacing.base),
             Text(
               'Añade un nuevo plato para empezar',
-              style: AppTypography.bodyMd(
-                  color: AppColors.outline),
+              style: AppTypography.bodyMd(color: AppColors.outline),
             ),
             const SizedBox(height: AppSpacing.lg),
             ElevatedButton.icon(
@@ -340,38 +375,34 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
           _buildCategoryChip('Todos', allSelected, () {
             setState(() => _selectedCategory = null);
           }),
-          ..._categories.map((cat) => _buildCategoryChip(
-                cat,
-                _selectedCategory == cat,
-                () => setState(() => _selectedCategory = cat),
-              )),
+          ..._categories.map(
+            (cat) => _buildCategoryChip(
+              cat,
+              _selectedCategory == cat,
+              () => setState(() => _selectedCategory = cat),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryChip(
-      String label, bool isSelected, VoidCallback onTap) {
+  Widget _buildCategoryChip(String label, bool isSelected, VoidCallback onTap) {
     return Padding(
       key: Key('category_chip_$label'),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       child: Material(
-        color: isSelected
-            ? AppColors.primaryContainer
-            : Colors.white,
+        color: isSelected ? AppColors.primaryContainer : Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.full),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadius.full),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               label,
               style: AppTypography.statusBadge(
-                color: isSelected
-                    ? Colors.white
-                    : AppColors.onSurfaceVariant,
+                color: isSelected ? Colors.white : AppColors.onSurfaceVariant,
               ),
             ),
           ),
@@ -481,10 +512,15 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                           GestureDetector(
                             onTap: () => _toggleAvailability(item),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: item.available
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                    ? const Color(
+                                        0xFF10B981,
+                                      ).withValues(alpha: 0.12)
                                     : Colors.grey.shade100,
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -526,7 +562,10 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                         children: [
                           // Price
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.primaryContainer,
                               borderRadius: BorderRadius.circular(8),
@@ -542,9 +581,14 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                           ),
                           // Category badge
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF594138).withValues(alpha: 0.08),
+                              color: const Color(
+                                0xFF594138,
+                              ).withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -559,11 +603,18 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                           // Stock badge
                           if (!hasVariations)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: item.stock > 5
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.1)
-                                    : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                                    ? const Color(
+                                        0xFF10B981,
+                                      ).withValues(alpha: 0.1)
+                                    : const Color(
+                                        0xFFF59E0B,
+                                      ).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -579,9 +630,14 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                             ),
                           if (hasVariations)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
-                                color: AppColors.primaryContainer.withValues(alpha: 0.08),
+                                color: AppColors.primaryContainer.withValues(
+                                  alpha: 0.08,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -596,9 +652,14 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                           // Modifiers count badge
                           if (item.modifiers.isNotEmpty)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                                color: const Color(
+                                  0xFF3B82F6,
+                                ).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -624,7 +685,10 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                       tooltip: 'Editar',
                       onPressed: () => _showEditDialog(item),
                       padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, size: 20),
@@ -635,7 +699,10 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                         if (confirmed) _deleteItem(item.id);
                       },
                       padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
                     ),
                   ],
                 ),
@@ -724,28 +791,30 @@ class _InlinePriceEditState extends State<_InlinePriceEdit> {
         child: TextField(
           controller: _controller,
           style: AppTypography.bodyMd(
-              color: AppColors.onSurface,
-              fontWeight: FontWeight.bold),
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+            color: AppColors.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             isDense: true,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 4,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
-              borderSide:
-                  const BorderSide(color: AppColors.primaryContainer),
+              borderSide: const BorderSide(color: AppColors.primaryContainer),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
-              borderSide:
-                  const BorderSide(color: AppColors.primaryContainer),
+              borderSide: const BorderSide(color: AppColors.primaryContainer),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
               borderSide: const BorderSide(
-                  color: AppColors.primaryContainer, width: 2),
+                color: AppColors.primaryContainer,
+                width: 2,
+              ),
             ),
           ),
           onSubmitted: (_) => _save(),
@@ -759,8 +828,8 @@ class _InlinePriceEditState extends State<_InlinePriceEdit> {
       child: Text(
         '${_formatPrice(widget.initialPriceCents)} €',
         style: AppTypography.bodyMd(
-                color: AppColors.primaryContainer)
-            .copyWith(fontWeight: FontWeight.bold),
+          color: AppColors.primaryContainer,
+        ).copyWith(fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -804,40 +873,43 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
     final item = widget.existingItem;
     _nameController = TextEditingController(text: item?.name ?? '');
     _priceController = TextEditingController(
-      text: item != null
-          ? (item.priceCents / 100).toStringAsFixed(2)
-          : '',
+      text: item != null ? (item.priceCents / 100).toStringAsFixed(2) : '',
     );
     _stockController = TextEditingController(
       text: item != null ? item.stock.toString() : '0',
     );
     _available = item?.available ?? true;
-    _category = item?.category ??
+    _category =
+        item?.category ??
         (widget.categories.isNotEmpty ? widget.categories.first : '');
     _hasVariations = item?.variations.isNotEmpty ?? false;
 
     _modifierEntries = (item?.modifiers ?? [])
-        .map((m) => _ModifierEntry(
-              id: m.id,
-              nameController: TextEditingController(text: m.name),
-              priceController: TextEditingController(
-                text: (m.priceCents / 100).toStringAsFixed(2),
-              ),
-            ))
+        .map(
+          (m) => _ModifierEntry(
+            id: m.id,
+            nameController: TextEditingController(text: m.name),
+            priceController: TextEditingController(
+              text: (m.priceCents / 100).toStringAsFixed(2),
+            ),
+          ),
+        )
         .toList();
     if (_modifierEntries.isEmpty) {
       _addModifierEntry();
     }
 
     _variationEntries = (item?.variations ?? [])
-        .map((v) => _VariationEntry(
-              id: v.id,
-              nameController: TextEditingController(text: v.name),
-              priceController: TextEditingController(
-                text: (v.priceCents / 100).toStringAsFixed(2),
-              ),
-              stockController: TextEditingController(text: v.stock.toString()),
-            ))
+        .map(
+          (v) => _VariationEntry(
+            id: v.id,
+            nameController: TextEditingController(text: v.name),
+            priceController: TextEditingController(
+              text: (v.priceCents / 100).toStringAsFixed(2),
+            ),
+            stockController: TextEditingController(text: v.stock.toString()),
+          ),
+        )
         .toList();
   }
 
@@ -860,12 +932,13 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
 
   void _addModifierEntry() {
     setState(() {
-      _modifierEntries.add(_ModifierEntry(
-        id:
-            'mod-${DateTime.now().millisecondsSinceEpoch}-${_modifierEntries.length}',
-        nameController: TextEditingController(),
-        priceController: TextEditingController(),
-      ));
+      _modifierEntries.add(
+        _ModifierEntry(
+          id: 'mod-${DateTime.now().millisecondsSinceEpoch}-${_modifierEntries.length}',
+          nameController: TextEditingController(),
+          priceController: TextEditingController(),
+        ),
+      );
     });
   }
 
@@ -880,12 +953,14 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
 
   void _addVariationEntry() {
     setState(() {
-      _variationEntries.add(_VariationEntry(
-        id: 'var-${DateTime.now().millisecondsSinceEpoch}-${_variationEntries.length}',
-        nameController: TextEditingController(),
-        priceController: TextEditingController(),
-        stockController: TextEditingController(text: '0'),
-      ));
+      _variationEntries.add(
+        _VariationEntry(
+          id: 'var-${DateTime.now().millisecondsSinceEpoch}-${_variationEntries.length}',
+          nameController: TextEditingController(),
+          priceController: TextEditingController(),
+          stockController: TextEditingController(text: '0'),
+        ),
+      );
     });
   }
 
@@ -911,7 +986,9 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
         final parsed = double.tryParse(priceText);
         if (parsed == null || parsed < 0) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Precio inválido. Ingresa un número positivo.')),
+            const SnackBar(
+              content: Text('Precio inválido. Ingresa un número positivo.'),
+            ),
           );
           return;
         }
@@ -920,7 +997,11 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
         final stockParsed = int.tryParse(_stockController.text);
         if (stockParsed == null || stockParsed < 0) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Stock inválido. Ingresa un número entero positivo.')),
+            const SnackBar(
+              content: Text(
+                'Stock inválido. Ingresa un número entero positivo.',
+              ),
+            ),
           );
           return;
         }
@@ -932,52 +1013,57 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
         priceCents = 0; // El precio se obtiene de las variaciones
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error en los datos: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error en los datos: $e')));
       return;
     }
 
     final modifiers = _modifierEntries
         .where((e) => e.nameController.text.trim().isNotEmpty)
         .map((e) {
-      final priceText = e.priceController.text.replaceAll(',', '.');
-      final modPriceCents =
-          ((double.tryParse(priceText) ?? 0) * 100).round();
-      return Modifier(
-        id: e.id,
-        name: e.nameController.text.trim(),
-        priceCents: modPriceCents,
-      );
-    }).toList();
+          final priceText = e.priceController.text.replaceAll(',', '.');
+          final modPriceCents = ((double.tryParse(priceText) ?? 0) * 100)
+              .round();
+          return Modifier(
+            id: e.id,
+            name: e.nameController.text.trim(),
+            priceCents: modPriceCents,
+          );
+        })
+        .toList();
 
     // F1-03: Filtrar variaciones sin nombre antes de guardar
     final variations = _hasVariations
         ? _variationEntries
-            .where((e) => e.nameController.text.trim().isNotEmpty)
-            .map((e) {
-              final priceText = e.priceController.text.replaceAll(',', '.');
-              final varPriceCents =
-                  ((double.tryParse(priceText) ?? 0) * 100).round();
-              final varStock = int.tryParse(e.stockController.text) ?? 0;
-              return MenuItemVariation(
-                id: e.id,
-                name: e.nameController.text.trim(),
-                priceCents: varPriceCents,
-                stock: varStock,
-              );
-            }).toList()
+              .where((e) => e.nameController.text.trim().isNotEmpty)
+              .map((e) {
+                final priceText = e.priceController.text.replaceAll(',', '.');
+                final varPriceCents = ((double.tryParse(priceText) ?? 0) * 100)
+                    .round();
+                final varStock = int.tryParse(e.stockController.text) ?? 0;
+                return MenuItemVariation(
+                  id: e.id,
+                  name: e.nameController.text.trim(),
+                  priceCents: varPriceCents,
+                  stock: varStock,
+                );
+              })
+              .toList()
         : <MenuItemVariation>[];
 
     if (_hasVariations && variations.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Añade al menos una variación con nombre.')),
+        const SnackBar(
+          content: Text('Añade al menos una variación con nombre.'),
+        ),
       );
       return;
     }
 
     final item = MenuItem(
-      id: widget.existingItem?.id ??
+      id:
+          widget.existingItem?.id ??
           'item-${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
       priceCents: priceCents,
@@ -991,7 +1077,6 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
     widget.onSave(item);
     Navigator.of(context).pop();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -1013,10 +1098,16 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl * 1.5)),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.xl * 1.5),
+                ),
                 boxShadow: [
-                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
-                ]
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -1034,7 +1125,7 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -1060,21 +1151,42 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Detalles Básicos', style: AppTypography.h3(color: AppColors.primaryContainer)),
+                              Text(
+                                'Detalles Básicos',
+                                style: AppTypography.h3(
+                                  color: AppColors.primaryContainer,
+                                ),
+                              ),
                               const SizedBox(height: AppSpacing.md),
                               TextFormField(
                                 controller: _nameController,
-                                style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                decoration: _inputDecoration('Nombre del plato'),
-                                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                                style: AppTypography.bodyMd(
+                                  color: AppColors.onSurface,
+                                ),
+                                decoration: _inputDecoration(
+                                  'Nombre del plato',
+                                ),
+                                validator: (v) =>
+                                    (v == null || v.trim().isEmpty)
+                                    ? 'Requerido'
+                                    : null,
                               ),
                               const SizedBox(height: AppSpacing.md),
                               DropdownButtonFormField<String>(
                                 initialValue: _category,
                                 dropdownColor: Colors.white,
-                                style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                style: AppTypography.bodyMd(
+                                  color: AppColors.onSurface,
+                                ),
                                 decoration: _inputDecoration('Categoría'),
-                                items: widget.categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
+                                items: widget.categories
+                                    .map(
+                                      (cat) => DropdownMenuItem(
+                                        value: cat,
+                                        child: Text(cat),
+                                      ),
+                                    )
+                                    .toList(),
                                 onChanged: (v) {
                                   if (v != null) setState(() => _category = v);
                                 },
@@ -1082,11 +1194,17 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                               const SizedBox(height: AppSpacing.md),
                               Row(
                                 children: [
-                                  Text('Disponible en menú', style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant)),
+                                  Text(
+                                    'Disponible en menú',
+                                    style: AppTypography.bodyMd(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                  ),
                                   const Spacer(),
                                   Switch(
                                     value: _available,
-                                    onChanged: (v) => setState(() => _available = v),
+                                    onChanged: (v) =>
+                                        setState(() => _available = v),
                                     activeColor: AppColors.primaryContainer,
                                   ),
                                 ],
@@ -1096,7 +1214,7 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      
+
                       // Card 2: Precios y Variaciones
                       Card(
                         elevation: 0,
@@ -1115,18 +1233,29 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 spacing: AppSpacing.sm,
                                 children: [
-                                  Text('Precios y Variaciones', style: AppTypography.h3(color: AppColors.primaryContainer)),
+                                  Text(
+                                    'Precios y Variaciones',
+                                    style: AppTypography.h3(
+                                      color: AppColors.primaryContainer,
+                                    ),
+                                  ),
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text('¿Tiene variaciones?', style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant)),
+                                      Text(
+                                        '¿Tiene variaciones?',
+                                        style: AppTypography.bodyMd(
+                                          color: AppColors.onSurfaceVariant,
+                                        ),
+                                      ),
                                       const SizedBox(width: AppSpacing.sm),
                                       Switch(
                                         value: _hasVariations,
                                         onChanged: (v) {
                                           setState(() {
                                             _hasVariations = v;
-                                            if (_hasVariations && _variationEntries.isEmpty) {
+                                            if (_hasVariations &&
+                                                _variationEntries.isEmpty) {
                                               _addVariationEntry();
                                             }
                                           });
@@ -1142,15 +1271,31 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                 // Precio
                                 TextFormField(
                                   controller: _priceController,
-                                  style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  decoration: _inputDecoration('Precio Base (\$)').copyWith(
-                                    prefixIcon: const Icon(Icons.attach_money, size: 16, color: Color(0xFFF26522)),
+                                  style: AppTypography.bodyMd(
+                                    color: AppColors.onSurface,
                                   ),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  decoration:
+                                      _inputDecoration(
+                                        'Precio Base (\$)',
+                                      ).copyWith(
+                                        prefixIcon: const Icon(
+                                          Icons.attach_money,
+                                          size: 16,
+                                          color: Color(0xFFF26522),
+                                        ),
+                                      ),
                                   validator: (v) {
-                                    if (v == null || v.trim().isEmpty) return 'Requerido';
-                                    final parsed = double.tryParse(v.replaceAll(',', '.'));
-                                    if (parsed == null || parsed < 0) return 'Inválido';
+                                    if (v == null || v.trim().isEmpty)
+                                      return 'Requerido';
+                                    final parsed = double.tryParse(
+                                      v.replaceAll(',', '.'),
+                                    );
+                                    if (parsed == null || parsed < 0)
+                                      return 'Inválido';
                                     return null;
                                   },
                                 ),
@@ -1162,8 +1307,11 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                 ),
                               ],
                               if (_hasVariations) ...[
-                                ..._variationEntries.asMap().entries.map((entry) =>
-                                  _buildVariationCard(entry.key, entry.value),
+                                ..._variationEntries.asMap().entries.map(
+                                  (entry) => _buildVariationCard(
+                                    entry.key,
+                                    entry.value,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 _buildAddVariationButton(),
@@ -1173,7 +1321,7 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      
+
                       // Card 3: Modificadores
                       Card(
                         elevation: 0,
@@ -1187,22 +1335,38 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Modificadores Opcionales', style: AppTypography.h3(color: AppColors.primaryContainer)),
-                              Text('Ingredientes extra o exclusiones (ej: Sin cebolla, Extra queso)', style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant)),
+                              Text(
+                                'Modificadores Opcionales',
+                                style: AppTypography.h3(
+                                  color: AppColors.primaryContainer,
+                                ),
+                              ),
+                              Text(
+                                'Ingredientes extra o exclusiones (ej: Sin cebolla, Extra queso)',
+                                style: AppTypography.bodyMd(
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              ),
                               const Divider(),
                               ..._modifierEntries.asMap().entries.map((entry) {
                                 final index = entry.key;
                                 final modifier = entry.value;
                                 return Padding(
-                                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                                  padding: const EdgeInsets.only(
+                                    bottom: AppSpacing.sm,
+                                  ),
                                   child: Row(
                                     children: [
                                       Expanded(
                                         flex: 2,
                                         child: TextFormField(
                                           controller: modifier.nameController,
-                                          style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                          decoration: _inputDecoration('Nombre'),
+                                          style: AppTypography.bodyMd(
+                                            color: AppColors.onSurface,
+                                          ),
+                                          decoration: _inputDecoration(
+                                            'Nombre',
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: AppSpacing.sm),
@@ -1210,14 +1374,25 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                         flex: 1,
                                         child: TextFormField(
                                           controller: modifier.priceController,
-                                          style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                          decoration: _inputDecoration('Precio (+\$)'),
+                                          style: AppTypography.bodyMd(
+                                            color: AppColors.onSurface,
+                                          ),
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(
+                                                decimal: true,
+                                              ),
+                                          decoration: _inputDecoration(
+                                            'Precio (+\$)',
+                                          ),
                                         ),
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.remove_circle, color: AppColors.error),
-                                        onPressed: () => _removeModifierEntry(index),
+                                        icon: const Icon(
+                                          Icons.remove_circle,
+                                          color: AppColors.error,
+                                        ),
+                                        onPressed: () =>
+                                            _removeModifierEntry(index),
                                       ),
                                     ],
                                   ),
@@ -1227,8 +1402,16 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                 alignment: Alignment.centerRight,
                                 child: TextButton.icon(
                                   onPressed: _addModifierEntry,
-                                  icon: const Icon(Icons.add, color: AppColors.primaryContainer),
-                                  label: Text('Añadir Modificador', style: AppTypography.statusBadge(color: AppColors.primaryContainer)),
+                                  icon: const Icon(
+                                    Icons.add,
+                                    color: AppColors.primaryContainer,
+                                  ),
+                                  label: Text(
+                                    'Añadir Modificador',
+                                    style: AppTypography.statusBadge(
+                                      color: AppColors.primaryContainer,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -1240,23 +1423,34 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                 ),
               ),
             ),
-            
+
             // Footer Actions
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppRadius.xl * 1.5)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(AppRadius.xl * 1.5),
+                ),
                 boxShadow: [
-                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, -2))
-                ]
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, -2),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancelar', style: AppTypography.statusBadge(color: AppColors.onSurfaceVariant)),
+                    child: Text(
+                      'Cancelar',
+                      style: AppTypography.statusBadge(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   ElevatedButton.icon(
@@ -1265,7 +1459,10 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryContainer,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
                     label: Text(_isEditing ? 'Guardar Cambios' : 'Crear Plato'),
                   ),
@@ -1285,7 +1482,10 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF7F3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryContainer.withValues(alpha: 0.25), width: 1.5),
+        border: Border.all(
+          color: AppColors.primaryContainer.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
@@ -1338,9 +1538,12 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
-                    decoration: _inputDecoration('Nombre (ej: Mediano, Grande)'),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Nombre requerido' : null,
+                    decoration: _inputDecoration(
+                      'Nombre (ej: Mediano, Grande)',
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Nombre requerido'
+                        : null,
                   ),
                   const SizedBox(height: 8),
                   // Precio y Stock en row
@@ -1354,14 +1557,21 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           decoration: _inputDecoration('Precio (\$)').copyWith(
-                            prefixIcon: const Icon(Icons.attach_money, size: 16, color: Color(0xFFF26522)),
+                            prefixIcon: const Icon(
+                              Icons.attach_money,
+                              size: 16,
+                              color: Color(0xFFF26522),
+                            ),
                           ),
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty) return 'Requerido';
-                            if (double.tryParse(v.replaceAll(',', '.')) == null) return 'Inválido';
+                            if (v == null || v.trim().isEmpty)
+                              return 'Requerido';
+                            if (double.tryParse(v.replaceAll(',', '.')) == null)
+                              return 'Inválido';
                             return null;
                           },
                         ),
@@ -1379,7 +1589,11 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
             ),
             // Delete button
             IconButton(
-              icon: const Icon(Icons.close_rounded, color: Color(0xFFBA1A1A), size: 20),
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Color(0xFFBA1A1A),
+                size: 20,
+              ),
               tooltip: 'Eliminar variación',
               onPressed: () => _removeVariationEntry(index),
               padding: const EdgeInsets.all(4),
@@ -1449,7 +1663,11 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.inventory_2_outlined, size: 18, color: Color(0xFFF26522)),
+          const Icon(
+            Icons.inventory_2_outlined,
+            size: 18,
+            color: Color(0xFFF26522),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -1480,7 +1698,9 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
               child: Icon(
                 Icons.remove,
                 size: 18,
-                color: current > 0 ? AppColors.primaryContainer : Colors.grey.shade400,
+                color: current > 0
+                    ? AppColors.primaryContainer
+                    : Colors.grey.shade400,
               ),
             ),
           ),
@@ -1584,4 +1804,3 @@ class _VariationEntry {
     required this.stockController,
   });
 }
-

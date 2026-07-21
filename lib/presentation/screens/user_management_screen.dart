@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import 'package:dinnerhome/models/user.dart';
-import 'package:dinnerhome/services/user_service.dart';
+import 'package:dinnerhome/models/role_permissions.dart';
 import '../theme/app_theme.dart';
 
 class UserManagementScreen extends ConsumerStatefulWidget {
@@ -54,13 +54,24 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     } catch (e, st) {
       debugPrint('Error creating user: $e\n$st');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al crear: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al crear: $e')));
     }
   }
 
   Future<void> _updateUser(String id, User user) async {
+    final currentUser = ref.read(currentUserProvider).value;
+    if (currentUser?.id == id && (user.role != Role.admin || !user.isActive)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No puedes quitar tus propios privilegios de administrador ni desactivarte.',
+          ),
+        ),
+      );
+      return;
+    }
     try {
       final userService = ref.read(userServiceProvider);
       await userService.updateUser(id, user);
@@ -68,13 +79,20 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     } catch (e, st) {
       debugPrint('Error updating user: $e\n$st');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al actualizar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al actualizar: $e')));
     }
   }
 
   Future<void> _deleteUser(String id) async {
+    final currentUser = ref.read(currentUserProvider).value;
+    if (currentUser?.id == id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No puedes eliminar tu propia cuenta.')),
+      );
+      return;
+    }
     try {
       final userService = ref.read(userServiceProvider);
       await userService.deleteUser(id);
@@ -82,18 +100,121 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     } catch (e, st) {
       debugPrint('Error deleting user: $e\n$st');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
+    }
+  }
+
+  void _showRoleConfiguration() {
+    final configuredPermissions = ref.read(rolePermissionsProvider);
+    final draft = <Role, Set<AppPermission>>{
+      for (final role in Role.values)
+        role: Set<AppPermission>.from(
+          configuredPermissions.permissionsFor(role),
+        ),
+    };
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          scrollable: true,
+          title: const Text('Permisos por rol'),
+          content: SizedBox(
+            width: 520,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Los administradores conservan acceso total para impedir que el sistema quede bloqueado.',
+                ),
+                const SizedBox(height: 12),
+                ...Role.values.map(
+                  (role) => ExpansionTile(
+                    initiallyExpanded: role != Role.admin,
+                    title: Text(_getRoleLabel(role)),
+                    subtitle: role == Role.admin
+                        ? const Text('Acceso total protegido')
+                        : Text('${draft[role]!.length} permiso(s) activo(s)'),
+                    children: AppPermission.values.map((permission) {
+                      final isAdmin = role == Role.admin;
+                      return CheckboxListTile(
+                        dense: true,
+                        title: Text(_permissionLabel(permission)),
+                        value: isAdmin || draft[role]!.contains(permission),
+                        onChanged: isAdmin
+                            ? null
+                            : (selected) {
+                                setDialogState(() {
+                                  if (selected ?? false) {
+                                    draft[role]!.add(permission);
+                                  } else {
+                                    draft[role]!.remove(permission);
+                                  }
+                                });
+                              },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final notifier = ref.read(rolePermissionsProvider.notifier);
+                for (final role in Role.values.where(
+                  (role) => role != Role.admin,
+                )) {
+                  await notifier.setPermissions(role, draft[role]!);
+                }
+                if (!dialogContext.mounted) return;
+                Navigator.of(dialogContext).pop();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Permisos actualizados')),
+                  );
+                }
+              },
+              child: const Text('Guardar permisos'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _permissionLabel(AppPermission permission) {
+    switch (permission) {
+      case AppPermission.manageOrders:
+        return 'Gestionar pedidos';
+      case AppPermission.manageTables:
+        return 'Gestionar mesas';
+      case AppPermission.useKitchenDisplay:
+        return 'Usar monitor de cocina';
+      case AppPermission.processPayments:
+        return 'Procesar pagos y caja';
+      case AppPermission.manageMenu:
+        return 'Gestionar menú';
+      case AppPermission.manageUsers:
+        return 'Gestionar usuarios y permisos';
+      case AppPermission.viewReports:
+        return 'Ver reportes';
+      case AppPermission.viewAudit:
+        return 'Ver auditoría';
     }
   }
 
   void _showCreateDialog() {
     showDialog(
       context: context,
-      builder: (ctx) => _UserFormDialog(
-        onSave: (user) => _createUser(user),
-      ),
+      builder: (ctx) => _UserFormDialog(onSave: (user) => _createUser(user)),
     );
   }
 
@@ -128,7 +249,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             child: Text(
               'Cancelar',
               style: AppTypography.statusBadge(
-                  color: AppColors.onSurfaceVariant),
+                color: AppColors.onSurfaceVariant,
+              ),
             ),
           ),
           TextButton(
@@ -136,8 +258,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             child: Text(
               'Eliminar',
               style: AppTypography.statusBadge(
-                  color: AppColors.error,
-                  fontWeight: FontWeight.bold),
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -198,9 +321,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                         ]
                       : null,
                 ),
-                Expanded(
-                  child: _buildBody(isDesktop, isMobile, currentUser),
-                ),
+                Expanded(child: _buildBody(isDesktop, isMobile, currentUser)),
               ],
             ),
           ),
@@ -208,7 +329,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
       ),
       bottomNavigationBar: isMobile
           ? StitchBottomNavBar(
-              currentRoute: '/admin/users', currentUser: currentUser)
+              currentRoute: '/admin/users',
+              currentUser: currentUser,
+            )
           : null,
     );
   }
@@ -225,13 +348,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline,
-                  color: AppColors.error, size: 48),
+              const Icon(Icons.error_outline, color: AppColors.error, size: 48),
               const SizedBox(height: AppSpacing.md),
               Text(
                 _errorMessage!,
-                style: AppTypography.bodyMd(
-                    color: AppColors.onSurfaceVariant),
+                style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -296,8 +417,10 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     final titleColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Gestion de Personal',
-            style: AppTypography.h1(color: AppColors.onBackground)),
+        Text(
+          'Gestion de Personal',
+          style: AppTypography.h1(color: AppColors.onBackground),
+        ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           'Control de acceso y roles para los empleados de tu restaurante.',
@@ -316,16 +439,19 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: _showRoleConfiguration,
                   icon: const Icon(Icons.manage_accounts, size: 18),
                   label: const Text('Configurar Roles'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.onSurfaceVariant,
                     side: const BorderSide(color: Color(0xFFE1BFB3)),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.sm,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.xl)),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                    ),
                   ),
                 ),
               ),
@@ -349,16 +475,19 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         Expanded(child: titleColumn),
         const SizedBox(width: AppSpacing.md),
         OutlinedButton.icon(
-          onPressed: () {},
+          onPressed: _showRoleConfiguration,
           icon: const Icon(Icons.manage_accounts, size: 18),
           label: const Text('Configurar Roles'),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.onSurfaceVariant,
             side: const BorderSide(color: Color(0xFFE1BFB3)),
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.xl)),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+            ),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
@@ -378,21 +507,38 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     final rolesCount = Role.values.length.toString();
 
     final cards = [
-      _buildStatCard(Icons.groups, 'Total Usuarios', totalCount,
-          const Color(0xFF3B82F6), 'Registrados'),
-      _buildStatCard(Icons.verified_user, 'Activos Ahora', activeCount,
-          const Color(0xFF10B981), 'En turno'),
-      _buildStatCard(Icons.lock_open, 'Roles Definidos', rolesCount,
-          AppColors.primaryContainer, 'Permisos'),
+      _buildStatCard(
+        Icons.groups,
+        'Total Usuarios',
+        totalCount,
+        const Color(0xFF3B82F6),
+        'Registrados',
+      ),
+      _buildStatCard(
+        Icons.verified_user,
+        'Activos Ahora',
+        activeCount,
+        const Color(0xFF10B981),
+        'En turno',
+      ),
+      _buildStatCard(
+        Icons.lock_open,
+        'Roles Definidos',
+        rolesCount,
+        AppColors.primaryContainer,
+        'Permisos',
+      ),
     ];
 
     if (isMobile) {
       return Column(
         children: cards
-            .map((c) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: c,
-                ))
+            .map(
+              (c) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: c,
+              ),
+            )
             .toList(),
       );
     }
@@ -409,7 +555,12 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   }
 
   Widget _buildStatCard(
-      IconData icon, String label, String value, Color color, String sub) {
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+    String sub,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -433,12 +584,18 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label,
-                  style: AppTypography.bodyMd(color: const Color(0xFF64748B))),
-              Text(value, style: AppTypography.h2(color: AppColors.onBackground)),
-              Text(sub,
-                  style:
-                      AppTypography.labelCaps(color: color, fontSize: 10)),
+              Text(
+                label,
+                style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
+              ),
+              Text(
+                value,
+                style: AppTypography.h2(color: AppColors.onBackground),
+              ),
+              Text(
+                sub,
+                style: AppTypography.labelCaps(color: color, fontSize: 10),
+              ),
             ],
           ),
         ],
@@ -460,9 +617,16 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         ),
         child: Column(
           children: [
-            Icon(Icons.people_outline, size: 48, color: AppColors.outline.withValues(alpha: 0.5)),
+            Icon(
+              Icons.people_outline,
+              size: 48,
+              color: AppColors.outline.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: AppSpacing.md),
-            Text('No hay usuarios registrados', style: AppTypography.h3(color: AppColors.onSurfaceVariant)),
+            Text(
+              'No hay usuarios registrados',
+              style: AppTypography.h3(color: AppColors.onSurfaceVariant),
+            ),
           ],
         ),
       );
@@ -480,46 +644,64 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           // Header
           Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
             decoration: const BoxDecoration(
               color: Color(0xFFF8FAFC),
-              borderRadius:
-                  BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppRadius.xl),
+              ),
             ),
             child: Row(
               children: [
                 const SizedBox(width: 52 + AppSpacing.md),
                 Expanded(
                   flex: 4,
-                  child: Text('NOMBRE',
-                      style: AppTypography.labelCaps(
-                          color: const Color(0xFF94A3B8))),
+                  child: Text(
+                    'NOMBRE',
+                    style: AppTypography.labelCaps(
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
                 ),
                 if (isDesktop)
                   Expanded(
                     flex: 4,
-                    child: Text('EMAIL',
-                        style: AppTypography.labelCaps(
-                            color: const Color(0xFF94A3B8))),
+                    child: Text(
+                      'EMAIL',
+                      style: AppTypography.labelCaps(
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   ),
                 Expanded(
                   flex: 2,
-                  child: Text('ROL',
-                      style: AppTypography.labelCaps(
-                          color: const Color(0xFF94A3B8))),
+                  child: Text(
+                    'ROL',
+                    style: AppTypography.labelCaps(
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
                 ),
                 if (isDesktop)
                   Expanded(
                     flex: 3,
-                    child: Text('ULTIMA SESION',
-                        style: AppTypography.labelCaps(
-                            color: const Color(0xFF94A3B8))),
+                    child: Text(
+                      'ULTIMA SESION',
+                      style: AppTypography.labelCaps(
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   ),
                 Expanded(
                   flex: 2,
-                  child: Text('ESTADO',
-                      style: AppTypography.labelCaps(
-                          color: const Color(0xFF94A3B8))),
+                  child: Text(
+                    'ESTADO',
+                    style: AppTypography.labelCaps(
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 80),
               ],
@@ -549,7 +731,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -575,16 +759,20 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodyLg(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface)),
+                Text(
+                  user.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodyLg(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.onSurface,
+                  ),
+                ),
                 if (!isDesktop)
-                  Text(emailLabel,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodyMd(
-                          color: const Color(0xFF94A3B8))),
+                  Text(
+                    emailLabel,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodyMd(color: const Color(0xFF94A3B8)),
+                  ),
               ],
             ),
           ),
@@ -592,10 +780,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           if (isDesktop)
             Expanded(
               flex: 4,
-              child: Text(emailLabel,
-                  overflow: TextOverflow.ellipsis,
-                  style:
-                      AppTypography.bodyMd(color: const Color(0xFF64748B))),
+              child: Text(
+                emailLabel,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
+              ),
             ),
           // Role
           Expanded(
@@ -604,16 +793,21 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               alignment: Alignment.centerLeft,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
                 decoration: BoxDecoration(
                   color: roleColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
-                child: Text(roleLabel,
-                    style: AppTypography.statusBadge(
-                        color: roleColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold)),
+                child: Text(
+                  roleLabel,
+                  style: AppTypography.statusBadge(
+                    color: roleColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ),
@@ -621,10 +815,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           if (isDesktop)
             Expanded(
               flex: 3,
-              child: Text(lastLoginLabel,
-                  overflow: TextOverflow.ellipsis,
-                  style:
-                      AppTypography.bodyMd(color: const Color(0xFF64748B))),
+              child: Text(
+                lastLoginLabel,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
+              ),
             ),
           // Status
           Expanded(
@@ -662,7 +857,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                _iconBtn(Icons.edit_outlined, const Color(0xFF64748B), () => _showEditDialog(user)),
+                _iconBtn(
+                  Icons.edit_outlined,
+                  const Color(0xFF64748B),
+                  () => _showEditDialog(user),
+                ),
                 _iconBtn(Icons.delete_outline, AppColors.error, () async {
                   final confirmed = await _confirmDelete(user);
                   if (confirmed) {
@@ -689,10 +888,22 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   }
 
   Widget _buildRoleDistribution(bool isMobile) {
-    final adminCount = _users.where((u) => u.role == Role.admin).length.toString();
-    final meseroCount = _users.where((u) => u.role == Role.mesero).length.toString();
-    final cocineroCount = _users.where((u) => u.role == Role.cocinero).length.toString();
-    final cajeroCount = _users.where((u) => u.role == Role.cajero).length.toString();
+    final adminCount = _users
+        .where((u) => u.role == Role.admin)
+        .length
+        .toString();
+    final meseroCount = _users
+        .where((u) => u.role == Role.mesero)
+        .length
+        .toString();
+    final cocineroCount = _users
+        .where((u) => u.role == Role.cocinero)
+        .length
+        .toString();
+    final cajeroCount = _users
+        .where((u) => u.role == Role.cajero)
+        .length
+        .toString();
 
     final roles = [
       _RoleData('Administradores', adminCount, AppColors.primaryContainer),
@@ -730,20 +941,23 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           if (isMobile)
             Column(
               children: roles
-                  .map((r) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: _buildRoleRow(r),
-                      ))
+                  .map(
+                    (r) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: _buildRoleRow(r),
+                    ),
+                  )
                   .toList(),
             )
           else
             Row(
               children: roles
-                  .expand((r) => [
-                        Expanded(child: _buildRoleCard(r)),
-                        if (r != roles.last)
-                          const SizedBox(width: AppSpacing.sm),
-                      ])
+                  .expand(
+                    (r) => [
+                      Expanded(child: _buildRoleCard(r)),
+                      if (r != roles.last) const SizedBox(width: AppSpacing.sm),
+                    ],
+                  )
                   .toList(),
             ),
         ],
@@ -757,24 +971,31 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         Container(
           width: 10,
           height: 10,
-          decoration:
-              BoxDecoration(shape: BoxShape.circle, color: role.color),
+          decoration: BoxDecoration(shape: BoxShape.circle, color: role.color),
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: Text(role.label,
-              style: AppTypography.bodyMd(color: const Color(0xFF475569))),
+          child: Text(
+            role.label,
+            style: AppTypography.bodyMd(color: const Color(0xFF475569)),
+          ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm, vertical: 2),
+            horizontal: AppSpacing.sm,
+            vertical: 2,
+          ),
           decoration: BoxDecoration(
             color: role.color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppRadius.full),
           ),
-          child: Text(role.count,
-              style: AppTypography.statusBadge(
-                  color: role.color, fontWeight: FontWeight.bold)),
+          child: Text(
+            role.count,
+            style: AppTypography.statusBadge(
+              color: role.color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ],
     );
@@ -797,24 +1018,33 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               Container(
                 width: 32,
                 height: 32,
-                decoration:
-                    BoxDecoration(color: role.color, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: role.color,
+                  shape: BoxShape.circle,
+                ),
                 child: Center(
-                  child: Text(role.count,
-                      style: AppTypography.statusBadge(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    role.count,
+                    style: AppTypography.statusBadge(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               Icon(Icons.chevron_right, color: role.color, size: 18),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(role.label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.bodyMd(
-                  color: const Color(0xFF475569),
-                  fontWeight: FontWeight.w600)),
+          Text(
+            role.label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.bodyMd(
+              color: const Color(0xFF475569),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -837,10 +1067,7 @@ class _UserFormDialog extends StatefulWidget {
   final User? existingUser;
   final ValueChanged<User> onSave;
 
-  const _UserFormDialog({
-    this.existingUser,
-    required this.onSave,
-  });
+  const _UserFormDialog({this.existingUser, required this.onSave});
 
   @override
   State<_UserFormDialog> createState() => _UserFormDialogState();
@@ -864,7 +1091,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
     _usernameController = TextEditingController(text: user?.username ?? '');
     _nameController = TextEditingController(text: user?.name ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
-    _passwordController = TextEditingController(text: user?.password ?? '');
+    _passwordController = TextEditingController();
     _role = user?.role ?? Role.mesero;
     _isActive = user?.isActive ?? true;
   }
@@ -886,7 +1113,9 @@ class _UserFormDialogState extends State<_UserFormDialog> {
         : widget.existingUser?.password;
 
     final user = User(
-      id: widget.existingUser?.id ?? 'user-${DateTime.now().millisecondsSinceEpoch}',
+      id:
+          widget.existingUser?.id ??
+          'user-${DateTime.now().millisecondsSinceEpoch}',
       username: _usernameController.text.trim(),
       name: _nameController.text.trim(),
       role: _role,
@@ -964,10 +1193,16 @@ class _UserFormDialogState extends State<_UserFormDialog> {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl * 1.5)),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.xl * 1.5),
+                ),
                 boxShadow: [
-                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
-                ]
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -985,7 +1220,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -1010,43 +1245,71 @@ class _UserFormDialogState extends State<_UserFormDialog> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Datos de Cuenta', style: AppTypography.h3(color: AppColors.primaryContainer)),
+                              Text(
+                                'Datos de Cuenta',
+                                style: AppTypography.h3(
+                                  color: AppColors.primaryContainer,
+                                ),
+                              ),
                               const SizedBox(height: AppSpacing.md),
                               TextFormField(
                                 controller: _nameController,
-                                style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                style: AppTypography.bodyMd(
+                                  color: AppColors.onSurface,
+                                ),
                                 decoration: _inputDecoration('Nombre completo'),
-                                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                                validator: (v) =>
+                                    (v == null || v.trim().isEmpty)
+                                    ? 'Requerido'
+                                    : null,
                               ),
                               const SizedBox(height: AppSpacing.md),
                               TextFormField(
                                 controller: _usernameController,
-                                style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                decoration: _inputDecoration('Nombre de usuario (Login)'),
-                                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                                style: AppTypography.bodyMd(
+                                  color: AppColors.onSurface,
+                                ),
+                                decoration: _inputDecoration(
+                                  'Nombre de usuario (Login)',
+                                ),
+                                validator: (v) =>
+                                    (v == null || v.trim().isEmpty)
+                                    ? 'Requerido'
+                                    : null,
                               ),
                               const SizedBox(height: AppSpacing.md),
                               TextFormField(
                                 controller: _emailController,
-                                style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                decoration: _inputDecoration('Correo electrónico'),
+                                style: AppTypography.bodyMd(
+                                  color: AppColors.onSurface,
+                                ),
+                                decoration: _inputDecoration(
+                                  'Correo electrónico',
+                                ),
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (v) {
-                                  if (v == null || v.trim().isEmpty) return 'Requerido';
-                                  if (!v.contains('@')) return 'Email no válido';
+                                  if (v == null || v.trim().isEmpty)
+                                    return 'Requerido';
+                                  if (!v.contains('@'))
+                                    return 'Email no válido';
                                   return null;
                                 },
                               ),
                               const SizedBox(height: AppSpacing.md),
                               TextFormField(
                                 controller: _passwordController,
-                                style: AppTypography.bodyMd(color: AppColors.onSurface),
-                                decoration: _inputDecoration(_isEditing
-                                    ? 'Nueva contraseña (opcional)'
-                                    : 'Contraseña'),
+                                style: AppTypography.bodyMd(
+                                  color: AppColors.onSurface,
+                                ),
+                                decoration: _inputDecoration(
+                                  _isEditing
+                                      ? 'Nueva contraseña (opcional)'
+                                      : 'Contraseña',
+                                ),
                                 obscureText: true,
                                 validator: (v) {
-                                  if (!_isEditing && (v == null || v.trim().isEmpty)) {
+                                  if (!_isEditing &&
+                                      (v == null || v.trim().isEmpty)) {
                                     return 'Requerido';
                                   }
                                   return null;
@@ -1056,9 +1319,18 @@ class _UserFormDialogState extends State<_UserFormDialog> {
                               DropdownButtonFormField<Role>(
                                 value: _role,
                                 dropdownColor: Colors.white,
-                                style: AppTypography.bodyMd(color: AppColors.onSurface),
+                                style: AppTypography.bodyMd(
+                                  color: AppColors.onSurface,
+                                ),
                                 decoration: _inputDecoration('Rol'),
-                                items: Role.values.map((r) => DropdownMenuItem(value: r, child: Text(_getRoleLabel(r)))).toList(),
+                                items: Role.values
+                                    .map(
+                                      (r) => DropdownMenuItem(
+                                        value: r,
+                                        child: Text(_getRoleLabel(r)),
+                                      ),
+                                    )
+                                    .toList(),
                                 onChanged: (v) {
                                   if (v != null) setState(() => _role = v);
                                 },
@@ -1066,11 +1338,17 @@ class _UserFormDialogState extends State<_UserFormDialog> {
                               const SizedBox(height: AppSpacing.md),
                               Row(
                                 children: [
-                                  Text('Usuario activo', style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant)),
+                                  Text(
+                                    'Usuario activo',
+                                    style: AppTypography.bodyMd(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                  ),
                                   const Spacer(),
                                   Switch(
                                     value: _isActive,
-                                    onChanged: (v) => setState(() => _isActive = v),
+                                    onChanged: (v) =>
+                                        setState(() => _isActive = v),
                                     activeColor: AppColors.primaryContainer,
                                   ),
                                 ],

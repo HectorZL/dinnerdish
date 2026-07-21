@@ -1,11 +1,11 @@
 import 'package:dinnerhome/exceptions/user_exception.dart';
 import 'package:dinnerhome/models/user.dart';
+import 'package:dinnerhome/services/password_hasher.dart';
 import 'package:dinnerhome/services/user_service.dart';
 
 class InMemoryUserService implements UserService {
   final List<User> _users = [
-    // Standard test users from AuthService
-    const User(
+    User(
       id: 'user-mesero-1',
       username: 'mesero',
       name: 'Juan Pérez',
@@ -14,9 +14,9 @@ class InMemoryUserService implements UserService {
       email: 'juan.p@sabor-y-hogar.com',
       lastLogin: 'Hoy, 10:30 AM',
       isActive: true,
-      password: 'mesero',
+      password: PasswordHasher.hash('Mesero123'),
     ),
-    const User(
+    User(
       id: 'user-cajero-1',
       username: 'cajero',
       name: 'María García',
@@ -25,9 +25,9 @@ class InMemoryUserService implements UserService {
       email: 'maria.g@sabor-y-hogar.com',
       lastLogin: 'Hoy, 08:15 AM',
       isActive: true,
-      password: 'cajero',
+      password: PasswordHasher.hash('Cajero123'),
     ),
-    const User(
+    User(
       id: 'user-cocinero-1',
       username: 'cocinero',
       name: 'Carlos López',
@@ -36,9 +36,9 @@ class InMemoryUserService implements UserService {
       email: 'carlos.l@sabor-y-hogar.com',
       lastLogin: 'Ayer, 09:00 PM',
       isActive: true,
-      password: 'cocinero',
+      password: PasswordHasher.hash('Cocinero123'),
     ),
-    const User(
+    User(
       id: 'user-admin-1',
       username: 'admin',
       name: 'Ana Martínez',
@@ -47,10 +47,9 @@ class InMemoryUserService implements UserService {
       email: 'ana.m@sabor-y-hogar.com',
       lastLogin: 'Hoy, 09:15 AM',
       isActive: true,
-      password: 'admin',
+      password: PasswordHasher.hash('Admin123'),
     ),
-    // Additional users from screen mock data
-    const User(
+    User(
       id: 'user-carlos-1',
       username: 'carlos.m',
       name: 'Carlos Mendez',
@@ -59,9 +58,9 @@ class InMemoryUserService implements UserService {
       email: 'carlos.m@sabor-y-hogar.com',
       lastLogin: 'Hoy, 09:15 AM',
       isActive: true,
-      password: 'admin',
+      password: PasswordHasher.hash('Carlos123'),
     ),
-    const User(
+    User(
       id: 'user-lucia-1',
       username: 'lucia.f',
       name: 'Lucia Ferrero',
@@ -70,9 +69,9 @@ class InMemoryUserService implements UserService {
       email: 'lucia.f@sabor-y-hogar.com',
       lastLogin: 'Ayer, 11:30 PM',
       isActive: true,
-      password: 'mesero',
+      password: PasswordHasher.hash('Lucia123'),
     ),
-    const User(
+    User(
       id: 'user-jorge-1',
       username: 'jruiz',
       name: 'Jorge Ruiz',
@@ -81,9 +80,9 @@ class InMemoryUserService implements UserService {
       email: 'jruiz@sabor-y-hogar.com',
       lastLogin: 'Hoy, 06:45 AM',
       isActive: true,
-      password: 'cocinero',
+      password: PasswordHasher.hash('Jorge123'),
     ),
-    const User(
+    User(
       id: 'user-elena-1',
       username: 'elena.b',
       name: 'Elena Blanco',
@@ -92,17 +91,17 @@ class InMemoryUserService implements UserService {
       email: 'elena.b@sabor-y-hogar.com',
       lastLogin: 'Hace 3 dias',
       isActive: false,
-      password: 'cajero',
+      password: PasswordHasher.hash('Elena123'),
     ),
   ];
 
   @override
-  Future<List<User>> fetchUsers() async => List.from(_users);
+  Future<List<User>> fetchUsers() async => List.unmodifiable(_users);
 
   @override
   Future<User?> getUser(String id) async {
     try {
-      return _users.firstWhere((u) => u.id == id);
+      return _users.firstWhere((user) => user.id == id);
     } catch (_) {
       return null;
     }
@@ -110,26 +109,87 @@ class InMemoryUserService implements UserService {
 
   @override
   Future<User> createUser(User user) async {
-    _users.add(user);
-    return user;
+    final prepared = _prepareUser(user, isNewUser: true);
+    _ensureUnique(prepared);
+    _users.add(prepared);
+    return prepared;
   }
 
   @override
   Future<User> updateUser(String id, User user) async {
-    final index = _users.indexWhere((u) => u.id == id);
-    if (index == -1) {
-      throw UserNotFoundException(id);
-    }
-    _users[index] = user;
-    return user;
+    final index = _users.indexWhere((entry) => entry.id == id);
+    if (index == -1) throw UserNotFoundException(id);
+
+    final existing = _users[index];
+    final prepared = _prepareUser(user.copyWith(id: id), isNewUser: false);
+    _ensureUnique(prepared, excludingId: id);
+    _ensureAnActiveAdminRemains(existing, prepared);
+    _users[index] = prepared;
+    return prepared;
   }
 
   @override
   Future<void> deleteUser(String id) async {
-    final index = _users.indexWhere((u) => u.id == id);
-    if (index == -1) {
-      throw UserNotFoundException(id);
+    final index = _users.indexWhere((user) => user.id == id);
+    if (index == -1) throw UserNotFoundException(id);
+
+    final user = _users[index];
+    if (user.role == Role.admin && user.isActive && _activeAdminCount <= 1) {
+      throw LastActiveAdminException();
     }
     _users.removeAt(index);
+  }
+
+  int get _activeAdminCount =>
+      _users.where((user) => user.role == Role.admin && user.isActive).length;
+
+  User _prepareUser(User user, {required bool isNewUser}) {
+    final username = user.username.trim().toLowerCase();
+    final email = user.email?.trim().toLowerCase();
+    if (!RegExp(r'^[a-z0-9._-]{3,32}$').hasMatch(username)) {
+      throw InvalidUsernameException();
+    }
+    if (email == null ||
+        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+      throw InvalidEmailException();
+    }
+
+    final password = user.password?.trim();
+    if (isNewUser && (password == null || password.isEmpty)) {
+      throw WeakPasswordException();
+    }
+    if (password != null &&
+        password.isNotEmpty &&
+        !PasswordHasher.isHash(password)) {
+      if (!PasswordHasher.isStrong(password)) throw WeakPasswordException();
+      return user.copyWith(
+        username: username,
+        email: email,
+        password: PasswordHasher.hash(password),
+      );
+    }
+    return user.copyWith(username: username, email: email);
+  }
+
+  void _ensureUnique(User user, {String? excludingId}) {
+    final duplicateUsername = _users.any(
+      (entry) => entry.id != excludingId && entry.username == user.username,
+    );
+    if (duplicateUsername) throw DuplicateUsernameException(user.username);
+
+    final duplicateEmail = _users.any(
+      (entry) => entry.id != excludingId && entry.email == user.email,
+    );
+    if (duplicateEmail) throw DuplicateEmailException(user.email!);
+  }
+
+  void _ensureAnActiveAdminRemains(User existing, User updated) {
+    final removesAdminAccess =
+        existing.role == Role.admin &&
+        existing.isActive &&
+        (updated.role != Role.admin || !updated.isActive);
+    if (removesAdminAccess && _activeAdminCount <= 1) {
+      throw LastActiveAdminException();
+    }
   }
 }

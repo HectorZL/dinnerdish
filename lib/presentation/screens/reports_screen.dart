@@ -1,10 +1,16 @@
-import 'package:flutter/material.dart';
+import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dinnerhome/providers/providers.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+
+import '../../models/menu_item.dart';
+import '../../models/order.dart';
+import '../../providers/providers.dart';
 import '../theme/app_theme.dart';
-import 'package:dinnerhome/models/order.dart';
-import 'package:dinnerhome/models/menu_item.dart';
+
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -13,18 +19,161 @@ class ReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
+  late DateTimeRange _range;
+  bool _isExporting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _range = DateTimeRange(
+      start: DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(const Duration(days: 29)),
+      end: DateTime(now.year, now.month, now.day, 23, 59, 59),
+    );
+  }
+
+  Future<void> _selectRange() async {
+    final now = DateTime.now();
+    final selected = await showDateRangePicker(
+      context: context,
+      initialDateRange: _range,
+      firstDate: DateTime(now.year - 2),
+      lastDate: now,
+      helpText: 'Selecciona el periodo del reporte',
+    );
+    if (selected != null) setState(() => _range = selected);
+  }
+
+  List<Order> _filterOrders(List<Order> orders) => orders.where((order) {
+    final created = order.createdAt;
+    return !created.isBefore(_range.start) &&
+        created.isBefore(_range.end.add(const Duration(days: 1)));
+  }).toList();
+
+  _ReportMetrics _metrics(List<Order> orders, List<MenuItem> menuItems) {
+    final salesOrders = orders
+        .where(
+          (order) =>
+              order.status == OrderStatus.billed ||
+              order.status == OrderStatus.closed,
+        )
+        .toList();
+    final quantities = <String, int>{};
+    final revenue = <String, int>{};
+    var totalCents = 0;
+    for (final order in salesOrders) {
+      totalCents += order.totalCents;
+      for (final item in order.items) {
+        quantities[item.menuItemId] =
+            (quantities[item.menuItemId] ?? 0) + item.quantity;
+        revenue[item.menuItemId] =
+            (revenue[item.menuItemId] ?? 0) + item.priceCents * item.quantity;
+      }
+    }
+    final names = {for (final item in menuItems) item.id: item.name};
+    final sellers = quantities.entries.toList()
+      ..sort((left, right) => right.value.compareTo(left.value));
+    return _ReportMetrics(
+      totalCents: totalCents,
+      orderCount: salesOrders.length,
+      itemQuantities: quantities,
+      itemRevenue: revenue,
+      itemNames: names,
+      topSellers: sellers.take(5).toList(),
+    );
+  }
+
+  Future<void> _exportPdf(List<Order> orders, List<MenuItem> menuItems) async {
+    setState(() => _isExporting = true);
+    try {
+      final metrics = _metrics(orders, menuItems);
+      final pdf = pw.Document();
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          build: (context) => [
+            pw.Text(
+              'Reporte de Sabor y Hogar',
+              style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 6),
+            pw.Text(
+              'Periodo: ${_formatDate(_range.start)} – ${_formatDate(_range.end)}',
+            ),
+            pw.SizedBox(height: 18),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('Ventas: ${_formatMoney(metrics.totalCents)}'),
+                pw.Text('Pedidos: ${metrics.orderCount}'),
+                pw.Text(
+                  'Ticket medio: ${_formatMoney(metrics.averageTicketCents)}',
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 22),
+            pw.Text(
+              'Platos más vendidos',
+              style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 8),
+            pw.TableHelper.fromTextArray(
+              headers: const ['Plato', 'Unidades', 'Ingresos'],
+              data: metrics.topSellers
+                  .map(
+                    (entry) => [
+                      metrics.itemNames[entry.key] ?? 'Artículo eliminado',
+                      entry.value.toString(),
+                      _formatMoney(metrics.itemRevenue[entry.key] ?? 0),
+                    ],
+                  )
+                  .toList(),
+              headerDecoration: const pw.BoxDecoration(
+                color: PdfColors.orange200,
+              ),
+            ),
+          ],
+        ),
+      );
+      final bytes = await pdf.save();
+      await Printing.sharePdf(
+        bytes: Uint8List.fromList(bytes),
+        filename:
+            'reporte_${_range.start.toIso8601String().substring(0, 10)}_${_range.end.toIso8601String().substring(0, 10)}.pdf',
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo exportar el reporte: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  String _formatDate(DateTime value) =>
+      '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+
+  String _formatMoney(int cents) => '${(cents / 100).toStringAsFixed(2)} €';
+
   @override
   Widget build(BuildContext context) {
-    final currentUser = ref.watch(currentUserProvider).value;
-    final allOrdersAsync = ref.watch(allOrdersProvider);
-    final menuItemsAsync = ref.watch(menuItemsProvider);
+    final orders = _filterOrders(
+      ref.watch(allOrdersProvider).value ?? const [],
+    );
+    final menuItems = ref.watch(menuItemsProvider).value ?? const [];
+    final metrics = _metrics(orders, menuItems);
     final isDesktop = MediaQuery.of(context).size.width > 1024;
-    final isMobile = !isDesktop;
+    final currentUser = ref.watch(currentUserProvider).value;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isDesktop) const StitchAdminSidebar(activeTab: 'Reportes'),
           Expanded(
@@ -49,10 +198,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildHeader(),
+                            _buildHeader(orders, menuItems),
                             const SizedBox(height: AppSpacing.xl),
-                            _buildBentoGrid(allOrdersAsync.value ?? [], menuItemsAsync.value ?? []),
-                            const SizedBox(height: 100),
+                            _buildMetrics(metrics),
+                            const SizedBox(height: AppSpacing.lg),
+                            _buildTopSellers(metrics),
                           ],
                         ),
                       ),
@@ -64,390 +214,149 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: isMobile ? _buildBottomNavBar(currentUser) : null,
+      bottomNavigationBar: isDesktop
+          ? null
+          : StitchBottomNavBar(
+              currentRoute: '/admin/reports',
+              currentUser: currentUser,
+            ),
     );
   }
 
-  Widget _buildBottomNavBar(dynamic currentUser) {
-    return StitchBottomNavBar(
-      currentRoute: '/admin/reports',
-      currentUser: currentUser,
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
+  Widget _buildHeader(List<Order> orders, List<MenuItem> menuItems) {
+    return Wrap(
+      spacing: AppSpacing.md,
+      runSpacing: AppSpacing.md,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Expanded(
+        SizedBox(
+          width: 420,
           child: Column(
-            spacing: 10.0,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Panel de Reportes',
-                  style: AppTypography.h2(color: AppColors.onSurface)),
-              const SizedBox(height: AppSpacing.xs),
+              Text('Panel de Reportes', style: AppTypography.h2()),
               Text(
-                  'Visualiza el rendimiento de tu negocio en tiempo real.',
-                  style: AppTypography.bodyMd(color: AppColors.secondary)),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.calendar_today, size: 18),
-              label: Text('Últimos 30 días',
-                  style: AppTypography.labelCaps(
-                      color: AppColors.onSurfaceVariant)),
-              style: OutlinedButton.styleFrom(
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: Color(0xFFE1BFB3)),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm+5),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.xl)),
+                'Rendimiento del negocio en el periodo seleccionado.',
+                style: AppTypography.bodyMd(color: AppColors.secondary),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            StitchPrimaryButton(
-              label: 'Exportar PDF',
-              icon: Icons.download,
-              height: 50,
-              width: 160,
-              onPressed: () {},
-            ),
-          ],
-        ),
             ],
           ),
         ),
-        
+        OutlinedButton.icon(
+          onPressed: _selectRange,
+          icon: const Icon(Icons.calendar_today, size: 18),
+          label: Text(
+            '${_formatDate(_range.start)} – ${_formatDate(_range.end)}',
+          ),
+        ),
+        StitchPrimaryButton(
+          width: 180,
+          label: 'Exportar PDF',
+          icon: Icons.picture_as_pdf,
+          isLoading: _isExporting,
+          onPressed: _isExporting ? null : () => _exportPdf(orders, menuItems),
+        ),
       ],
     );
   }
 
-  Widget _buildBentoGrid(List<Order> orders, List<MenuItem> menuItems) {
-    double totalSales = 0;
-    int billedCount = 0;
-    Map<String, int> dishQuantities = {};
-    Map<String, double> dishRevenue = {};
-
-    for (var order in orders) {
-      if (order.status == OrderStatus.closed || order.status == OrderStatus.billed) {
-        billedCount++;
-        for (var item in order.items) {
-          totalSales += (item.priceCents * item.quantity / 100);
-          dishQuantities[item.menuItemId] = (dishQuantities[item.menuItemId] ?? 0) + item.quantity;
-          dishRevenue[item.menuItemId] = (dishRevenue[item.menuItemId] ?? 0) + (item.priceCents * item.quantity / 100);
-        }
-      }
-    }
-    
-    double averageTicket = billedCount > 0 ? totalSales / billedCount : 0;
-    var sortedEntries = dishQuantities.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    var top3 = sortedEntries.take(3).toList();
-
+  Widget _buildMetrics(_ReportMetrics metrics) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 900;
-        return Column(
-          children: [
-            // KPI Row
-            Row(
-              children: [
-                _buildKpiCard(
-                  'Ventas Totales',
-                  '${totalSales.toStringAsFixed(2)}€',
-                  '+0%',
-                  Icons.payments,
-                  const Color(0xFFFFF7ED),
-                  AppColors.primaryContainer,
-                  Colors.green,
-                ),
-                const SizedBox(width: AppSpacing.gutter),
-                _buildKpiCard(
-                  'Tickets Medios',
-                  '${averageTicket.toStringAsFixed(2)}€',
-                  '+0%',
-                  Icons.receipt_long,
-                  const Color(0xFFEFF6FF),
-                  const Color(0xFF3B82F6),
-                  Colors.green,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.gutter),
-
-            // Main Charts Row
-            if (isWide)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 6, child: _buildSalesChart()),
-                  const SizedBox(width: AppSpacing.gutter),
-                  Expanded(flex: 6, child: _buildTopSellers(top3, dishRevenue, menuItems)),
-                ],
-              )
-            else ...[
-              _buildSalesChart(),
-              const SizedBox(height: AppSpacing.gutter),
-              _buildTopSellers(top3, dishRevenue, menuItems),
-            ],
-          ],
+        final cards = [
+          _metricCard(
+            'Ventas totales',
+            _formatMoney(metrics.totalCents),
+            Icons.payments,
+          ),
+          _metricCard(
+            'Pedidos cobrados',
+            metrics.orderCount.toString(),
+            Icons.receipt_long,
+          ),
+          _metricCard(
+            'Ticket medio',
+            _formatMoney(metrics.averageTicketCents),
+            Icons.analytics,
+          ),
+        ];
+        if (constraints.maxWidth < 650) return Column(children: cards);
+        return Row(
+          children: cards.map((card) => Expanded(child: card)).toList(),
         );
       },
     );
   }
 
-  Widget _buildKpiCard(
-    String label,
-    String value,
-    String trend,
-    IconData icon,
-    Color bgColor,
-    Color iconColor,
-    Color trendColor,
-  ) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: const Color(0xFFF8FAFC)),
-          boxShadow: [AppShadows.card],
-        ),
-        child: Column(
+  Widget _metricCard(String title, String value, IconData icon) => Container(
+    margin: const EdgeInsets.all(4),
+    padding: const EdgeInsets.all(AppSpacing.md),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      boxShadow: [AppShadows.card],
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: AppColors.primaryContainer),
+        const SizedBox(width: AppSpacing.sm),
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(label.toUpperCase(),
-                    style: AppTypography.labelCaps(
-                        color: AppColors.secondary)),
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.base),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: Icon(icon, color: iconColor, size: 14),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.base),
-            Row(
-              children: [
-                Text(value,
-                    style: AppTypography.h3(
-                        color: AppColors.onBackground)),
-                const SizedBox(width: AppSpacing.base),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xs,
-                      vertical: 2),
-                  decoration: BoxDecoration(
-                    color: trendColor.withValues(alpha: 0.1),
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.xs),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.trending_up,
-                          size: 14, color: Colors.green),
-                      const SizedBox(width: 2),
-                      Text(trend,
-                          style: AppTypography.statusBadge(
-                              color: Colors.green)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text('Comparado con mes anterior',
-                style: AppTypography.bodyMd(
-                    color: AppColors.secondary)),
+            Text(title, style: AppTypography.bodyMd()),
+            Text(value, style: AppTypography.h3()),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSalesChart() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: const Color(0xFFF8FAFC)),
-        boxShadow: [AppShadows.card],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Evolución Semanal',
-                  style: AppTypography.h3(
-                      color: AppColors.onSurface)),
-              const Icon(Icons.more_horiz,
-                  color: Color(0xFFCBD5E1)),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          SizedBox(
-            height: 200,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _buildChartBar('LUN', 0.6, 0.7),
-                _buildChartBar('MAR', 0.75, 0.85),
-                _buildChartBar('MIE', 0.5, 0.6),
-                _buildChartBar('JUE', 0.9, 1.0),
-                _buildChartBar('VIE', 0.65, 0.8),
-                _buildChartBar('SAB', 0.8, 0.9),
-                _buildChartBar('DOM', 0.4, 0.5),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChartBar(String label, double bgHeight, double fillHeight) {
-    return Expanded(
-      child: Column(
-        children: [
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(8)),
-              ),
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  height: (bgHeight).clamp(0.0, 1.0) *
-                      200, // relative fill
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer
-                        .withValues(alpha: fillHeight),
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(8)),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.base),
-          Text(label,
-              style: AppTypography.statusBadge(
-                  color: AppColors.secondary)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopSellers(List<MapEntry<String, int>> topDishes, Map<String, double> revenues, List<MenuItem> menuItems) {
-    int maxUnits = topDishes.isEmpty ? 1 : topDishes.first.value;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: const Color(0xFFF8FAFC)),
-        boxShadow: [AppShadows.card],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Platos Estrella',
-              style: AppTypography.h3(color: AppColors.onSurface)),
-          const SizedBox(height: AppSpacing.md),
-          if (topDishes.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Text('No hay ventas registradas aún.', style: TextStyle(color: Colors.grey)),
-            ),
-          for (var entry in topDishes) ...[
-            Builder(
-              builder: (context) {
-                final menuItem = menuItems.firstWhere((m) => m.id == entry.key, orElse: () => MenuItem(id: '', name: 'Desconocido', priceCents: 0, category: '', available: true, modifiers: []));
-                return _buildTopSellerItem(
-                  menuItem.name,
-                  '${entry.value} unidades vendidas',
-                  maxUnits > 0 ? entry.value / maxUnits : 0,
-                  '${(revenues[entry.key] ?? 0).toStringAsFixed(2)}€',
-                );
-              }
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopSellerItem(
-    String name,
-    String units,
-    double progress,
-    String revenue,
-  ) {
-    return Row(
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          child: const Icon(Icons.restaurant,
-              color: Color(0xFF94A3B8)),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(name,
-                  style: AppTypography.bodyLg(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface)),
-              const SizedBox(height: AppSpacing.xs),
-              Text(units,
-                  style: AppTypography.bodyMd(
-                      color: AppColors.secondary)),
-              const SizedBox(height: AppSpacing.xs),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: const Color(0xFFF1F5F9),
-                  color: AppColors.primaryContainer,
-                  minHeight: 6,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Text(revenue,
-            style: AppTypography.bodyLg(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryContainer)),
       ],
-    );
-  }
+    ),
+  );
 
+  Widget _buildTopSellers(_ReportMetrics metrics) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(AppSpacing.lg),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      boxShadow: [AppShadows.card],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Platos más vendidos', style: AppTypography.h3()),
+        const SizedBox(height: AppSpacing.md),
+        if (metrics.topSellers.isEmpty)
+          const Text('No hay ventas en este periodo.')
+        else
+          ...metrics.topSellers.map(
+            (entry) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(child: Text(entry.value.toString())),
+              title: Text(metrics.itemNames[entry.key] ?? 'Artículo eliminado'),
+              subtitle: Text('${entry.value} unidades'),
+              trailing: Text(_formatMoney(metrics.itemRevenue[entry.key] ?? 0)),
+            ),
+          ),
+      ],
+    ),
+  );
+}
 
+class _ReportMetrics {
+  final int totalCents;
+  final int orderCount;
+  final Map<String, int> itemQuantities;
+  final Map<String, int> itemRevenue;
+  final Map<String, String> itemNames;
+  final List<MapEntry<String, int>> topSellers;
+
+  const _ReportMetrics({
+    required this.totalCents,
+    required this.orderCount,
+    required this.itemQuantities,
+    required this.itemRevenue,
+    required this.itemNames,
+    required this.topSellers,
+  });
+
+  int get averageTicketCents => orderCount == 0 ? 0 : totalCents ~/ orderCount;
 }

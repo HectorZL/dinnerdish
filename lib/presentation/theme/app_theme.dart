@@ -63,86 +63,79 @@ class AppTypography {
     Color color = AppColors.onBackground,
     FontWeight? fontWeight,
     double? fontSize,
-  }) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: fontSize ?? 32,
-        fontWeight: fontWeight ?? FontWeight.w700,
-        height: 1.2,
-        color: color,
-      );
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: fontSize ?? 32,
+    fontWeight: fontWeight ?? FontWeight.w700,
+    height: 1.2,
+    color: color,
+  );
 
   static TextStyle h2({
     Color color = AppColors.onBackground,
     FontWeight? fontWeight,
     double? fontSize,
-  }) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: fontSize ?? 24,
-        fontWeight: fontWeight ?? FontWeight.w600,
-        height: 1.3,
-        color: color,
-      );
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: fontSize ?? 24,
+    fontWeight: fontWeight ?? FontWeight.w600,
+    height: 1.3,
+    color: color,
+  );
 
   static TextStyle h3({
     Color color = AppColors.onBackground,
     FontWeight? fontWeight,
     double? fontSize,
-  }) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: fontSize ?? 20,
-        fontWeight: fontWeight ?? FontWeight.w600,
-        height: 1.4,
-        color: color,
-      );
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: fontSize ?? 20,
+    fontWeight: fontWeight ?? FontWeight.w600,
+    height: 1.4,
+    color: color,
+  );
 
   static TextStyle bodyLg({
     Color color = AppColors.onSurface,
     FontWeight? fontWeight,
     double? fontSize,
-  }) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: fontSize ?? 16,
-        fontWeight: fontWeight ?? FontWeight.w400,
-        height: 1.6,
-        color: color,
-      );
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: fontSize ?? 16,
+    fontWeight: fontWeight ?? FontWeight.w400,
+    height: 1.6,
+    color: color,
+  );
 
   static TextStyle bodyMd({
     Color color = AppColors.onSurfaceVariant,
     FontWeight? fontWeight,
     double? fontSize,
-  }) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: fontSize ?? 14,
-        fontWeight: fontWeight ?? FontWeight.w400,
-        height: 1.5,
-        color: color,
-      );
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: fontSize ?? 14,
+    fontWeight: fontWeight ?? FontWeight.w400,
+    height: 1.5,
+    color: color,
+  );
 
   static TextStyle labelCaps({
     Color color = AppColors.secondary,
     FontWeight? fontWeight,
     double? fontSize,
-  }) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: fontSize ?? 12,
-        fontWeight: fontWeight ?? FontWeight.w700,
-        letterSpacing: 0.6, // 0.05em ≈ 0.6px
-        height: 1.0,
-        color: color,
-      );
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: fontSize ?? 12,
+    fontWeight: fontWeight ?? FontWeight.w700,
+    letterSpacing: 0.6, // 0.05em ≈ 0.6px
+    height: 1.0,
+    color: color,
+  );
 
   static TextStyle statusBadge({
     Color color = AppColors.onSurface,
     FontWeight? fontWeight,
     double? fontSize,
-  }) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: fontSize ?? 12,
-        fontWeight: fontWeight ?? FontWeight.w600,
-        height: 1.0,
-        color: color,
-      );
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: fontSize ?? 12,
+    fontWeight: fontWeight ?? FontWeight.w600,
+    height: 1.0,
+    color: color,
+  );
 }
 
 // ── Spacing ───────────────────────────────────
@@ -234,13 +227,20 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                   children: [
                     if (showBack)
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Color(0xFF131D21)),
-                        onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Color(0xFF131D21),
+                        ),
+                        onPressed:
+                            onBack ?? () => Navigator.of(context).maybePop(),
                       ),
                     if (showBack) const SizedBox(width: 8),
                     if (!showBack)
                       IconButton(
-                        icon: const Icon(Icons.menu, color: AppColors.primaryContainer),
+                        icon: const Icon(
+                          Icons.menu,
+                          color: AppColors.primaryContainer,
+                        ),
                         onPressed: () {
                           Scaffold.of(context).openDrawer();
                         },
@@ -265,32 +265,42 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
               Row(
                 children: [
                   if (navLinks != null && isDesktop) ...[
-                    ...navLinks!.map((link) => Padding(
-                          padding: const EdgeInsets.only(right: 24),
-                          child: InkWell(
-                            onTap: link.route != null ? () => context.go(link.route!) : null,
-                            child: Text(
-                              link.label,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontWeight: link.isActive ? FontWeight.bold : FontWeight.w600,
-                                color: link.isActive
-                                    ? AppColors.primaryContainer
-                                    : const Color(0xFF64748B),
-                                fontSize: 14,
-                              ),
+                    ...navLinks!.map(
+                      (link) => Padding(
+                        padding: const EdgeInsets.only(right: 24),
+                        child: InkWell(
+                          onTap: link.route != null
+                              ? () => context.go(link.route!)
+                              : null,
+                          child: Text(
+                            link.label,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: link.isActive
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
+                              color: link.isActive
+                                  ? AppColors.primaryContainer
+                                  : const Color(0xFF64748B),
+                              fontSize: 14,
                             ),
                           ),
-                        )),
+                        ),
+                      ),
+                    ),
                   ],
                   if (actions != null) ...actions!,
                   Consumer(
                     builder: (context, ref, child) {
                       return PopupMenuButton<String>(
                         offset: const Offset(0, 50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         onSelected: (value) async {
                           if (value == 'logout') {
-                            await ref.read(currentUserProvider.notifier).logout();
+                            await ref
+                                .read(currentUserProvider.notifier)
+                                .logout();
                             if (context.mounted) {
                               context.go('/login');
                             }
@@ -299,12 +309,14 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                               context: context,
                               builder: (ctx) => AlertDialog(
                                 title: const Text('Perfil'),
-                                content: const Text('Detalles del usuario irán aquí.'),
+                                content: const Text(
+                                  'Detalles del usuario irán aquí.',
+                                ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx),
                                     child: const Text('Cerrar'),
-                                  )
+                                  ),
                                 ],
                               ),
                             );
@@ -315,7 +327,11 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                             value: 'profile',
                             child: Row(
                               children: [
-                                Icon(Icons.person, color: Color(0xFF64748B), size: 20),
+                                Icon(
+                                  Icons.person,
+                                  color: Color(0xFF64748B),
+                                  size: 20,
+                                ),
                                 SizedBox(width: 8),
                                 Text('Detalles del Usuario'),
                               ],
@@ -327,7 +343,10 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                               children: [
                                 Icon(Icons.logout, color: Colors.red, size: 20),
                                 SizedBox(width: 8),
-                                Text('Salir', style: TextStyle(color: Colors.red)),
+                                Text(
+                                  'Salir',
+                                  style: TextStyle(color: Colors.red),
+                                ),
                               ],
                             ),
                           ),
@@ -340,10 +359,17 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                             color: AppColors.primaryContainer,
                             border: Border.all(color: Colors.white, width: 2),
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 4,
+                              ),
                             ],
                           ),
-                          child: const Icon(Icons.person, color: Colors.white, size: 24),
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                         ),
                       );
                     },
@@ -368,10 +394,7 @@ class NavLink {
 class StitchAdminSidebar extends StatelessWidget {
   final String activeTab;
 
-  const StitchAdminSidebar({
-    super.key,
-    required this.activeTab,
-  });
+  const StitchAdminSidebar({super.key, required this.activeTab});
 
   @override
   Widget build(BuildContext context) {
@@ -380,7 +403,9 @@ class StitchAdminSidebar extends StatelessWidget {
       child: Container(
         color: Colors.white,
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.xl),
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xl,
+        ),
         child: Column(
           children: [
             Container(
@@ -398,23 +423,31 @@ class StitchAdminSidebar extends StatelessWidget {
                       color: const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
-                    child: const Icon(Icons.admin_panel_settings,
-                        color: AppColors.primaryContainer),
+                    child: const Icon(
+                      Icons.admin_panel_settings,
+                      color: AppColors.primaryContainer,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Admin Principal',
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.h3(
-                                color: AppColors.primaryContainer,
-                                fontWeight: FontWeight.bold)),
-                        Text('Gestión Global • v1.0.4',
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodyMd(
-                                color: const Color(0xFF64748B))),
+                        Text(
+                          'Admin Principal',
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.h3(
+                            color: AppColors.primaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Gestión Global • v1.0.4',
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodyMd(
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -422,22 +455,59 @@ class StitchAdminSidebar extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            _buildNavItem(context, Icons.group_outlined, 'Usuarios', activeTab == 'Usuarios'),
-            _buildNavItem(context, Icons.restaurant_menu_outlined, 'Menú', activeTab == 'Menú'),
-            _buildNavItem(context, Icons.bar_chart_outlined, 'Reportes', activeTab == 'Reportes'),
-            _buildNavItem(context, Icons.history, 'Auditoría', activeTab == 'Auditoría'),
-            _buildNavItem(context, Icons.settings_outlined, 'Ajustes', activeTab == 'Ajustes'),
+            _buildNavItem(
+              context,
+              Icons.group_outlined,
+              'Usuarios',
+              activeTab == 'Usuarios',
+            ),
+            _buildNavItem(
+              context,
+              Icons.restaurant_menu_outlined,
+              'Menú',
+              activeTab == 'Menú',
+            ),
+            _buildNavItem(
+              context,
+              Icons.add_circle_outline,
+              'Adicionales',
+              activeTab == 'Adicionales',
+            ),
+            _buildNavItem(
+              context,
+              Icons.bar_chart_outlined,
+              'Reportes',
+              activeTab == 'Reportes',
+            ),
+            _buildNavItem(
+              context,
+              Icons.history,
+              'Auditoría',
+              activeTab == 'Auditoría',
+            ),
+            _buildNavItem(
+              context,
+              Icons.settings_outlined,
+              'Ajustes',
+              activeTab == 'Ajustes',
+            ),
             const Spacer(),
-            Text('Versión v1.0.4',
-                style: AppTypography.labelCaps(
-                    color: const Color(0xFF94A3B8))),
+            Text(
+              'Versión v1.0.4',
+              style: AppTypography.labelCaps(color: const Color(0xFF94A3B8)),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(BuildContext context, IconData icon, String title, bool isActive) {
+  Widget _buildNavItem(
+    BuildContext context,
+    IconData icon,
+    String title,
+    bool isActive,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.base),
       decoration: BoxDecoration(
@@ -445,19 +515,25 @@ class StitchAdminSidebar extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: isActive
             ? const Border(
-                right: BorderSide(color: AppColors.primaryContainer, width: 4))
+                right: BorderSide(color: AppColors.primaryContainer, width: 4),
+              )
             : null,
       ),
       child: ListTile(
-        leading: Icon(icon,
+        leading: Icon(
+          icon,
+          color: isActive
+              ? AppColors.primaryContainer
+              : const Color(0xFF475569),
+        ),
+        title: Text(
+          title,
+          style: AppTypography.bodyMd(
             color: isActive
                 ? AppColors.primaryContainer
-                : const Color(0xFF475569)),
-        title: Text(title,
-            style: AppTypography.bodyMd(
-                color: isActive
-                    ? AppColors.primaryContainer
-                    : const Color(0xFF475569))),
+                : const Color(0xFF475569),
+          ),
+        ),
         onTap: () {
           if (isActive) return;
           switch (title) {
@@ -465,6 +541,8 @@ class StitchAdminSidebar extends StatelessWidget {
               context.go('/admin/users');
             case 'Menú':
               context.go('/admin/menu');
+            case 'Adicionales':
+              context.go('/admin/additionals');
             case 'Reportes':
               context.go('/admin/reports');
             case 'Auditoría':
@@ -472,7 +550,8 @@ class StitchAdminSidebar extends StatelessWidget {
           }
         },
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.xl)),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+        ),
       ),
     );
   }
@@ -486,7 +565,7 @@ class _NavItem {
   _NavItem(this.icon, this.label, this.route);
 }
 
-class StitchBottomNavBar extends StatelessWidget {
+class StitchBottomNavBar extends ConsumerWidget {
   final String currentRoute;
   final dynamic currentUser;
 
@@ -497,26 +576,42 @@ class StitchBottomNavBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final permissions = ref.watch(rolePermissionsProvider);
     final items = <_NavItem>[
       _NavItem(Icons.dashboard_outlined, 'Inicio', '/menu'),
     ];
 
-    if (RouteGuard.canAccessOrders(currentUser)) {
-      items.add(_NavItem(Icons.receipt_long_outlined, 'Pedidos', '/orders/tracking'));
+    if (RouteGuard.canAccessOrders(currentUser, permissions)) {
+      items.add(
+        _NavItem(Icons.receipt_long_outlined, 'Pedidos', '/orders/tracking'),
+      );
     }
-    if (RouteGuard.canAccessTables(currentUser)) {
+    if (RouteGuard.canAccessTables(currentUser, permissions)) {
       items.add(_NavItem(Icons.table_restaurant_outlined, 'Mesas', '/tables'));
     }
-    if (RouteGuard.canAccessKds(currentUser)) {
+    if (RouteGuard.canAccessKds(currentUser, permissions)) {
       items.add(_NavItem(Icons.kitchen_outlined, 'Cocina', '/kds'));
     }
-    if (RouteGuard.canAccessPayment(currentUser)) {
-      items.add(_NavItem(Icons.point_of_sale_outlined, 'Caja', '/cashier/pending'));
+    if (RouteGuard.canAccessPayment(currentUser, permissions)) {
+      items.add(
+        _NavItem(Icons.point_of_sale_outlined, 'Caja', '/cashier/pending'),
+      );
     }
-    if (currentUser != null && currentUser.role.toString() == 'Role.admin') {
-      items.add(_NavItem(Icons.bar_chart_outlined, 'Reportes', '/admin/reports'));
-      items.add(_NavItem(Icons.restaurant_menu_outlined, 'Menú', '/admin/menu'));
+    if (RouteGuard.canAccessReports(currentUser, permissions)) {
+      items.add(
+        _NavItem(Icons.bar_chart_outlined, 'Reportes', '/admin/reports'),
+      );
+    }
+    if (RouteGuard.canAccessMenuManagement(currentUser, permissions)) {
+      items.add(
+        _NavItem(Icons.restaurant_menu_outlined, 'Menú', '/admin/menu'),
+      );
+    }
+    if (RouteGuard.canAccessAdmin(currentUser, permissions)) {
+      items.add(
+        _NavItem(Icons.manage_accounts_outlined, 'Usuarios', '/admin/users'),
+      );
     }
 
     // Limit to max 5 items on mobile to keep the bar clean
@@ -533,25 +628,31 @@ class StitchBottomNavBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: displayItems
-            .map((item) => Expanded(
-                  child: _buildItem(
-                      context, item.icon, item.label, item.route),
-                ))
+            .map(
+              (item) => Expanded(
+                child: _buildItem(context, item.icon, item.label, item.route),
+              ),
+            )
             .toList(),
       ),
     );
   }
 
-  Widget _buildItem(BuildContext context, IconData icon, String label, String route) {
+  Widget _buildItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String route,
+  ) {
     bool isActive = currentRoute == route;
     if (route != '/menu' && currentRoute.startsWith(route)) {
-        isActive = true;
+      isActive = true;
     }
     if (route == '/orders/tracking' && currentRoute.startsWith('/orders/')) {
-        isActive = true;
+      isActive = true;
     }
     if (route == '/cashier/pending' && currentRoute.startsWith('/cashier/')) {
-        isActive = true;
+      isActive = true;
     }
 
     return GestureDetector(
@@ -564,7 +665,9 @@ class StitchBottomNavBar extends StatelessWidget {
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: EdgeInsets.symmetric(
-                horizontal: isActive ? 18 : 10, vertical: 6),
+              horizontal: isActive ? 18 : 10,
+              vertical: 6,
+            ),
             decoration: BoxDecoration(
               color: isActive
                   ? AppColors.primaryContainer.withValues(alpha: 0.12)
@@ -586,8 +689,7 @@ class StitchBottomNavBar extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
-              fontWeight:
-                  isActive ? FontWeight.w700 : FontWeight.w500,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               color: isActive
                   ? AppColors.primaryContainer
                   : const Color(0xFF94A3B8),
@@ -680,7 +782,9 @@ class StitchPrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryContainer,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: AppColors.primaryContainer.withValues(alpha: 0.4),
+          disabledBackgroundColor: AppColors.primaryContainer.withValues(
+            alpha: 0.4,
+          ),
           disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(

@@ -7,16 +7,24 @@ import 'package:dinnerhome/services/audit_service.dart';
 import 'package:dinnerhome/services/order_service.dart';
 import 'package:dinnerhome/services/socket_service.dart';
 import 'package:dinnerhome/services/menu_service.dart';
+import 'package:dinnerhome/services/additional_service.dart';
+import 'package:dinnerhome/models/global_additional.dart';
 
 class InMemoryOrderService implements OrderService {
   final SocketService socketService;
   final MenuService? menuService;
+  final AdditionalService? additionalService;
   final AuditService? auditService;
   final Map<String, Order> _orders = {};
   int _orderCounter = 0;
   final _orderEventsController = StreamController<OrderEvent>.broadcast();
 
-  InMemoryOrderService(this.socketService, {this.menuService, this.auditService});
+  InMemoryOrderService(
+    this.socketService, {
+    this.menuService,
+    this.additionalService,
+    this.auditService,
+  });
 
   @override
   Future<Order> createDraft({required String waiterId, String? tableId}) async {
@@ -44,7 +52,10 @@ class InMemoryOrderService implements OrderService {
   }
 
   @override
-  Future<Order> updateTable({required String orderId, required String tableId}) async {
+  Future<Order> updateTable({
+    required String orderId,
+    required String tableId,
+  }) async {
     final order = _orders[orderId];
     if (order == null) {
       throw OrderNotFoundException(orderId);
@@ -61,7 +72,10 @@ class InMemoryOrderService implements OrderService {
   }
 
   @override
-  Future<Order> addItem({required String orderId, required OrderItem item}) async {
+  Future<Order> addItem({
+    required String orderId,
+    required OrderItem item,
+  }) async {
     final order = _orders[orderId];
     if (order == null) {
       throw OrderNotFoundException(orderId);
@@ -73,8 +87,15 @@ class InMemoryOrderService implements OrderService {
       throw OrderLockedException(order.status.name);
     }
 
-    // Decrementar stock si menuService está presente
-    await menuService?.adjustStock(item.menuItemId, item.variationId, -item.quantity);
+    if (isGlobalAdditionalLine(item.menuItemId)) {
+      await _validateGlobalAdditionalItem(item);
+    } else {
+      await menuService?.adjustStock(
+        item.menuItemId,
+        item.variationId,
+        -item.quantity,
+      );
+    }
 
     final updatedItems = [...order.items, item];
     final updatedOrder = _recalculateOrder(order.copyWith(items: updatedItems));
@@ -84,6 +105,60 @@ class InMemoryOrderService implements OrderService {
       action: 'order.item_added',
       userId: order.waiterId,
       metadata: {'orderId': orderId, 'itemId': item.id},
+    );
+    return updatedOrder;
+  }
+
+  @override
+  Future<Order> addCashierAdditional({
+    required String orderId,
+    required String additionalId,
+    required int quantity,
+    required String byUserId,
+  }) async {
+    final order = _orders[orderId];
+    if (order == null) throw OrderNotFoundException(orderId);
+    if (order.status == OrderStatus.closed) {
+      throw OrderLockedException(order.status.name);
+    }
+    if (quantity <= 0) {
+      throw ArgumentError('La cantidad del adicional debe ser mayor que cero.');
+    }
+
+    final service = additionalService;
+    if (service == null) {
+      throw StateError('El catálogo de adicionales no está disponible.');
+    }
+    final additional = await service.getAdditional(additionalId);
+    if (additional == null || !additional.available) {
+      throw ArgumentError('El adicional seleccionado no está disponible.');
+    }
+
+    final item = OrderItem(
+      id: 'cashier-additional-${DateTime.now().microsecondsSinceEpoch}',
+      menuItemId: globalAdditionalLineMenuItemId(additional.id),
+      name: additional.name,
+      quantity: quantity,
+      priceCents: additional.priceCents,
+      status: oi.OrderStatus.served,
+      modifierIds: [additional.id],
+    );
+    final updatedOrder = _recalculateOrder(
+      order.copyWith(items: [...order.items, item]),
+    );
+    _orders[orderId] = updatedOrder;
+    _emitEvent(updatedOrder, 'cashier_additional_added');
+    auditService?.record(
+      action: 'order.cashier_additional_added',
+      userId: byUserId,
+      metadata: {
+        'orderId': orderId,
+        'itemId': item.id,
+        'additionalId': additional.id,
+        'additionalName': additional.name,
+        'quantity': quantity,
+        'priceCents': additional.priceCents,
+      },
     );
     return updatedOrder;
   }
@@ -99,11 +174,15 @@ class InMemoryOrderService implements OrderService {
       throw OrderNotFoundException(orderId);
     }
 
-    final oldItem = order.items.firstWhere((i) => i.id == item.id, orElse: () => throw Exception('Item no encontrado en el pedido'));
+    final oldItem = order.items.firstWhere(
+      (i) => i.id == item.id,
+      orElse: () => throw Exception('Item no encontrado en el pedido'),
+    );
     final diff = item.quantity - oldItem.quantity;
 
-    // Ajustar stock si menuService está presente
-    await menuService?.adjustStock(item.menuItemId, item.variationId, -diff);
+    if (!isGlobalAdditionalLine(item.menuItemId)) {
+      await menuService?.adjustStock(item.menuItemId, item.variationId, -diff);
+    }
 
     final items = order.items.map((i) => i.id == item.id ? item : i).toList();
     final updatedOrder = _recalculateOrder(order.copyWith(items: items));
@@ -128,10 +207,18 @@ class InMemoryOrderService implements OrderService {
       throw OrderNotFoundException(orderId);
     }
 
-    final item = order.items.firstWhere((i) => i.id == itemId, orElse: () => throw Exception('Item no encontrado en el pedido'));
+    final item = order.items.firstWhere(
+      (i) => i.id == itemId,
+      orElse: () => throw Exception('Item no encontrado en el pedido'),
+    );
 
-    // Incrementar stock al remover si menuService está presente
-    await menuService?.adjustStock(item.menuItemId, item.variationId, item.quantity);
+    if (!isGlobalAdditionalLine(item.menuItemId)) {
+      await menuService?.adjustStock(
+        item.menuItemId,
+        item.variationId,
+        item.quantity,
+      );
+    }
 
     final updatedItems = order.items.where((i) => i.id != itemId).toList();
     final updatedOrder = _recalculateOrder(order.copyWith(items: updatedItems));
@@ -146,7 +233,10 @@ class InMemoryOrderService implements OrderService {
   }
 
   @override
-  Future<Order> sendToKitchen({required String orderId, required String byUserId}) async {
+  Future<Order> sendToKitchen({
+    required String orderId,
+    required String byUserId,
+  }) async {
     final order = _orders[orderId];
     if (order == null) {
       throw OrderNotFoundException(orderId);
@@ -157,7 +247,9 @@ class InMemoryOrderService implements OrderService {
     }
 
     final updatedOrder = order.copyWith(
-      status: order.status == OrderStatus.prepping ? OrderStatus.prepping : OrderStatus.sentToKitchen,
+      status: order.status == OrderStatus.prepping
+          ? OrderStatus.prepping
+          : OrderStatus.sentToKitchen,
       sentToKitchenAt: order.sentToKitchenAt ?? DateTime.now(),
     );
     _orders[orderId] = updatedOrder;
@@ -211,6 +303,7 @@ class InMemoryOrderService implements OrderService {
     );
     return updatedOrder;
   }
+
   @override
   Future<Order> updateItemStatus({
     required String orderId,
@@ -225,7 +318,9 @@ class InMemoryOrderService implements OrderService {
 
     final itemIndex = order.items.indexWhere((i) => i.id == itemId);
     if (itemIndex == -1) {
-      throw OrderNotFoundException('Item $itemId not found in order $orderId'); // Could use ItemNotFound
+      throw OrderNotFoundException(
+        'Item $itemId not found in order $orderId',
+      ); // Could use ItemNotFound
     }
 
     // Actualizar el item
@@ -239,9 +334,11 @@ class InMemoryOrderService implements OrderService {
     // Works from both sentToKitchen and prepping states
     if (status == oi.OrderStatus.ready &&
         (order.status == OrderStatus.prepping ||
-         order.status == OrderStatus.sentToKitchen)) {
+            order.status == OrderStatus.sentToKitchen)) {
       final allReady = updatedItems.every(
-        (item) => item.status == oi.OrderStatus.ready || item.status == oi.OrderStatus.served,
+        (item) =>
+            item.status == oi.OrderStatus.ready ||
+            item.status == oi.OrderStatus.served,
       );
       if (allReady) {
         updatedOrder = updatedOrder.copyWith(
@@ -281,9 +378,12 @@ class InMemoryOrderService implements OrderService {
 
   @override
   Future<List<Order>> getActiveOrders() async {
-    return _orders.values.where((o) => 
-      o.status != OrderStatus.closed && o.status != OrderStatus.draft
-    ).toList();
+    return _orders.values
+        .where(
+          (o) =>
+              o.status != OrderStatus.closed && o.status != OrderStatus.draft,
+        )
+        .toList();
   }
 
   @override
@@ -294,8 +394,31 @@ class InMemoryOrderService implements OrderService {
   @override
   Stream<OrderEvent> watchOrders() => _orderEventsController.stream;
 
+  Future<void> _validateGlobalAdditionalItem(OrderItem item) async {
+    final additionalId = globalAdditionalIdFromMenuItemId(item.menuItemId);
+    final service = additionalService;
+    if (additionalId == null || service == null) {
+      throw StateError('No se pudo validar el adicional global.');
+    }
+    final additional = await service.getAdditional(additionalId);
+    if (additional == null || !additional.available) {
+      throw ArgumentError('El adicional seleccionado no está disponible.');
+    }
+    if (item.priceCents != additional.priceCents ||
+        item.modifierIds.length != 1 ||
+        item.modifierIds.single != additional.id) {
+      throw ArgumentError(
+        'El precio del adicional no coincide con el catálogo.',
+      );
+    }
+  }
+
   void _emitEvent(Order order, String eventType) {
-    final event = OrderEvent(orderId: order.id, eventType: eventType, order: order);
+    final event = OrderEvent(
+      orderId: order.id,
+      eventType: eventType,
+      order: order,
+    );
     _orderEventsController.add(event);
     socketService.emitOrderEvent(event);
   }

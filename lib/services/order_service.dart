@@ -18,6 +18,12 @@ abstract class OrderService {
   Future<Order> createDraft({required String waiterId, String? tableId});
   Future<Order> updateTable({required String orderId, required String tableId});
   Future<Order> addItem({required String orderId, required OrderItem item});
+  Future<Order> addCashierAdditional({
+    required String orderId,
+    required String additionalId,
+    required int quantity,
+    required String byUserId,
+  });
   Future<Order> updateItem({
     required String orderId,
     required OrderItem item,
@@ -28,7 +34,10 @@ abstract class OrderService {
     required String itemId,
     required String byUserId,
   });
-  Future<Order> sendToKitchen({required String orderId, required String byUserId});
+  Future<Order> sendToKitchen({
+    required String orderId,
+    required String byUserId,
+  });
   Future<Order> updateStatus({
     required String orderId,
     required OrderStatus status,

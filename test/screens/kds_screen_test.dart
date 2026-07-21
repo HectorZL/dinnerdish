@@ -24,7 +24,9 @@ class MockKdsSocketService implements SocketService {
   void dispose() => _controller.close();
 
   void addOrder(Order order, {String eventType = 'order_update'}) {
-    _controller.add(OrderEvent(orderId: order.id, eventType: eventType, order: order));
+    _controller.add(
+      OrderEvent(orderId: order.id, eventType: eventType, order: order),
+    );
   }
 }
 
@@ -50,10 +52,7 @@ class MockKdsOrderService implements OrderService {
   }
 
   @override
-  Future<Order> createDraft({
-    required String waiterId,
-    String? tableId,
-  }) async {
+  Future<Order> createDraft({required String waiterId, String? tableId}) async {
     throw UnimplementedError('Not used in KDS screen');
   }
 
@@ -61,6 +60,16 @@ class MockKdsOrderService implements OrderService {
   Future<Order> addItem({
     required String orderId,
     required order_item.OrderItem item,
+  }) async {
+    throw UnimplementedError('Not used in KDS screen');
+  }
+
+  @override
+  Future<Order> addCashierAdditional({
+    required String orderId,
+    required String additionalId,
+    required int quantity,
+    required String byUserId,
   }) async {
     throw UnimplementedError('Not used in KDS screen');
   }
@@ -178,8 +187,9 @@ void main() {
   });
 
   group('KdsScreen', () {
-    testWidgets('shows empty state initially with wait message',
-        (tester) async {
+    testWidgets('shows empty state initially with wait message', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildKdsApp(socketService));
 
       expect(find.text('Esperando órdenes...'), findsOneWidget);
@@ -219,8 +229,9 @@ void main() {
       expect(find.text('Mesa 5'), findsOneWidget);
     });
 
-    testWidgets('shows connected indicator after receiving event',
-        (tester) async {
+    testWidgets('shows connected indicator after receiving event', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildKdsApp(socketService));
 
       final order = makeOrder(
@@ -237,26 +248,27 @@ void main() {
       expect(find.text('Desconectado'), findsNothing);
     });
 
-    testWidgets('sorts tickets into correct tabs by status',
-        (tester) async {
+    testWidgets('sorts tickets into correct tabs by status', (tester) async {
       await tester.pumpWidget(buildKdsApp(socketService));
 
       // Emit one pending, one prepping, one ready
-      socketService.addOrder(makeOrder(
-        id: 'order-pending',
-        tableId: '1',
-        status: OrderStatus.sentToKitchen,
-      ));
-      socketService.addOrder(makeOrder(
-        id: 'order-prepping',
-        tableId: '2',
-        status: OrderStatus.prepping,
-      ));
-      socketService.addOrder(makeOrder(
-        id: 'order-ready',
-        tableId: '3',
-        status: OrderStatus.ready,
-      ));
+      socketService.addOrder(
+        makeOrder(
+          id: 'order-pending',
+          tableId: '1',
+          status: OrderStatus.sentToKitchen,
+        ),
+      );
+      socketService.addOrder(
+        makeOrder(
+          id: 'order-prepping',
+          tableId: '2',
+          status: OrderStatus.prepping,
+        ),
+      );
+      socketService.addOrder(
+        makeOrder(id: 'order-ready', tableId: '3', status: OrderStatus.ready),
+      );
 
       await tester.pump();
       await tester.pump();
@@ -266,8 +278,7 @@ void main() {
       expect(find.text('Listos (1)'), findsOneWidget);
     });
 
-    testWidgets('updates ticket tab when order status changes',
-        (tester) async {
+    testWidgets('updates ticket tab when order status changes', (tester) async {
       await tester.pumpWidget(buildKdsApp(socketService));
 
       // Start with a pending order

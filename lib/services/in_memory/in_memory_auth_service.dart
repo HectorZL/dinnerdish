@@ -1,6 +1,7 @@
 import 'package:dinnerhome/exceptions/auth_exception.dart';
 import 'package:dinnerhome/models/user.dart';
 import 'package:dinnerhome/services/auth_service.dart';
+import 'package:dinnerhome/services/password_hasher.dart';
 import 'package:dinnerhome/services/user_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_user_service.dart';
 
@@ -9,19 +10,18 @@ class InMemoryAuthService implements AuthService {
   User? _currentUser;
 
   InMemoryAuthService([UserService? userService])
-      : _userService = userService ?? InMemoryUserService();
+    : _userService = userService ?? InMemoryUserService();
 
   @override
   Future<User> login(String username, String password) async {
     final users = await _userService.fetchUsers();
     try {
-      final user = users.firstWhere((u) =>
-          u.username == username &&
-          u.isActive &&
-          (u.password == null ||
-              u.password!.isEmpty ||
-              u.password == password ||
-              password == 'password'));
+      final user = users.firstWhere(
+        (candidate) =>
+            candidate.username.toLowerCase() == username.trim().toLowerCase() &&
+            candidate.isActive &&
+            PasswordHasher.verify(password, candidate.password),
+      );
       _currentUser = user;
       return user;
     } catch (_) {
@@ -41,7 +41,5 @@ class InMemoryAuthService implements AuthService {
   }
 
   @override
-  Future<User?> getCurrentUser() async {
-    return _currentUser;
-  }
+  Future<User?> getCurrentUser() async => _currentUser;
 }

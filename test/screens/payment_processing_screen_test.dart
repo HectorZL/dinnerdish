@@ -79,7 +79,10 @@ class MockPaymentProcOrderService implements OrderService {
   }
 
   @override
-  Future<Order> updateTable({required String orderId, required String tableId}) async {
+  Future<Order> updateTable({
+    required String orderId,
+    required String tableId,
+  }) async {
     throw UnimplementedError();
   }
 
@@ -89,6 +92,37 @@ class MockPaymentProcOrderService implements OrderService {
     required order_item.OrderItem item,
   }) async {
     throw UnimplementedError();
+  }
+
+  @override
+  Future<Order> addCashierAdditional({
+    required String orderId,
+    required String additionalId,
+    required int quantity,
+    required String byUserId,
+  }) async {
+    final current = order ?? makeTestOrder(id: orderId);
+    final item = order_item.OrderItem(
+      id: 'cashier-additional-$additionalId',
+      menuItemId: 'global-additional:$additionalId',
+      name: additionalId,
+      quantity: quantity,
+      status: order_item.OrderStatus.served,
+      modifierIds: [additionalId],
+      priceCents: 300,
+    );
+    final items = [...current.items, item];
+    final subtotal = items.fold<int>(
+      0,
+      (sum, line) => sum + line.priceCents * line.quantity,
+    );
+    final tax = (subtotal * 0.10).toInt();
+    return current.copyWith(
+      items: items,
+      subtotalCents: subtotal,
+      taxCents: tax,
+      totalCents: subtotal + tax,
+    );
   }
 
   @override
@@ -167,7 +201,8 @@ class MockPaymentProcPaymentService implements PaymentService {
   }
 
   @override
-  Future<List<PaymentTransaction>> getPaymentHistory(String orderId) async => [];
+  Future<List<PaymentTransaction>> getPaymentHistory(String orderId) async =>
+      [];
 
   @override
   Future<List<PaymentTransaction>> splitPayment({
@@ -175,15 +210,19 @@ class MockPaymentProcPaymentService implements PaymentService {
     required List<int> splitAmountsCents,
     required String processedBy,
   }) async {
-    return splitAmountsCents.map((amount) => PaymentTransaction(
-      id: 'split-txn-${splitAmountsCents.indexOf(amount)}',
-      orderId: orderId,
-      processedBy: processedBy,
-      amountCents: amount,
-      method: PaymentMethod.split,
-      status: PaymentStatus.completed,
-      createdAt: DateTime.now(),
-    )).toList();
+    return splitAmountsCents
+        .map(
+          (amount) => PaymentTransaction(
+            id: 'split-txn-${splitAmountsCents.indexOf(amount)}',
+            orderId: orderId,
+            processedBy: processedBy,
+            amountCents: amount,
+            method: PaymentMethod.split,
+            status: PaymentStatus.completed,
+            createdAt: DateTime.now(),
+          ),
+        )
+        .toList();
   }
 
   @override
@@ -237,9 +276,7 @@ Widget buildPaymentApp({
       orderServiceProvider.overrideWith((ref) => orderService),
       paymentServiceProvider.overrideWith((ref) => paymentService),
     ],
-    child: MaterialApp(
-      home: PaymentProcessingScreen(orderId: 'order-1'),
-    ),
+    child: MaterialApp(home: PaymentProcessingScreen(orderId: 'order-1')),
   );
 }
 
@@ -252,13 +289,17 @@ void main() {
 
   group('PaymentProcessingScreen', () {
     testWidgets('shows order details after loading', (tester) async {
-      final orderService = MockPaymentProcOrderService(order: makeTestOrder(id: 'order-1'));
+      final orderService = MockPaymentProcOrderService(
+        order: makeTestOrder(id: 'order-1'),
+      );
       final paymentService = MockPaymentProcPaymentService();
 
-      await tester.pumpWidget(buildPaymentApp(
-        orderService: orderService,
-        paymentService: paymentService,
-      ));
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+        ),
+      );
       await tester.pump();
       await tester.pump();
 
@@ -279,18 +320,22 @@ void main() {
 
       // Prices
       expect(find.text('\$20.00'), findsOneWidget); // subtotal
-      expect(find.text('\$5.00'), findsOneWidget);  // tax
-      expect(find.text('\$25.00'), findsOneWidget);  // total
+      expect(find.text('\$5.00'), findsOneWidget); // tax
+      expect(find.text('\$25.00'), findsOneWidget); // total
     });
 
     testWidgets('shows payment method options', (tester) async {
-      final orderService = MockPaymentProcOrderService(order: makeTestOrder(id: 'order-1'));
+      final orderService = MockPaymentProcOrderService(
+        order: makeTestOrder(id: 'order-1'),
+      );
       final paymentService = MockPaymentProcPaymentService();
 
-      await tester.pumpWidget(buildPaymentApp(
-        orderService: orderService,
-        paymentService: paymentService,
-      ));
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+        ),
+      );
       await tester.pump();
       await tester.pump();
 
@@ -304,13 +349,19 @@ void main() {
     });
 
     testWidgets('process payment shows success dialog', (tester) async {
-      final orderService = MockPaymentProcOrderService(order: makeTestOrder(id: 'order-1'));
-      final paymentService = MockPaymentProcPaymentService(processShouldThrow: false);
+      final orderService = MockPaymentProcOrderService(
+        order: makeTestOrder(id: 'order-1'),
+      );
+      final paymentService = MockPaymentProcPaymentService(
+        processShouldThrow: false,
+      );
 
-      await tester.pumpWidget(buildPaymentApp(
-        orderService: orderService,
-        paymentService: paymentService,
-      ));
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+        ),
+      );
       await tester.pump();
       await tester.pump();
 
@@ -329,15 +380,22 @@ void main() {
       expect(find.text('Volver a Solicitudes'), findsOneWidget);
     });
 
-    testWidgets('process payment shows error snackbar on failure',
-        (tester) async {
-      final orderService = MockPaymentProcOrderService(order: makeTestOrder(id: 'order-1'));
-      final paymentService = MockPaymentProcPaymentService(processShouldThrow: true);
+    testWidgets('process payment shows error snackbar on failure', (
+      tester,
+    ) async {
+      final orderService = MockPaymentProcOrderService(
+        order: makeTestOrder(id: 'order-1'),
+      );
+      final paymentService = MockPaymentProcPaymentService(
+        processShouldThrow: true,
+      );
 
-      await tester.pumpWidget(buildPaymentApp(
-        orderService: orderService,
-        paymentService: paymentService,
-      ));
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+        ),
+      );
       await tester.pump();
       await tester.pump();
 
@@ -352,10 +410,7 @@ void main() {
       await tester.pump();
 
       // Error snackbar should appear
-      expect(
-        find.textContaining('Error al procesar pago'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Error al procesar pago'), findsOneWidget);
     });
 
     testWidgets('shows error state when order service throws', (tester) async {
@@ -365,10 +420,12 @@ void main() {
       );
       final paymentService = MockPaymentProcPaymentService();
 
-      await tester.pumpWidget(buildPaymentApp(
-        orderService: orderService,
-        paymentService: paymentService,
-      ));
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+        ),
+      );
       await tester.pump();
       await tester.pump();
 
@@ -383,10 +440,12 @@ void main() {
       final orderService = MockPaymentProcOrderService(order: null);
       final paymentService = MockPaymentProcPaymentService();
 
-      await tester.pumpWidget(buildPaymentApp(
-        orderService: orderService,
-        paymentService: paymentService,
-      ));
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+        ),
+      );
       await tester.pump();
       await tester.pump();
 
@@ -394,13 +453,17 @@ void main() {
     });
 
     testWidgets('split button is present and visible', (tester) async {
-      final orderService = MockPaymentProcOrderService(order: makeTestOrder(id: 'order-1'));
+      final orderService = MockPaymentProcOrderService(
+        order: makeTestOrder(id: 'order-1'),
+      );
       final paymentService = MockPaymentProcPaymentService();
 
-      await tester.pumpWidget(buildPaymentApp(
-        orderService: orderService,
-        paymentService: paymentService,
-      ));
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+        ),
+      );
       await tester.pump();
       await tester.pump();
 

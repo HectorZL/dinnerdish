@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../models/global_additional.dart';
 import '../../providers/providers.dart';
 import '../../models/order.dart';
 import '../../models/table.dart';
@@ -27,6 +28,7 @@ class _PaymentProcessingScreenState
   PaymentMethod _selectedMethod = PaymentMethod.cash;
   final List<int> _splitAmounts = [];
   Map<String, MenuItem> _menuItems = {};
+  List<GlobalAdditional> _availableAdditions = [];
   int _discountAmountCents = 0;
 
   int get _finalTotalCents {
@@ -50,16 +52,21 @@ class _PaymentProcessingScreenState
     try {
       final orderService = ref.read(orderServiceProvider);
       final menuService = ref.read(menuServiceProvider);
+      final additionalService = ref.read(additionalServiceProvider);
       final order = await orderService.getOrder(widget.orderId);
       final menuItems = await menuService.fetchMenu();
+      final additions = await additionalService.fetchAdditions(
+        onlyAvailable: true,
+      );
       final Map<String, MenuItem> menuItemsMap = {
-        for (var item in menuItems) item.id: item
+        for (var item in menuItems) item.id: item,
       };
-      
+
       if (!mounted) return;
       setState(() {
         _order = order;
         _menuItems = menuItemsMap;
+        _availableAdditions = additions;
         _isLoading = false;
       });
     } catch (e) {
@@ -71,13 +78,153 @@ class _PaymentProcessingScreenState
     }
   }
 
+  void _showAddAdditionalDialog() {
+    final order = _order;
+    if (order == null || order.status == OrderStatus.closed) return;
+    if (_availableAdditions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay adicionales globales disponibles para cobrar.'),
+        ),
+      );
+      return;
+    }
+
+    var selectedAdditionalId = _availableAdditions.first.id;
+    var quantity = 1;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final selectedAdditional = _availableAdditions.firstWhere(
+            (addition) => addition.id == selectedAdditionalId,
+          );
+          return AlertDialog(
+            title: const Text('Añadir adicional a la cuenta'),
+            content: SizedBox(
+              width: 420,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Caja usa el catálogo global; el precio se valida antes de cobrar.',
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedAdditionalId,
+                    decoration: const InputDecoration(labelText: 'Adicional'),
+                    items: _availableAdditions
+                        .map(
+                          (addition) => DropdownMenuItem(
+                            value: addition.id,
+                            child: Text(
+                              '${addition.name} · ${(addition.priceCents / 100).toStringAsFixed(2)} €',
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (additionalId) {
+                      if (additionalId != null) {
+                        setDialogState(
+                          () => selectedAdditionalId = additionalId,
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Text('Cantidad'),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: quantity > 1
+                            ? () => setDialogState(() => quantity--)
+                            : null,
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      Text('$quantity'),
+                      IconButton(
+                        onPressed: () => setDialogState(() => quantity++),
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  Text(
+                    'Total adicional: ${((selectedAdditional.priceCents * quantity) / 100).toStringAsFixed(2)} €',
+                    textAlign: TextAlign.right,
+                    style: AppTypography.h3(color: AppColors.primaryContainer),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton.icon(
+                onPressed: () => _addCashierAdditional(
+                  dialogContext,
+                  selectedAdditional,
+                  quantity,
+                ),
+                icon: const Icon(Icons.add),
+                label: const Text('Añadir y cobrar'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _addCashierAdditional(
+    BuildContext dialogContext,
+    GlobalAdditional additional,
+    int quantity,
+  ) async {
+    final order = _order;
+    final cashier = ref.read(currentUserProvider).value;
+    if (order == null || cashier == null) return;
+
+    try {
+      final updated = await ref
+          .read(orderServiceProvider)
+          .addCashierAdditional(
+            orderId: order.id,
+            additionalId: additional.id,
+            quantity: quantity,
+            byUserId: cashier.id,
+          );
+      if (!mounted) return;
+      setState(() {
+        _order = updated;
+        _discountAmountCents = 0;
+      });
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${additional.name} añadido a la cuenta')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo añadir el adicional: $error')),
+        );
+      }
+    }
+  }
+
   Future<void> _processPayment() async {
     if (_order == null || _isProcessing) return;
 
     // F5-03: Guard — no procesar si ya está cerrado
     if (_order!.status == OrderStatus.closed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Este pedido ya fue procesado y cerrado.')),
+        const SnackBar(
+          content: Text('Este pedido ya fue procesado y cerrado.'),
+        ),
       );
       return;
     }
@@ -92,15 +239,17 @@ class _PaymentProcessingScreenState
 
       if (currentUser == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Usuario no autenticado')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Usuario no autenticado')));
         setState(() => _isProcessing = false);
         return;
       }
 
       if (_finalTotalCents == 0 && _discountAmountCents != _order!.totalCents) {
-        throw Exception('El total a pagar no puede ser 0 a menos que sea una cortesía del 100%.');
+        throw Exception(
+          'El total a pagar no puede ser 0 a menos que sea una cortesía del 100%.',
+        );
       }
 
       if (_splitAmounts.isNotEmpty) {
@@ -170,7 +319,11 @@ class _PaymentProcessingScreenState
         ),
         title: Row(
           children: [
-            const Icon(Icons.check_circle, color: AppColors.statusReady, size: 28),
+            const Icon(
+              Icons.check_circle,
+              color: AppColors.statusReady,
+              size: 28,
+            ),
             const SizedBox(width: 12),
             Text(
               'Pago Exitoso',
@@ -193,10 +346,7 @@ class _PaymentProcessingScreenState
             ),
             if (_splitAmounts.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.base),
-              _buildSummaryRow(
-                'División',
-                '${_splitAmounts.length} partes',
-              ),
+              _buildSummaryRow('División', '${_splitAmounts.length} partes'),
             ],
           ],
         ),
@@ -208,7 +358,9 @@ class _PaymentProcessingScreenState
             },
             child: Text(
               'Volver a Solicitudes',
-              style: AppTypography.statusBadge(color: AppColors.primaryContainer),
+              style: AppTypography.statusBadge(
+                color: AppColors.primaryContainer,
+              ),
             ),
           ),
         ],
@@ -220,17 +372,21 @@ class _PaymentProcessingScreenState
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: AppTypography.bodyMd(
-                color: AppColors.onSurfaceVariant.withValues(alpha: 0.7))),
-        Text(value,
-            style: AppTypography.bodyMd(
-                color: AppColors.onSurface).copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: AppTypography.bodyMd(
+            color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+          ),
+        ),
+        Text(
+          value,
+          style: AppTypography.bodyMd(
+            color: AppColors.onSurface,
+          ).copyWith(fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }
-
-
 
   String _methodLabel(PaymentMethod method) {
     switch (method) {
@@ -281,14 +437,17 @@ class _PaymentProcessingScreenState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline,
-                  size: 48,
-                  color: AppColors.error.withValues(alpha: 0.7)),
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.error.withValues(alpha: 0.7),
+              ),
               const SizedBox(height: 16),
               Text(
                 _error!,
                 style: AppTypography.bodyMd(
-                    color: AppColors.onSurface.withValues(alpha: 0.7)),
+                  color: AppColors.onSurface.withValues(alpha: 0.7),
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -321,7 +480,8 @@ class _PaymentProcessingScreenState
             Text(
               'Orden no encontrada',
               style: AppTypography.bodyMd(
-                  color: AppColors.outline.withValues(alpha: 0.5)),
+                color: AppColors.outline.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -350,18 +510,26 @@ class _PaymentProcessingScreenState
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Mesa ${order.tableId}',
-                                  style: AppTypography.h2()),
+                              Text(
+                                'Mesa ${order.tableId}',
+                                style: AppTypography.h2(),
+                              ),
                               const SizedBox(height: 4),
-                              Text('Cuenta Detallada',
-                                  style: AppTypography.h3(color: AppColors.onSurfaceVariant)),
+                              Text(
+                                'Cuenta Detallada',
+                                style: AppTypography.h3(
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                         const SizedBox(width: 16),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primaryFixed,
                             borderRadius: BorderRadius.circular(AppRadius.full),
@@ -369,7 +537,8 @@ class _PaymentProcessingScreenState
                           child: Text(
                             'PEDIDO #${order.id}',
                             style: AppTypography.labelCaps(
-                                color: AppColors.primaryContainer),
+                              color: AppColors.primaryContainer,
+                            ),
                           ),
                         ),
                       ],
@@ -378,7 +547,8 @@ class _PaymentProcessingScreenState
                     Text(
                       '${order.items.length} Comensales | Atendido por: ${order.waiterId}',
                       style: AppTypography.bodyMd(
-                          color: AppColors.onSurfaceVariant),
+                        color: AppColors.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -395,77 +565,99 @@ class _PaymentProcessingScreenState
                       decoration: const BoxDecoration(
                         color: Color(0xFFF8FAFC),
                         border: Border(
-                            bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                          bottom: BorderSide(color: Color(0xFFF1F5F9)),
+                        ),
                       ),
                       child: Row(
                         children: [
                           Expanded(
-                              flex: 5,
-                              child: Text('CONCEPTO',
-                                  style: AppTypography.labelCaps())),
+                            flex: 5,
+                            child: Text(
+                              'CONCEPTO',
+                              style: AppTypography.labelCaps(),
+                            ),
+                          ),
                           Expanded(
-                              flex: 2,
-                              child: Text('CANT.',
-                                  textAlign: TextAlign.center,
-                                  style: AppTypography.labelCaps())),
+                            flex: 2,
+                            child: Text(
+                              'CANT.',
+                              textAlign: TextAlign.center,
+                              style: AppTypography.labelCaps(),
+                            ),
+                          ),
                           Expanded(
-                              flex: 3,
-                              child: Text('PRECIO',
-                                  textAlign: TextAlign.right,
-                                  style: AppTypography.labelCaps())),
+                            flex: 3,
+                            child: Text(
+                              'PRECIO',
+                              textAlign: TextAlign.right,
+                              style: AppTypography.labelCaps(),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     // Items
-                    ...order.items.map((item) => Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: const BoxDecoration(
-                            border: Border(
-                                bottom: BorderSide(
-                                    color: Color(0xFFF8FAFC))),
+                    ...order.items.map(
+                      (item) => Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: Color(0xFFF8FAFC)),
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 5,
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(_menuItems[item.menuItemId]?.name ?? 'Item ${item.menuItemId}',
-                                        style: AppTypography.bodyLg(
-                                            color: AppColors.onSurface)),
-                                    if (item.modifierIds.isNotEmpty)
-                                      Text(
-                                        'Mod: ${item.modifierIds.length}',
-                                        style: AppTypography.statusBadge(
-                                            color: AppColors.onSurfaceVariant),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text('${item.quantity}',
-                                    textAlign: TextAlign.center,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 5,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.name ??
+                                        _menuItems[item.menuItemId]?.name ??
+                                        'Item ${item.menuItemId}',
                                     style: AppTypography.bodyLg(
-                                        color: AppColors.onSurface)),
+                                      color: AppColors.onSurface,
+                                    ),
+                                  ),
+                                  if (item.modifierIds.isNotEmpty)
+                                    Text(
+                                      'Mod: ${item.modifierIds.length}',
+                                      style: AppTypography.statusBadge(
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                ],
                               ),
-                              Expanded(
-                                flex: 3,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                      '\$${(item.priceCents / 100).toStringAsFixed(2)}',
-                                      textAlign: TextAlign.right,
-                                      style: AppTypography.bodyLg(
-                                          color: AppColors.onSurface)),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                '${item.quantity}',
+                                textAlign: TextAlign.center,
+                                style: AppTypography.bodyLg(
+                                  color: AppColors.onSurface,
                                 ),
                               ),
-                            ],
-                          ),
-                        )),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  '\$${(item.priceCents / 100).toStringAsFixed(2)}',
+                                  textAlign: TextAlign.right,
+                                  style: AppTypography.bodyLg(
+                                    color: AppColors.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -475,17 +667,29 @@ class _PaymentProcessingScreenState
                 children: [
                   Expanded(
                     child: _buildActionChip(
-                        Icons.percent, 'Descuento', AppColors.primaryContainer, _showDiscountDialog),
+                      Icons.percent,
+                      'Descuento',
+                      AppColors.primaryContainer,
+                      _showDiscountDialog,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: _buildActionChip(
-                        Icons.card_giftcard, 'Cortesia', AppColors.onSurfaceVariant, _applyCortesia),
+                      Icons.card_giftcard,
+                      'Cortesia',
+                      AppColors.onSurfaceVariant,
+                      _applyCortesia,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: _buildActionChip(
-                        Icons.edit, 'Modificar', AppColors.onSurfaceVariant, () {}),
+                      Icons.edit,
+                      'Añadir adicional',
+                      AppColors.onSurfaceVariant,
+                      _showAddAdditionalDialog,
+                    ),
                   ),
                 ],
               ),
@@ -497,26 +701,34 @@ class _PaymentProcessingScreenState
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.payments,
-                            color: AppColors.primaryContainer, size: 24),
+                        Icon(
+                          Icons.payments,
+                          color: AppColors.primaryContainer,
+                          size: 24,
+                        ),
                         const SizedBox(width: AppSpacing.base),
                         Text('Finalizar Pago', style: AppTypography.h3()),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    _buildTotalRow('Subtotal',
-                        '\$${(order.subtotalCents / 100).toStringAsFixed(2)}'),
+                    _buildTotalRow(
+                      'Subtotal',
+                      '\$${(order.subtotalCents / 100).toStringAsFixed(2)}',
+                    ),
                     const SizedBox(height: AppSpacing.base),
-                    _buildTotalRow('IVA (10%)',
-                        '\$${(order.taxCents / 100).toStringAsFixed(2)}'),
+                    _buildTotalRow(
+                      'IVA (10%)',
+                      '\$${(order.taxCents / 100).toStringAsFixed(2)}',
+                    ),
                     if (_discountAmountCents > 0) ...[
                       const SizedBox(height: AppSpacing.base),
-                      _buildTotalRow('Descuento',
-                          '-\$${(_discountAmountCents / 100).toStringAsFixed(2)}', isDiscount: true),
+                      _buildTotalRow(
+                        'Descuento',
+                        '-\$${(_discountAmountCents / 100).toStringAsFixed(2)}',
+                        isDiscount: true,
+                      ),
                     ],
-                    const Divider(
-                        height: 24,
-                        color: Color(0xFFE2E8F0)),
+                    const Divider(height: 24, color: Color(0xFFE2E8F0)),
                     _buildTotalRow(
                       'TOTAL A PAGAR',
                       '\$${(_finalTotalCents / 100).toStringAsFixed(2)}',
@@ -524,13 +736,13 @@ class _PaymentProcessingScreenState
                     ),
                     const SizedBox(height: AppSpacing.md),
                     // Payment Methods
-                    Text('MÉTODO DE PAGO',
-                        style: AppTypography.labelCaps()),
+                    Text('MÉTODO DE PAGO', style: AppTypography.labelCaps()),
                     const SizedBox(height: AppSpacing.md),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final crossAxisCount =
-                            constraints.maxWidth > 400 ? 4 : 2;
+                        final crossAxisCount = constraints.maxWidth > 400
+                            ? 4
+                            : 2;
                         return GridView.count(
                           crossAxisCount: crossAxisCount,
                           shrinkWrap: true,
@@ -539,14 +751,27 @@ class _PaymentProcessingScreenState
                           mainAxisSpacing: AppSpacing.sm,
                           childAspectRatio: 1.5,
                           children: [
-                            _buildMethodCard(PaymentMethod.creditCard,
-                                Icons.credit_card, 'Tarjeta'),
                             _buildMethodCard(
-                                PaymentMethod.cash, Icons.money, 'Efectivo'),
-                            _buildMethodCard(PaymentMethod.split,
-                                Icons.call_split, 'Dividir', key: const Key('splitPaymentButton')),
+                              PaymentMethod.creditCard,
+                              Icons.credit_card,
+                              'Tarjeta',
+                            ),
                             _buildMethodCard(
-                                PaymentMethod.qr, Icons.qr_code, 'QR / Bizum'),
+                              PaymentMethod.cash,
+                              Icons.money,
+                              'Efectivo',
+                            ),
+                            _buildMethodCard(
+                              PaymentMethod.split,
+                              Icons.call_split,
+                              'Dividir',
+                              key: const Key('splitPaymentButton'),
+                            ),
+                            _buildMethodCard(
+                              PaymentMethod.qr,
+                              Icons.qr_code,
+                              'QR / Bizum',
+                            ),
                           ],
                         );
                       },
@@ -555,23 +780,35 @@ class _PaymentProcessingScreenState
                     // Options
                     Row(
                       children: [
-                        const Icon(Icons.check_box,
-                            color: AppColors.primaryContainer, size: 20),
+                        const Icon(
+                          Icons.check_box,
+                          color: AppColors.primaryContainer,
+                          size: 20,
+                        ),
                         const SizedBox(width: AppSpacing.base),
-                        Text('Emitir Factura Completa (con CIF)',
-                            style: AppTypography.bodyMd(
-                                color: AppColors.onSurfaceVariant)),
+                        Text(
+                          'Emitir Factura Completa (con CIF)',
+                          style: AppTypography.bodyMd(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Row(
                       children: [
-                        const Icon(Icons.check_box,
-                            color: AppColors.primaryContainer, size: 20),
+                        const Icon(
+                          Icons.check_box,
+                          color: AppColors.primaryContainer,
+                          size: 20,
+                        ),
                         const SizedBox(width: AppSpacing.base),
-                        Text('Enviar Ticket por Email',
-                            style: AppTypography.bodyMd(
-                                color: AppColors.onSurfaceVariant)),
+                        Text(
+                          'Enviar Ticket por Email',
+                          style: AppTypography.bodyMd(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -593,16 +830,23 @@ class _PaymentProcessingScreenState
     );
   }
 
-  Widget _buildActionChip(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildActionChip(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return OutlinedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, size: 18),
       label: Text(label, style: AppTypography.statusBadge(color: color)),
       style: OutlinedButton.styleFrom(
         foregroundColor: color,
-        side: BorderSide(color: color == AppColors.primaryContainer
-            ? color
-            : const Color(0xFFE2E8F0)),
+        side: BorderSide(
+          color: color == AppColors.primaryContainer
+              ? color
+              : const Color(0xFFE2E8F0),
+        ),
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -611,7 +855,12 @@ class _PaymentProcessingScreenState
     );
   }
 
-  Widget _buildTotalRow(String label, String value, {bool isTotal = false, bool isDiscount = false}) {
+  Widget _buildTotalRow(
+    String label,
+    String value, {
+    bool isTotal = false,
+    bool isDiscount = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -619,14 +868,21 @@ class _PaymentProcessingScreenState
           label,
           style: isTotal
               ? AppTypography.h2(color: AppColors.primaryContainer)
-              : AppTypography.bodyLg(color: isDiscount ? AppColors.error : AppColors.onSurfaceVariant),
+              : AppTypography.bodyLg(
+                  color: isDiscount
+                      ? AppColors.error
+                      : AppColors.onSurfaceVariant,
+                ),
         ),
         Text(
           value,
           style: isTotal
-              ? AppTypography.h2(color: AppColors.primaryContainer).copyWith(
-                  fontWeight: FontWeight.w900)
-              : AppTypography.bodyLg(color: isDiscount ? AppColors.error : AppColors.onSurface),
+              ? AppTypography.h2(
+                  color: AppColors.primaryContainer,
+                ).copyWith(fontWeight: FontWeight.w900)
+              : AppTypography.bodyLg(
+                  color: isDiscount ? AppColors.error : AppColors.onSurface,
+                ),
         ),
       ],
     );
@@ -659,7 +915,8 @@ class _PaymentProcessingScreenState
                       title: const Text('%'),
                       value: true,
                       groupValue: isPercentage,
-                      onChanged: (val) => setStateDialog(() => isPercentage = val!),
+                      onChanged: (val) =>
+                          setStateDialog(() => isPercentage = val!),
                     ),
                   ),
                   Expanded(
@@ -667,17 +924,22 @@ class _PaymentProcessingScreenState
                       title: const Text('\$'),
                       value: false,
                       groupValue: isPercentage,
-                      onChanged: (val) => setStateDialog(() => isPercentage = val!),
+                      onChanged: (val) =>
+                          setStateDialog(() => isPercentage = val!),
                     ),
                   ),
                 ],
               ),
               TextField(
                 controller: controller,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
                   labelText: 'Valor',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ],
@@ -693,7 +955,8 @@ class _PaymentProcessingScreenState
                 if (val > 0) {
                   setState(() {
                     if (isPercentage) {
-                      _discountAmountCents = (_order!.totalCents * (val / 100)).round();
+                      _discountAmountCents = (_order!.totalCents * (val / 100))
+                          .round();
                     } else {
                       _discountAmountCents = (val * 100).round();
                     }
@@ -713,16 +976,18 @@ class _PaymentProcessingScreenState
   }
 
   Widget _buildMethodCard(
-      PaymentMethod method, IconData icon, String label, {Key? key}) {
+    PaymentMethod method,
+    IconData icon,
+    String label, {
+    Key? key,
+  }) {
     final isSelected = _selectedMethod == method;
     return GestureDetector(
       key: key,
       onTap: () => setState(() => _selectedMethod = method),
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primaryFixed
-              : Colors.white,
+          color: isSelected ? AppColors.primaryFixed : Colors.white,
           borderRadius: BorderRadius.circular(AppRadius.xl),
           border: Border.all(
             color: isSelected
@@ -755,5 +1020,4 @@ class _PaymentProcessingScreenState
       ),
     );
   }
-
 }
