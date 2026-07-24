@@ -602,139 +602,6 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     );
   }
 
-  void _showVariationsBottomSheet(MenuItem item) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(item.name, style: AppTypography.h2()),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Selecciona las variaciones y cantidades:',
-                    style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_availableAdditions.any(
-                        (addition) => addition.available,
-                      ) ||
-                      item.modifiers.isNotEmpty)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          _showModifiersBottomSheet(item);
-                        },
-                        icon: const Icon(Icons.add_circle_outline),
-                        label: const Text('Añadir variación con adicionales'),
-                      ),
-                    ),
-                  ...item.variations.map((v) {
-                    final key = _selectionKey(item.id, variationId: v.id);
-                    final qty = _selectedQuantities[key] ?? 0;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  v.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                Text(
-                                  '${(v.priceCents / 100).toStringAsFixed(2)}€ • ${v.stock} disp.',
-                                  style: TextStyle(
-                                    color: v.stock == 0
-                                        ? Colors.red
-                                        : const Color(0xFF64748B),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.remove_circle_outline,
-                                  color: AppColors.primaryContainer,
-                                ),
-                                onPressed: qty > 0
-                                    ? () {
-                                        setModalState(() {
-                                          _selectedQuantities[key] = qty - 1;
-                                        });
-                                        setState(() {});
-                                      }
-                                    : null,
-                              ),
-                              Text(
-                                '$qty',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.add_circle_outline,
-                                  color: AppColors.primaryContainer,
-                                ),
-                                onPressed: () {
-                                  if (qty >= v.stock) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'No hay suficiente stock para la variación ${v.name}',
-                                        ),
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  setModalState(() {
-                                    _selectedQuantities[key] = qty + 1;
-                                  });
-                                  setState(() {});
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                  const SizedBox(height: 24),
-                  StitchPrimaryButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    label: 'Confirmar',
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tablesAsync = ref.watch(tablesProvider);
@@ -1015,9 +882,8 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
           onTap: isOutOfStock
               ? null
               : () {
-                  if (hasVariations) {
-                    _showVariationsBottomSheet(item);
-                  } else if (item.modifiers.isNotEmpty ||
+                  if (hasVariations ||
+                      item.modifiers.isNotEmpty ||
                       _availableAdditions.any(
                         (addition) => addition.available,
                       )) {
@@ -1173,7 +1039,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                 // Action — stepper or add button
                 if (hasVariations)
                   GestureDetector(
-                    onTap: () => _showVariationsBottomSheet(item),
+                    onTap: () => _showModifiersBottomSheet(item),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,

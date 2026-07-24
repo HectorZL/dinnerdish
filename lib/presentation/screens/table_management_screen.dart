@@ -69,15 +69,6 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: !isDesktop && canManage
-          ? FloatingActionButton.extended(
-              onPressed: _showTableForm,
-              backgroundColor: AppColors.primaryContainer,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add),
-              label: const Text('Nueva mesa'),
-            )
-          : null,
       body: Column(
         children: [
           StitchTopAppBar(
@@ -221,18 +212,28 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
 
     return StitchCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Wrap(
-        spacing: AppSpacing.lg,
-        runSpacing: AppSpacing.lg,
-        children: tables
-            .map(
-              (table) => _TableCard(
-                table: table,
-                canManage: canManage,
-                onTap: () => _openTable(table, activeOrders, canManage),
-              ),
-            )
-            .toList(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const gap = AppSpacing.lg;
+          final cardWidth = constraints.maxWidth < 768
+              ? (constraints.maxWidth - gap) / 2
+              : 156.0;
+
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            children: tables
+                .map(
+                  (table) => _TableCard(
+                    width: cardWidth,
+                    table: table,
+                    canManage: canManage,
+                    onTap: () => _openTable(table, activeOrders, canManage),
+                  ),
+                )
+                .toList(),
+          );
+        },
       ),
     );
   }
@@ -262,11 +263,13 @@ class _LegendItem extends StatelessWidget {
 }
 
 class _TableCard extends StatelessWidget {
+  final double width;
   final table_model.Table table;
   final bool canManage;
   final VoidCallback onTap;
 
   const _TableCard({
+    required this.width,
     required this.table,
     required this.canManage,
     required this.onTap,
@@ -305,7 +308,7 @@ class _TableCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadius.xl),
           child: Container(
-            width: 156,
+            width: width,
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: Colors.white,
