@@ -263,8 +263,10 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ],
                 ),
               ),
-              Row(
-                children: [
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   if (navLinks != null && isDesktop) ...[
                     ...navLinks!.map(
                       (link) => Padding(
@@ -346,34 +348,35 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                             ),
                           ),
                         ],
-                        child: Semantics(
-                          button: true,
-                          label: 'Abrir menú de usuario',
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primaryContainer,
-                              border: Border.all(color: Colors.white, width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.person,
-                              color: Colors.white,
-                              size: 24,
+                          child: Semantics(
+                            button: true,
+                            label: 'Abrir menú de usuario',
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.primaryContainer,
+                                border: Border.all(color: Colors.white, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 24,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

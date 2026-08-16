@@ -69,7 +69,7 @@ void main() {
     testWidgets('processes a pending payment request end-to-end',
         (tester) async {
       // Pre-seed the order and payment request
-      final orderId = await seedOrderReadyForPayment();
+      await seedOrderReadyForPayment();
 
       // Build app and login as cajero
       await tester.pumpWidget(services.buildApp());
@@ -77,18 +77,17 @@ void main() {
       await loginViaProvider(tester, cajeroUser);
 
       // Navigate to cashier payments
-      await tapDashboardCard(tester, 'Facturación');
-      await tester.pump();
-      await tester.pump();
+      await tapDashboardCard(tester, 'Caja y Cobros');
+      await tester.pumpAndSettle();
 
       // Should see the pending payment request
-      expect(find.textContaining('Orden #$orderId'), findsOneWidget);
+      expect(find.text('Mesa 5'), findsOneWidget);
+      expect(find.text('Cuenta Total'), findsOneWidget);
+      expect(find.text('Cuenta Separada'), findsOneWidget);
 
-      // ── Tap on the request → navigate to payment processing ──
-      await tester.tap(find.textContaining('Orden #$orderId'));
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
+      // ── Tap on Cuenta Total → navigate to payment processing ──
+      await tester.tap(find.text('Cuenta Total'));
+      await tester.pumpAndSettle();
 
       // Should be on payment processing screen
       expect(find.text('Procesar Pago'), findsAtLeastNWidgets(1));
@@ -110,12 +109,10 @@ void main() {
 
       // ── Go back to cashier screen ──
       await tester.tap(find.text('Volver a Solicitudes'));
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // No pending requests remain
-      expect(find.text('No hay solicitudes de pago pendientes'), findsOneWidget);
+      expect(find.text('Sin órdenes pendientes'), findsOneWidget);
     });
 
     testWidgets('shows empty state when no pending requests', (tester) async {
@@ -123,28 +120,24 @@ void main() {
       await tester.pump();
       await loginViaProvider(tester, cajeroUser);
 
-      await tapDashboardCard(tester, 'Facturación');
-      await tester.pump();
-      await tester.pump();
+      await tapDashboardCard(tester, 'Caja y Cobros');
+      await tester.pumpAndSettle();
 
-      expect(find.text('No hay solicitudes de pago pendientes'), findsOneWidget);
+      expect(find.text('Sin órdenes pendientes'), findsOneWidget);
     });
 
     testWidgets('records audit entry on payment processing', (tester) async {
-      final orderId = await seedOrderReadyForPayment();
+      await seedOrderReadyForPayment();
 
       await tester.pumpWidget(services.buildApp());
       await tester.pump();
       await loginViaProvider(tester, cajeroUser);
 
-      await tapDashboardCard(tester, 'Facturación');
-      await tester.pump();
-      await tester.pump();
+      await tapDashboardCard(tester, 'Caja y Cobros');
+      await tester.pumpAndSettle();
 
-      await tester.tap(find.textContaining('Orden #$orderId'));
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
+      await tester.tap(find.text('Cuenta Total'));
+      await tester.pumpAndSettle();
 
       // Process payment
       final processButton = find.byKey(const Key('processPaymentButton'));

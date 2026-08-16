@@ -105,8 +105,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/orders/:id/payment',
-        builder: (ctx, state) =>
-            PaymentProcessingScreen(orderId: state.pathParameters['id']!),
+        builder: (ctx, state) => PaymentProcessingScreen(
+          orderId: state.pathParameters['id']!,
+          initialMode: state.uri.queryParameters['mode'] ?? 'total',
+        ),
       ),
       GoRoute(
         path: '/cash-drawer',

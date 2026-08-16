@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../exceptions/menu_exception.dart';
+import '../../models/global_additional.dart';
 import '../../models/menu_item.dart';
 import '../../models/menu_item_variation.dart';
 import '../../models/modifier.dart';
 import '../../providers/providers.dart';
+import '../../services/stock_service.dart';
 import '../theme/app_theme.dart';
 
 class MenuManagementScreen extends ConsumerStatefulWidget {
@@ -123,22 +125,211 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
     await _updateItem(item.id, updated);
   }
 
-  void _showCreateDialog() {
+  Future<int?> _showRestockDialog(MenuItem item, {String? variationId}) async {
+    final menuService = ref.read(menuServiceProvider);
+    final currentItem = await menuService.getMenuItem(item.id) ?? item;
+    final variation = variationId == null
+        ? null
+        : currentItem.variations.cast<MenuItemVariation?>().firstWhere(
+            (value) => value?.id == variationId,
+            orElse: () => null,
+          );
+    final currentStock = variation?.stock ?? currentItem.stock;
+    final targetName = variation == null
+        ? currentItem.name
+        : '${currentItem.name} · ${variation.name}';
+    final quantityController = TextEditingController();
+
+    final result = await showDialog<RestockResult>(
+      context: context,
+      builder: (dialogContext) {
+        String? errorMessage;
+        bool saving = false;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Añadir stock'),
+            content: SizedBox(
+              width: 360,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    targetName,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                  Text('Stock actual: $currentStock'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: quantityController,
+                    autofocus: true,
+                    enabled: !saving,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Cantidad a añadir',
+                      hintText: 'Ejemplo: 20',
+                      errorText: errorMessage,
+                      border: const OutlineInputBorder(),
+                    ),
+                    onSubmitted: (_) async {
+                      if (!saving) {
+                        await _confirmRestock(
+                          dialogContext,
+                          setDialogState,
+                          quantityController,
+                          currentItem,
+                          variationId,
+                          currentStock,
+                          targetName,
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'La cantidad se sumará al stock actual y no modifica otras variaciones ni adicionales.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: saving
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton.icon(
+                onPressed: saving
+                    ? null
+                    : () => _confirmRestock(
+                        dialogContext,
+                        setDialogState,
+                        quantityController,
+                        currentItem,
+                        variationId,
+                        currentStock,
+                        targetName,
+                      ),
+                icon: saving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.add_box_outlined),
+                label: const Text('Confirmar reposición'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    quantityController.dispose();
+
+    if (result != null) {
+      await _loadData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Stock anterior: ${result.previousStock} · Añadido: ${result.addedQuantity} · Stock actual: ${result.newStock}',
+            ),
+          ),
+        );
+      }
+      return result.newStock;
+    }
+    return null;
+  }
+
+  Future<void> _confirmRestock(
+    BuildContext dialogContext,
+    StateSetter setDialogState,
+    TextEditingController quantityController,
+    MenuItem item,
+    String? variationId,
+    int currentStock,
+    String targetName,
+  ) async {
+    final quantity = int.tryParse(quantityController.text.trim());
+    if (quantity == null || quantity <= 0) {
+      setDialogState(() {
+        // StateSetter owns this dialog's error through the local builder.
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La reposición debe ser un número entero positivo.'),
+        ),
+      );
+      return;
+    }
+
+    setDialogState(() {});
+    try {
+      final currentUser = ref.read(currentUserProvider).value;
+      final result = await ref
+          .read(stockServiceProvider)
+          .restock(
+            RestockRequest(
+              operationId: 'restock-${DateTime.now().microsecondsSinceEpoch}',
+              itemId: item.id,
+              variationId: variationId,
+              quantity: quantity,
+              expectedCurrentStock: currentStock,
+              userId: currentUser?.id ?? 'system',
+            ),
+          );
+      if (dialogContext.mounted) {
+        Navigator.of(dialogContext).pop(result);
+      }
+    } on StockRestockException catch (error) {
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(
+          dialogContext,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } catch (error) {
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(dialogContext).showSnackBar(
+          SnackBar(content: Text('No se pudo reponer $targetName: $error')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showCreateDialog() async {
+    final additions = await ref
+        .read(additionalServiceProvider)
+        .fetchAdditions();
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => _MenuItemFormDialog(
         categories: _categories,
+        availableAdditions: additions,
+        onRestock: (_) async => null,
         onSave: (item) => _createItem(item),
       ),
     );
   }
 
-  void _showEditDialog(MenuItem item) {
+  Future<void> _showEditDialog(MenuItem item) async {
+    final additions = await ref
+        .read(additionalServiceProvider)
+        .fetchAdditions();
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => _MenuItemFormDialog(
         existingItem: item,
         categories: _categories,
+        availableAdditions: additions,
+        onRestock: (variationId) =>
+            _showRestockDialog(item, variationId: variationId),
         onSave: (updated) => _updateItem(item.id, updated),
       ),
     );
@@ -600,6 +791,31 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                               ),
                             ),
                           ),
+                          if (hasVariations)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: item.stock > 0
+                                    ? const Color(
+                                        0xFF10B981,
+                                      ).withValues(alpha: 0.1)
+                                    : AppColors.errorContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Stock base: ${item.stock}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: item.stock > 0
+                                      ? const Color(0xFF059669)
+                                      : AppColors.error,
+                                ),
+                              ),
+                            ),
                           // Stock badge
                           if (!hasVariations)
                             Container(
@@ -679,6 +895,17 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                 // Actions column
                 Column(
                   children: [
+                    IconButton(
+                      icon: const Icon(Icons.add_box_outlined, size: 20),
+                      color: AppColors.primaryContainer,
+                      tooltip: 'Añadir stock del plato',
+                      onPressed: () => _showRestockDialog(item),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                    ),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 20),
                       color: AppColors.primaryContainer,
@@ -842,11 +1069,15 @@ class _InlinePriceEditState extends State<_InlinePriceEdit> {
 class _MenuItemFormDialog extends StatefulWidget {
   final MenuItem? existingItem;
   final List<String> categories;
+  final List<GlobalAdditional> availableAdditions;
+  final Future<int?> Function(String? variationId) onRestock;
   final ValueChanged<MenuItem> onSave;
 
   const _MenuItemFormDialog({
     this.existingItem,
     required this.categories,
+    required this.availableAdditions,
+    required this.onRestock,
     required this.onSave,
   });
 
@@ -863,6 +1094,7 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
   late String _category;
   late List<_ModifierEntry> _modifierEntries;
   late List<_VariationEntry> _variationEntries;
+  late Set<String> _selectedAdditionalIds;
   late bool _hasVariations;
 
   bool get _isEditing => widget.existingItem != null;
@@ -883,6 +1115,7 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
         item?.category ??
         (widget.categories.isNotEmpty ? widget.categories.first : '');
     _hasVariations = item?.variations.isNotEmpty ?? false;
+    _selectedAdditionalIds = {...(item?.additionalIds ?? const <String>[])};
 
     _modifierEntries = (item?.modifiers ?? [])
         .map(
@@ -981,6 +1214,19 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
     int stock = 0;
 
     try {
+      final stockParsed = int.tryParse(_stockController.text);
+      if (stockParsed == null || stockParsed < 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Stock inválido. Ingresa un número entero mayor o igual a cero.',
+            ),
+          ),
+        );
+        return;
+      }
+      stock = stockParsed;
+
       if (!_hasVariations) {
         final priceText = _priceController.text.replaceAll(',', '.');
         final parsed = double.tryParse(priceText);
@@ -993,24 +1239,9 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
           return;
         }
         priceCents = (parsed * 100).round();
-
-        final stockParsed = int.tryParse(_stockController.text);
-        if (stockParsed == null || stockParsed < 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Stock inválido. Ingresa un número entero positivo.',
-              ),
-            ),
-          );
-          return;
-        }
-        stock = stockParsed;
       } else {
-        // F1-02: Cuando hay variaciones, el stock base no aplica.
-        // Usamos 99 como valor placeholder (el stock real está en las variaciones).
-        stock = 99;
-        priceCents = 0; // El precio se obtiene de las variaciones
+        // El precio del plato base se calcula a partir de sus variaciones.
+        priceCents = 0;
       }
     } catch (e) {
       ScaffoldMessenger.of(
@@ -1072,6 +1303,7 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
       category: _category,
       stock: stock,
       variations: variations,
+      additionalIds: _selectedAdditionalIds.toList(),
     );
 
     widget.onSave(item);
@@ -1269,6 +1501,36 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                 ],
                               ),
                               const Divider(),
+                              // El stock base siempre es visible, incluso cuando
+                              // el plato tiene variaciones independientes.
+                              _buildStockStepper(
+                                label: _isEditing
+                                    ? 'Stock actual del plato'
+                                    : 'Stock inicial del plato',
+                                controller: _stockController,
+                                readOnly: _isEditing,
+                              ),
+                              if (_isEditing) ...[
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: TextButton.icon(
+                                    onPressed: () async {
+                                      final newStock = await widget.onRestock(
+                                        null,
+                                      );
+                                      if (newStock != null && mounted) {
+                                        setState(() {
+                                          _stockController.text = '$newStock';
+                                        });
+                                      }
+                                    },
+                                    icon: const Icon(Icons.add_box_outlined),
+                                    label: const Text('Añadir stock del plato'),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: AppSpacing.md),
                               if (!_hasVariations) ...[
                                 // Precio
                                 TextFormField(
@@ -1304,11 +1566,6 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                                   },
                                 ),
                                 const SizedBox(height: AppSpacing.md),
-                                // Stock stepper
-                                _buildStockStepper(
-                                  label: 'Stock disponible',
-                                  controller: _stockController,
-                                ),
                               ],
                               if (_hasVariations) ...[
                                 ..._variationEntries.asMap().entries.map(
@@ -1325,6 +1582,8 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
+                      _buildAdditionalSelectionCard(),
+                      const SizedBox(height: AppSpacing.md),
 
                       // Card 3: Modificadores
                       Card(
@@ -1340,13 +1599,13 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Modificadores Opcionales',
+                                'Adicionales especiales de este plato',
                                 style: AppTypography.h3(
                                   color: AppColors.primaryContainer,
                                 ),
                               ),
                               Text(
-                                'Ingredientes extra o exclusiones (ej: Sin cebolla, Extra queso)',
+                                'Ingredientes extra o exclusiones del plato (ej: Porción de arroz, Sin queso)',
                                 style: AppTypography.bodyMd(
                                   color: AppColors.onSurfaceVariant,
                                 ),
@@ -1479,6 +1738,64 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
     );
   }
 
+  Widget _buildAdditionalSelectionCard() {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Adicionales de este plato',
+              style: AppTypography.h3(color: AppColors.primaryContainer),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Selecciona los adicionales globales disponibles únicamente para este plato. Los adicionales no tienen stock.',
+              style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant),
+            ),
+            const Divider(),
+            if (widget.availableAdditions.isEmpty)
+              Text(
+                'No hay adicionales globales configurados todavía.',
+                style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant),
+              )
+            else
+              ...widget.availableAdditions.map(
+                (additional) => CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: _selectedAdditionalIds.contains(additional.id),
+                  title: Text(
+                    additional.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    '${(additional.priceCents / 100).toStringAsFixed(2)} € · ${additional.available ? 'Disponible' : 'No disponible'} · Global',
+                  ),
+                  onChanged: (selected) {
+                    setState(() {
+                      if (selected ?? false) {
+                        _selectedAdditionalIds.add(additional.id);
+                      } else {
+                        _selectedAdditionalIds.remove(additional.id);
+                      }
+                    });
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Variations section UI ──────────────────────────────────────────────
   Widget _buildVariationCard(int index, _VariationEntry variation) {
     return Container(
@@ -1492,120 +1809,120 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Variation header
-                  Row(
-                    children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryContainer,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${index + 1}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Variación',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFF26522),
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
+            Row(
+              children: [
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryContainer,
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                  const SizedBox(height: 10),
-                  // Nombre field
-                  TextFormField(
-                    controller: variation.nameController,
-                    style: const TextStyle(
-                      color: Color(0xFF131D21),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                  child: Center(
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    decoration: _inputDecoration(
-                      'Nombre (ej: Mediano, Grande)',
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Variación',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFF26522),
+                      letterSpacing: 0.3,
                     ),
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Nombre requerido'
-                        : null,
                   ),
-                  const SizedBox(height: 8),
-                  // Precio y Stock en row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: variation.priceController,
-                          style: const TextStyle(
-                            color: Color(0xFF131D21),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: _inputDecoration('Precio (\$)').copyWith(
-                            prefixIcon: const Icon(
-                              Icons.attach_money,
-                              size: 16,
-                              color: Color(0xFFF26522),
-                            ),
-                          ),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'Requerido';
-                            }
-                            if (double.tryParse(v.replaceAll(',', '.')) ==
-                                null) {
-                              return 'Inválido';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                    ],
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Color(0xFFBA1A1A),
+                    size: 20,
                   ),
-                  const SizedBox(height: 8),
-                  // Stock stepper para la variación
-                  _buildStockStepper(
-                    label: 'Stock inicial',
-                    controller: variation.stockController,
+                  tooltip: 'Eliminar variación',
+                  onPressed: () => _removeVariationEntry(index),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 44,
+                    minHeight: 44,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            // Delete button
-            IconButton(
-              icon: const Icon(
-                Icons.close_rounded,
-                color: Color(0xFFBA1A1A),
-                size: 20,
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: variation.nameController,
+              style: const TextStyle(
+                color: Color(0xFF131D21),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-              tooltip: 'Eliminar variación',
-              onPressed: () => _removeVariationEntry(index),
-              padding: const EdgeInsets.all(4),
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              decoration: _inputDecoration('Nombre (ej: Mediano, Grande)'),
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Nombre requerido' : null,
             ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: variation.priceController,
+              style: const TextStyle(
+                color: Color(0xFF131D21),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: _inputDecoration('Precio (\$)').copyWith(
+                prefixIcon: const Icon(
+                  Icons.attach_money,
+                  size: 16,
+                  color: Color(0xFFF26522),
+                ),
+              ),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Requerido';
+                if (double.tryParse(v.replaceAll(',', '.')) == null) {
+                  return 'Inválido';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildStockStepper(
+              label: _isEditing ? 'Stock actual' : 'Stock inicial',
+              controller: variation.stockController,
+              readOnly: _isEditing,
+            ),
+            if (_isEditing) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () async {
+                    final newStock = await widget.onRestock(variation.id);
+                    if (newStock != null && mounted) {
+                      setState(() {
+                        variation.stockController.text = '$newStock';
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.add_box_outlined),
+                  label: const Text('Añadir stock de esta variación'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1659,96 +1976,114 @@ class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
   Widget _buildStockStepper({
     required String label,
     required TextEditingController controller,
+    bool readOnly = false,
   }) {
-    final current = int.tryParse(controller.text) ?? 0;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFE2D5D0)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(
-            Icons.inventory_2_outlined,
-            size: 18,
-            color: Color(0xFFF26522),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF594138),
-              ),
-            ),
-          ),
-          // Minus button
-          GestureDetector(
-            onTap: () {
-              if (current > 0) {
-                setState(() => controller.text = '${current - 1}');
-              }
-            },
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: current > 0
-                    ? AppColors.primaryContainer.withValues(alpha: 0.12)
-                    : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.remove,
+          Row(
+            children: [
+              const Icon(
+                Icons.inventory_2_outlined,
                 size: 18,
-                color: current > 0
-                    ? AppColors.primaryContainer
-                    : Colors.grey.shade400,
+                color: Color(0xFFF26522),
               ),
-            ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF594138),
+                ),
+              ),
+            ],
           ),
-          // Count display
-          Container(
-            width: 60,
-            height: 36,
-            alignment: Alignment.center,
-            child: TextField(
-              controller: controller,
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: readOnly
+                    ? null
+                    : () {
+                        final current = int.tryParse(controller.text) ?? 0;
+                        if (current > 0) {
+                          setState(() => controller.text = '${current - 1}');
+                        }
+                      },
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: readOnly
+                          ? Colors.grey.shade100
+                          : AppColors.primaryContainer.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.remove,
+                      color: readOnly
+                          ? Colors.grey.shade400
+                          : AppColors.primaryContainer,
+                    ),
+                  ),
+                ),
               ),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF131D21),
+              SizedBox(
+                width: 72,
+                height: 44,
+                child: TextField(
+                  controller: controller,
+                  readOnly: readOnly,
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF131D21),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
               ),
-              onChanged: (val) {
-                setState(() {});
-              },
-            ),
-          ),
-          // Plus button
-          GestureDetector(
-            onTap: () {
-              setState(() => controller.text = '${current + 1}');
-            },
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
+              GestureDetector(
+                onTap: readOnly
+                    ? null
+                    : () {
+                        final current = int.tryParse(controller.text) ?? 0;
+                        setState(() => controller.text = '${current + 1}');
+                      },
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: readOnly
+                          ? Colors.grey.shade300
+                          : AppColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white),
+                  ),
+                ),
               ),
-              child: const Icon(Icons.add, size: 18, color: Colors.white),
-            ),
+            ],
           ),
         ],
       ),

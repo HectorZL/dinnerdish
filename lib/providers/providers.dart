@@ -8,6 +8,7 @@ import 'package:dinnerhome/models/menu_item.dart';
 import 'package:dinnerhome/models/global_additional.dart';
 import 'package:dinnerhome/services/auth_service.dart';
 import 'package:dinnerhome/services/menu_service.dart';
+import 'package:dinnerhome/services/stock_service.dart';
 import 'package:dinnerhome/services/order_service.dart';
 import 'package:dinnerhome/services/cash_drawer_service.dart';
 import 'package:dinnerhome/services/payment_service.dart';
@@ -20,11 +21,11 @@ import 'package:dinnerhome/services/role_permissions_service.dart';
 import 'package:dinnerhome/services/user_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_user_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_cash_drawer_service.dart';
-import 'package:dinnerhome/services/in_memory/in_memory_menu_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_order_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_payment_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_socket_service.dart';
 import 'package:dinnerhome/services/hive/hive_audit_service.dart';
+import 'package:dinnerhome/services/hive/hive_menu_service.dart';
 import 'package:dinnerhome/models/table.dart';
 import 'package:dinnerhome/services/table_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_table_service.dart';
@@ -51,7 +52,14 @@ final authServiceProvider = Provider<AuthService>((ref) {
 });
 
 final menuServiceProvider = Provider<MenuService>((ref) {
-  return InMemoryMenuService();
+  return HiveMenuService();
+});
+
+final stockServiceProvider = Provider<StockService>((ref) {
+  return MenuStockService(
+    ref.watch(menuServiceProvider),
+    auditService: ref.watch(auditServiceProvider),
+  );
 });
 
 final additionalServiceProvider = Provider<AdditionalService>((ref) {

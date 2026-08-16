@@ -31,6 +31,11 @@ class MenuItem {
   @HiveField(7)
   final List<MenuItemVariation> variations;
 
+  /// IDs del catálogo global habilitados para este plato.
+  /// Los adicionales no tienen stock; solo se guarda esta relación.
+  @HiveField(8)
+  final List<String> additionalIds;
+
   const MenuItem({
     required this.id,
     required this.name,
@@ -40,6 +45,7 @@ class MenuItem {
     required this.category,
     this.stock = 99,
     this.variations = const [],
+    this.additionalIds = const [],
   }) : assert(priceCents >= 0, 'priceCents must be >= 0'),
        assert(stock >= 0, 'stock must be >= 0');
 
@@ -70,6 +76,9 @@ class MenuItem {
     }
     final stock = json['stock'] as int? ?? 99;
     final variationsRaw = json['variations'] as List<dynamic>? ?? [];
+    final additionalIds = (json['additionalIds'] as List<dynamic>? ?? [])
+        .whereType<String>()
+        .toList();
     final variations = variationsRaw
         .map((e) => MenuItemVariation.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -85,19 +94,21 @@ class MenuItem {
       category: category,
       stock: stock,
       variations: variations,
+      additionalIds: additionalIds,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'priceCents': priceCents,
-        'modifiers': modifiers.map((e) => e.toJson()).toList(),
-        'available': available,
-        'category': category,
-        'stock': stock,
-        'variations': variations.map((e) => e.toJson()).toList(),
-      };
+    'id': id,
+    'name': name,
+    'priceCents': priceCents,
+    'modifiers': modifiers.map((e) => e.toJson()).toList(),
+    'available': available,
+    'category': category,
+    'stock': stock,
+    'variations': variations.map((e) => e.toJson()).toList(),
+    'additionalIds': additionalIds,
+  };
 
   MenuItem copyWith({
     String? id,
@@ -108,6 +119,7 @@ class MenuItem {
     String? category,
     int? stock,
     List<MenuItemVariation>? variations,
+    List<String>? additionalIds,
   }) {
     return MenuItem(
       id: id ?? this.id,
@@ -118,6 +130,7 @@ class MenuItem {
       category: category ?? this.category,
       stock: stock ?? this.stock,
       variations: variations ?? this.variations,
+      additionalIds: additionalIds ?? this.additionalIds,
     );
   }
 }

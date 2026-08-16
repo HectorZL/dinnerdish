@@ -6,6 +6,7 @@ import 'package:dinnerhome/models/menu_item.dart';
 import 'package:dinnerhome/models/menu_item_variation.dart';
 import 'package:dinnerhome/models/modifier.dart';
 import 'package:dinnerhome/models/order_item.dart' as order_item;
+import 'package:dinnerhome/models/selected_additional.dart';
 import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/models/table.dart';
 import 'package:dinnerhome/models/user.dart';
@@ -18,6 +19,7 @@ import 'package:dinnerhome/models/payment_summary.dart';
 import 'package:dinnerhome/models/audit_entry.dart';
 import 'package:dinnerhome/router/app_router.dart';
 import 'package:dinnerhome/providers/providers.dart';
+import 'package:dinnerhome/services/hive/hive_menu_service.dart';
 
 Future<void> main() async {
   usePathUrlStrategy();
@@ -34,6 +36,8 @@ Future<void> initHive() async {
   Hive.registerAdapter(ModifierAdapter());
   Hive.registerAdapter(order_item.OrderItemAdapter());
   Hive.registerAdapter(order_item.OrderStatusAdapter());
+  Hive.registerAdapter(SelectedAdditionalAdapter());
+  Hive.registerAdapter(AdditionalSourceAdapter());
   Hive.registerAdapter(OrderAdapter());
   Hive.registerAdapter(OrderStatusAdapter());
   Hive.registerAdapter(TableAdapter());
@@ -51,6 +55,12 @@ Future<void> initHive() async {
 
   await Hive.openBox<AuditEntry>('audit');
   await Hive.openBox('settings');
+  final menuBox = await Hive.openBox<MenuItem>(HiveMenuService.boxName);
+  if (menuBox.isEmpty) {
+    await menuBox.putAll({
+      for (final item in HiveMenuService.defaultMenu()) item.id: item,
+    });
+  }
 }
 
 class MainApp extends ConsumerWidget {

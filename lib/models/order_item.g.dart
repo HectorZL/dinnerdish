@@ -26,13 +26,15 @@ class OrderItemAdapter extends TypeAdapter<OrderItem> {
       priceCents: fields[6] as int,
       name: fields[7] as String?,
       variationId: fields[8] as String?,
+      selectedAdditionals:
+          (fields[9] as List?)?.cast<SelectedAdditional>() ?? const [],
     );
   }
 
   @override
   void write(BinaryWriter writer, OrderItem obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +52,9 @@ class OrderItemAdapter extends TypeAdapter<OrderItem> {
       ..writeByte(7)
       ..write(obj.name)
       ..writeByte(8)
-      ..write(obj.variationId);
+      ..write(obj.variationId)
+      ..writeByte(9)
+      ..write(obj.selectedAdditionals);
   }
 
   @override

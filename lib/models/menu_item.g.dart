@@ -25,13 +25,14 @@ class MenuItemAdapter extends TypeAdapter<MenuItem> {
       category: fields[5] as String,
       stock: fields[6] as int,
       variations: (fields[7] as List).cast<MenuItemVariation>(),
+      additionalIds: (fields[8] as List).cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, MenuItem obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class MenuItemAdapter extends TypeAdapter<MenuItem> {
       ..writeByte(6)
       ..write(obj.stock)
       ..writeByte(7)
-      ..write(obj.variations);
+      ..write(obj.variations)
+      ..writeByte(8)
+      ..write(obj.additionalIds);
   }
 
   @override

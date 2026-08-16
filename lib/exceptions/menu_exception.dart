@@ -7,5 +7,21 @@ class MenuException extends AppException {
 
 class MenuItemNotFoundException extends MenuException {
   MenuItemNotFoundException(String id)
-    : super('MenuItem not found: $id', code: 'MENU_ITEM_NOT_FOUND');
+    : super('El plato no existe: $id.', code: 'MENU_ITEM_NOT_FOUND');
+}
+
+class MenuItemVariationNotFoundException extends MenuException {
+  MenuItemVariationNotFoundException(String itemId, String variationId)
+    : super(
+        'La variación no existe: $variationId para el plato $itemId.',
+        code: 'MENU_VARIATION_NOT_FOUND',
+      );
+}
+
+class StockAdjustmentNegativeException extends MenuException {
+  StockAdjustmentNegativeException()
+    : super(
+        'El ajuste dejaría el stock en un valor negativo.',
+        code: 'STOCK_ADJUSTMENT_NEGATIVE',
+      );
 }

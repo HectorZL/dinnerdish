@@ -48,3 +48,5 @@ app.*.map.json
 # OpenCode related
 .ocx/
 .opencode/
+.kiro/
+after-effects-mcp/

@@ -91,10 +91,6 @@ void main() {
 
       expect(find.text('Pedido enviado a cocina'), findsOneWidget);
 
-      // Go back to dashboard
-      await tester.tap(find.byIcon(Icons.arrow_back));
-      await tester.pumpAndSettle();
-
       // ════════════════════════════════════════════
       // PHASE 3: Cocinero — process order in KDS
       // ════════════════════════════════════════════
@@ -144,8 +140,8 @@ void main() {
       // Should see payment request
       expect(find.text('Mesa 01'), findsOneWidget);
 
-      // Process payment
-      await tester.tap(find.text('Cobrar ahora'));
+      // Process payment with Cuenta Total
+      await tester.tap(find.text('Cuenta Total'));
       await tester.pumpAndSettle();
 
       expect(find.text('Procesar Pago'), findsAtLeastNWidgets(1));
@@ -187,10 +183,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Pedido enviado a cocina'), findsOneWidget);
-
-      // Go back to dashboard
-      await tester.tap(find.byIcon(Icons.arrow_back));
-      await tester.pumpAndSettle();
 
       // ════════════════════════════════════════════
       // PHASE 6: Admin — check audit log

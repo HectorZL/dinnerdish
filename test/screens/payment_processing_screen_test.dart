@@ -265,6 +265,7 @@ Order makeTestOrder({required String id, int totalCents = 2500}) {
 Widget buildPaymentApp({
   required MockPaymentProcOrderService orderService,
   required MockPaymentProcPaymentService paymentService,
+  String initialMode = 'total',
 }) {
   return ProviderScope(
     overrides: [
@@ -276,7 +277,12 @@ Widget buildPaymentApp({
       orderServiceProvider.overrideWith((ref) => orderService),
       paymentServiceProvider.overrideWith((ref) => paymentService),
     ],
-    child: MaterialApp(home: PaymentProcessingScreen(orderId: 'order-1')),
+    child: MaterialApp(
+      home: PaymentProcessingScreen(
+        orderId: 'order-1',
+        initialMode: initialMode,
+      ),
+    ),
   );
 }
 
@@ -319,7 +325,7 @@ void main() {
       expect(find.textContaining('waiter-1'), findsOneWidget);
 
       // Prices
-      expect(find.text('\$20.00'), findsOneWidget); // subtotal
+      expect(find.text('\$20.00'), findsAtLeastNWidgets(1)); // subtotal and line item
       expect(find.text('\$5.00'), findsOneWidget); // tax
       expect(find.text('\$25.00'), findsOneWidget); // total
     });
@@ -470,6 +476,100 @@ void main() {
       // Verify split button exists by key
       final splitButton = find.byKey(const Key('splitPaymentButton'));
       expect(splitButton, findsOneWidget);
+    });
+
+    testWidgets('shows Cuenta Total and Cuenta Separada mode options', (
+      tester,
+    ) async {
+      final orderService = MockPaymentProcOrderService(
+        order: makeTestOrder(id: 'order-1'),
+      );
+      final paymentService = MockPaymentProcPaymentService();
+
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Cuenta Total'), findsOneWidget);
+      expect(find.text('Cuenta Separada'), findsOneWidget);
+      expect(find.text('COBRAR CUENTA TOTAL'), findsOneWidget);
+    });
+
+    testWidgets('switches to Cuenta Separada mode and allows dish selection per diner', (
+      tester,
+    ) async {
+      final orderService = MockPaymentProcOrderService(
+        order: makeTestOrder(id: 'order-1', totalCents: 2500),
+      );
+      final paymentService = MockPaymentProcPaymentService();
+
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+          initialMode: 'split',
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // Comensal 1 header and controls
+      expect(find.text('Comensal #1'), findsOneWidget);
+      expect(find.text('Selecciona los platos que pagará este comensal'), findsOneWidget);
+      expect(find.text('Todos los restantes'), findsOneWidget);
+
+      // Initially 0 items selected -> disabled button
+      expect(find.text('SELECCIONA PLATOS (COMENSAL #1)'), findsOneWidget);
+
+      // Select 1 of 2 available for item-1
+      final incrementItemBtn = find.byKey(const Key('incrementItem_item-1'));
+      await tester.ensureVisible(incrementItemBtn);
+      await tester.pump();
+      await tester.tap(incrementItemBtn);
+      await tester.pump();
+
+      expect(find.text('1 de 2 disponible(s)'), findsOneWidget);
+      expect(find.textContaining('COBRAR COMENSAL #1'), findsOneWidget);
+
+      // Pay for Comensal 1
+      final processButton = find.byKey(const Key('processPaymentButton'));
+      await tester.ensureVisible(processButton);
+      await tester.pump();
+      await tester.tap(processButton);
+      await tester.pump();
+      await tester.pump();
+
+      // Now advances to Comensal 2
+      expect(find.text('Comensal #2'), findsOneWidget);
+      expect(find.text('Pagos Realizados en Esta Mesa'), findsOneWidget);
+      expect(find.textContaining('Comensal 1'), findsAtLeastNWidgets(1));
+
+      // Comensal 2 selects remaining items using 'Todos los restantes'
+      final selectAllBtn = find.byKey(const Key('selectAllRemainingButton'));
+      await tester.ensureVisible(selectAllBtn);
+      await tester.pump();
+      await tester.tap(selectAllBtn);
+      await tester.pump();
+
+      expect(find.textContaining('COBRAR COMENSAL #2'), findsOneWidget);
+      expect(find.textContaining('Y CERRAR'), findsOneWidget);
+
+      // Pay for Comensal 2 and complete order
+      await tester.ensureVisible(processButton);
+      await tester.pump();
+      await tester.tap(processButton);
+      await tester.pump();
+      await tester.pump();
+
+      // Success dialog appears
+      expect(find.text('Pago Exitoso'), findsOneWidget);
+      expect(find.text('Cuenta Separada'), findsAtLeastNWidgets(1));
+      expect(find.text('2 comensales pagaron'), findsOneWidget);
     });
   });
 }

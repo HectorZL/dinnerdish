@@ -68,6 +68,8 @@ void main() {
       expect(find.text('Mesa table-5'), findsOneWidget);
       expect(find.text('Mesa table-6'), findsNothing);
       expect(find.text(r'$12.00'), findsOneWidget);
+      expect(find.text('Cuenta Total'), findsOneWidget);
+      expect(find.text('Cuenta Separada'), findsOneWidget);
     });
   });
 }

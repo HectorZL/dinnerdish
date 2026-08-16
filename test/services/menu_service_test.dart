@@ -37,14 +37,17 @@ void main() {
     test('updateMenuItem updates an existing item', () async {
       final service = InMemoryMenuService();
 
-      final updated = await service.updateMenuItem('item-1', MenuItem(
-        id: 'item-1',
-        name: 'Pasta Carbonara Updated',
-        priceCents: 1300,
-        modifiers: [],
-        available: false,
-        category: 'Platos Principales',
-      ));
+      final updated = await service.updateMenuItem(
+        'item-1',
+        MenuItem(
+          id: 'item-1',
+          name: 'Pasta Carbonara Updated',
+          priceCents: 1300,
+          modifiers: [],
+          available: false,
+          category: 'Platos Principales',
+        ),
+      );
 
       expect(updated.name, 'Pasta Carbonara Updated');
       expect(updated.priceCents, 1300);
@@ -60,21 +63,27 @@ void main() {
     // ---------------------------------------------------------------------------
     // Test 3: updateMenuItem throws MenuItemNotFoundException
     // ---------------------------------------------------------------------------
-    test('updateMenuItem throws MenuItemNotFoundException for unknown id', () async {
-      final service = InMemoryMenuService();
+    test(
+      'updateMenuItem throws MenuItemNotFoundException for unknown id',
+      () async {
+        final service = InMemoryMenuService();
 
-      expect(
-        () => service.updateMenuItem('non-existent', MenuItem(
-          id: 'non-existent',
-          name: 'Ghost Dish',
-          priceCents: 1000,
-          modifiers: [],
-          available: true,
-          category: 'Test',
-        )),
-        throwsA(isA<MenuItemNotFoundException>()),
-      );
-    });
+        expect(
+          () => service.updateMenuItem(
+            'non-existent',
+            MenuItem(
+              id: 'non-existent',
+              name: 'Ghost Dish',
+              priceCents: 1000,
+              modifiers: [],
+              available: true,
+              category: 'Test',
+            ),
+          ),
+          throwsA(isA<MenuItemNotFoundException>()),
+        );
+      },
+    );
 
     // ---------------------------------------------------------------------------
     // Test 4: deleteMenuItem removes an item
@@ -94,14 +103,17 @@ void main() {
     // ---------------------------------------------------------------------------
     // Test 5: deleteMenuItem throws MenuItemNotFoundException
     // ---------------------------------------------------------------------------
-    test('deleteMenuItem throws MenuItemNotFoundException for unknown id', () async {
-      final service = InMemoryMenuService();
+    test(
+      'deleteMenuItem throws MenuItemNotFoundException for unknown id',
+      () async {
+        final service = InMemoryMenuService();
 
-      expect(
-        () => service.deleteMenuItem('non-existent'),
-        throwsA(isA<MenuItemNotFoundException>()),
-      );
-    });
+        expect(
+          () => service.deleteMenuItem('non-existent'),
+          throwsA(isA<MenuItemNotFoundException>()),
+        );
+      },
+    );
 
     // ---------------------------------------------------------------------------
     // Test 6: getCategories returns unique sorted categories
@@ -126,18 +138,55 @@ void main() {
     test('getCategories includes categories from newly added items', () async {
       final service = InMemoryMenuService();
 
-      await service.createMenuItem(MenuItem(
-        id: 'new-cat-item',
-        name: 'New Category Dish',
-        priceCents: 1000,
-        modifiers: [],
-        available: true,
-        category: 'Postres',
-      ));
+      await service.createMenuItem(
+        MenuItem(
+          id: 'new-cat-item',
+          name: 'New Category Dish',
+          priceCents: 1000,
+          modifiers: [],
+          available: true,
+          category: 'Postres',
+        ),
+      );
 
       final categories = await service.getCategories();
       expect(categories, contains('Postres'));
       expect(categories.length, 3);
     });
+
+    test('adjustStock updates only the selected variation', () async {
+      final service = InMemoryMenuService();
+      final before = await service.getMenuItem('item-1');
+
+      await service.adjustStock('item-1', 'var-1-1', -3);
+
+      final after = await service.getMenuItem('item-1');
+      expect(after!.stock, before!.stock);
+      expect(after.variations.firstWhere((v) => v.id == 'var-1-1').stock, 12);
+      expect(
+        after.variations.firstWhere((v) => v.id == 'var-1-2').stock,
+        before.variations.firstWhere((v) => v.id == 'var-1-2').stock,
+      );
+    });
+
+    test(
+      'adjustStock rejects an unknown item, variation, or negative result',
+      () async {
+        final service = InMemoryMenuService();
+
+        expect(
+          () => service.adjustStock('missing', null, 1),
+          throwsA(isA<MenuItemNotFoundException>()),
+        );
+        expect(
+          () => service.adjustStock('item-1', 'missing-variation', 1),
+          throwsA(isA<MenuItemVariationNotFoundException>()),
+        );
+        expect(
+          () => service.adjustStock('item-1', 'var-1-1', -16),
+          throwsA(isA<StockAdjustmentNegativeException>()),
+        );
+      },
+    );
   });
 }

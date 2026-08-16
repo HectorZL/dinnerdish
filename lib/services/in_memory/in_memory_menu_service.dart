@@ -18,9 +18,20 @@ class InMemoryMenuService implements MenuService {
       available: true,
       category: 'Platos Principales',
       stock: 0,
+      additionalIds: const ['additional-rice', 'additional-avocado'],
       variations: [
-        MenuItemVariation(id: 'var-1-1', name: 'Normal', priceCents: 1200, stock: 15),
-        MenuItemVariation(id: 'var-1-2', name: 'Familiar', priceCents: 2200, stock: 5),
+        MenuItemVariation(
+          id: 'var-1-1',
+          name: 'Normal',
+          priceCents: 1200,
+          stock: 15,
+        ),
+        MenuItemVariation(
+          id: 'var-1-2',
+          name: 'Familiar',
+          priceCents: 2200,
+          stock: 5,
+        ),
       ],
     ),
     MenuItem(
@@ -116,23 +127,40 @@ class InMemoryMenuService implements MenuService {
   }
 
   @override
-  Future<void> adjustStock(String itemId, String? variationId, int quantityChange) async {
+  Future<void> adjustStock(
+    String itemId,
+    String? variationId,
+    int quantityChange,
+  ) async {
     final index = _menu.indexWhere((item) => item.id == itemId);
-    if (index == -1) return;
+    if (index == -1) {
+      throw MenuItemNotFoundException(itemId);
+    }
 
     final item = _menu[index];
-    if (variationId != null && variationId.isNotEmpty) {
-      final updatedVariations = item.variations.map((v) {
-        if (v.id == variationId) {
-          final newStock = (v.stock + quantityChange).clamp(0, 999999);
-          return v.copyWith(stock: newStock);
-        }
-        return v;
-      }).toList();
-      _menu[index] = item.copyWith(variations: updatedVariations);
-    } else {
-      final newStock = (item.stock + quantityChange).clamp(0, 999999);
-      _menu[index] = item.copyWith(stock: newStock);
+    if (variationId != null) {
+      final variationIndex = item.variations.indexWhere(
+        (variation) => variation.id == variationId,
+      );
+      if (variationIndex == -1) {
+        throw MenuItemVariationNotFoundException(itemId, variationId);
+      }
+
+      final variations = List<MenuItemVariation>.from(item.variations);
+      final variation = variations[variationIndex];
+      final newStock = variation.stock + quantityChange;
+      if (newStock < 0) {
+        throw StockAdjustmentNegativeException();
+      }
+      variations[variationIndex] = variation.copyWith(stock: newStock);
+      _menu[index] = item.copyWith(variations: variations);
+      return;
     }
+
+    final newStock = item.stock + quantityChange;
+    if (newStock < 0) {
+      throw StockAdjustmentNegativeException();
+    }
+    _menu[index] = item.copyWith(stock: newStock);
   }
 }

@@ -1,5 +1,7 @@
 import 'package:hive/hive.dart';
 
+import 'selected_additional.dart';
+
 part 'order_item.g.dart';
 
 @HiveType(typeId: 3)
@@ -45,6 +47,11 @@ class OrderItem {
   @HiveField(8)
   final String? variationId;
 
+  /// Additionales selected for this dish, stored as snapshots rather than
+  /// independent menu lines. This field is append-only for Hive compatibility.
+  @HiveField(9)
+  final List<SelectedAdditional> selectedAdditionals;
+
   const OrderItem({
     required this.id,
     required this.menuItemId,
@@ -55,6 +62,7 @@ class OrderItem {
     this.priceCents = 0,
     this.name,
     this.variationId,
+    this.selectedAdditionals = const [],
   }) : assert(quantity > 0, 'quantity must be > 0'),
        assert(priceCents >= 0, 'priceCents must be >= 0');
 
@@ -83,6 +91,8 @@ class OrderItem {
     final priceCents = json['priceCents'] as int? ?? 0;
     final name = json['name'] as String?;
     final variationId = json['variationId'] as String?;
+    final selectedAdditionalsRaw =
+        json['selectedAdditionals'] as List<dynamic>?;
 
     return OrderItem(
       id: id,
@@ -94,20 +104,30 @@ class OrderItem {
       priceCents: priceCents,
       name: name,
       variationId: variationId,
+      selectedAdditionals: selectedAdditionalsRaw == null
+          ? const []
+          : selectedAdditionalsRaw
+                .map(
+                  (e) => SelectedAdditional.fromJson(e as Map<String, dynamic>),
+                )
+                .toList(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'menuItemId': menuItemId,
-        'quantity': quantity,
-        'notes': notes,
-        'status': status.name,
-        'modifierIds': modifierIds,
-        'priceCents': priceCents,
-        'name': name,
-        'variationId': variationId,
-      };
+    'id': id,
+    'menuItemId': menuItemId,
+    'quantity': quantity,
+    'notes': notes,
+    'status': status.name,
+    'modifierIds': modifierIds,
+    'priceCents': priceCents,
+    'name': name,
+    'variationId': variationId,
+    'selectedAdditionals': selectedAdditionals
+        .map((additional) => additional.toJson())
+        .toList(),
+  };
 
   OrderItem copyWith({
     String? id,
@@ -119,6 +139,7 @@ class OrderItem {
     int? priceCents,
     String? name,
     String? variationId,
+    List<SelectedAdditional>? selectedAdditionals,
   }) {
     return OrderItem(
       id: id ?? this.id,
@@ -130,6 +151,7 @@ class OrderItem {
       priceCents: priceCents ?? this.priceCents,
       name: name ?? this.name,
       variationId: variationId ?? this.variationId,
+      selectedAdditionals: selectedAdditionals ?? this.selectedAdditionals,
     );
   }
 }

@@ -170,6 +170,13 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     return null;
   }
 
+  List<GlobalAdditional> _additionsForItem(MenuItem item) {
+    final assignedIds = item.additionalIds.toSet();
+    return _availableAdditions
+        .where((additional) => assignedIds.contains(additional.id))
+        .toList();
+  }
+
   String _selectionKey(
     String menuItemId, {
     String? variationId,
@@ -439,9 +446,14 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
       ),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
+          final availableVariations = item.variations
+              .where((value) => value.stock > 0)
+              .toList();
           final effectiveVariationId =
               selectedVariationId ??
-              (item.variations.isEmpty ? null : item.variations.first.id);
+              (availableVariations.isEmpty
+                  ? null
+                  : availableVariations.first.id);
           final variation = effectiveVariationId == null
               ? null
               : item.variations.firstWhere(
@@ -455,7 +467,8 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
           final localExtras = item.modifiers
               .where((modifier) => selectedModifierIds.contains(modifier.id))
               .fold<int>(0, (sum, modifier) => sum + modifier.priceCents);
-          final globalExtras = _availableAdditions
+          final itemAdditions = _additionsForItem(item);
+          final globalExtras = itemAdditions
               .where(
                 (addition) =>
                     addition.available &&
@@ -487,7 +500,25 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                           .map(
                             (value) => DropdownMenuItem(
                               value: value.id,
-                              child: Text(value.name),
+                              enabled: value.stock > 0,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(value.name),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    value.stock > 0
+                                        ? 'Disponible (${value.stock})'
+                                        : 'Agotado (0)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: value.stock > 0
+                                          ? Colors.green.shade700
+                                          : AppColors.error,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           )
                           .toList(),
@@ -521,15 +552,13 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                       ),
                     ),
                   ],
-                  if (_availableAdditions.any(
-                    (addition) => addition.available,
-                  )) ...[
+                  if (itemAdditions.any((addition) => addition.available)) ...[
                     const SizedBox(height: 16),
                     Text(
-                      'Adicionales para cualquier plato',
+                      'Adicionales de ${item.name}',
                       style: AppTypography.h3(),
                     ),
-                    ..._availableAdditions
+                    ...itemAdditions
                         .where((addition) => addition.available)
                         .map(
                           (addition) => CheckboxListTile(
@@ -537,7 +566,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                             value: selectedAdditionalIds.contains(addition.id),
                             title: Text(addition.name),
                             subtitle: Text(
-                              '+${(addition.priceCents / 100).toStringAsFixed(2)} €',
+                              '+${(addition.priceCents / 100).toStringAsFixed(2)} € · Global · Sin stock',
                             ),
                             onChanged: (selected) => setModalState(() {
                               if (selected ?? false) {
@@ -574,24 +603,27 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                     label:
                         'Añadir · ${((basePrice + localExtras + globalExtras) * quantity / 100).toStringAsFixed(2)} €',
                     icon: Icons.add,
-                    onPressed: () {
-                      final key = _selectionKey(
-                        item.id,
-                        variationId: effectiveVariationId,
-                        modifierIds: selectedModifierIds,
-                      );
-                      setState(() {
-                        _selectedQuantities[key] =
-                            (_selectedQuantities[key] ?? 0) + quantity;
-                        for (final additionalId in selectedAdditionalIds) {
-                          _selectedAdditionalQuantities[additionalId] =
-                              (_selectedAdditionalQuantities[additionalId] ??
-                                  0) +
-                              quantity;
-                        }
-                      });
-                      Navigator.of(context).pop();
-                    },
+                    onPressed: maxQuantity > 0
+                        ? () {
+                            final key = _selectionKey(
+                              item.id,
+                              variationId: effectiveVariationId,
+                              modifierIds: selectedModifierIds,
+                            );
+                            setState(() {
+                              _selectedQuantities[key] =
+                                  (_selectedQuantities[key] ?? 0) + quantity;
+                              for (final additionalId
+                                  in selectedAdditionalIds) {
+                                _selectedAdditionalQuantities[additionalId] =
+                                    (_selectedAdditionalQuantities[additionalId] ??
+                                        0) +
+                                    quantity;
+                              }
+                            });
+                            Navigator.of(context).pop();
+                          }
+                        : null,
                   ),
                 ],
               ),
@@ -847,7 +879,9 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     final totalQuantity = _selectedQuantities.entries
         .where((entry) => _parseSelectionKey(entry.key).menuItemId == item.id)
         .fold<int>(0, (sum, entry) => sum + entry.value);
-    final isOutOfStock = !hasVariations && item.stock <= 0;
+    final isOutOfStock = hasVariations
+        ? item.variations.every((variation) => variation.stock <= 0)
+        : item.stock <= 0;
 
     final priceLabel = hasVariations
         ? 'Desde ${(item.variations.map((v) => v.priceCents).reduce((a, b) => a < b ? a : b) / 100).toStringAsFixed(2)} €'
@@ -977,25 +1011,31 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                               ),
                             ),
                           ),
-                          // Stock / variations badge
+                          // Stock por variación
                           if (hasVariations)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 9,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryContainer.withValues(
-                                  alpha: 0.08,
+                            ...item.variations.map(
+                              (variation) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 9,
+                                  vertical: 3,
                                 ),
-                                borderRadius: BorderRadius.circular(7),
-                              ),
-                              child: Text(
-                                '${item.variations.length} opciones',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryContainer,
+                                decoration: BoxDecoration(
+                                  color: variation.stock > 0
+                                      ? const Color(
+                                          0xFF10B981,
+                                        ).withValues(alpha: 0.1)
+                                      : AppColors.errorContainer,
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                child: Text(
+                                  '${variation.name}: ${variation.stock > 0 ? 'Disponible' : 'Agotado'} (${variation.stock})',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: variation.stock > 0
+                                        ? const Color(0xFF059669)
+                                        : AppColors.error,
+                                  ),
                                 ),
                               ),
                             )
@@ -1017,8 +1057,8 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                               ),
                               child: Text(
                                 isOutOfStock
-                                    ? 'Agotado'
-                                    : 'Stock: ${item.stock}',
+                                    ? 'Agotado (0)'
+                                    : 'Disponible (${item.stock})',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -1037,7 +1077,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                 ),
                 const SizedBox(width: 8),
                 // Action — stepper or add button
-                if (hasVariations)
+                if (hasVariations && !isOutOfStock)
                   GestureDetector(
                     onTap: () => _showModifiersBottomSheet(item),
                     child: Container(

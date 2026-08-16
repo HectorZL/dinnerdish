@@ -229,22 +229,46 @@ class _PendingOrderCard extends StatelessWidget {
                   ),
               ],
               const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () =>
-                      context.go('/orders/${order.id}/payment'),
-                  icon: const Icon(Icons.point_of_sale, size: 18),
-                  label: const Text('Cobrar ahora'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryContainer,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      key: Key('payTotalButton_${order.id}'),
+                      onPressed: () =>
+                          context.go('/orders/${order.id}/payment?mode=total'),
+                      icon: const Icon(Icons.receipt_long, size: 16),
+                      label: const Text('Cuenta Total'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryContainer,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: Key('paySplitButton_${order.id}'),
+                      onPressed: () =>
+                          context.go('/orders/${order.id}/payment?mode=split'),
+                      icon: const Icon(Icons.call_split, size: 16),
+                      label: const Text('Cuenta Separada'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primaryContainer,
+                        side: const BorderSide(
+                          color: AppColors.primaryContainer,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

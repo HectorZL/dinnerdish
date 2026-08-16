@@ -7,5 +7,15 @@ abstract class MenuService {
   Future<MenuItem> updateMenuItem(String id, MenuItem item);
   Future<void> deleteMenuItem(String id);
   Future<List<String>> getCategories();
-  Future<void> adjustStock(String itemId, String? variationId, int quantityChange);
+
+  /// Adjusts the stock of the base dish when [variationId] is null, or of
+  /// the identified variation otherwise.
+  ///
+  /// Implementations must reject missing dishes/variations and any result
+  /// below zero. They must not silently clamp an invalid adjustment.
+  Future<void> adjustStock(
+    String itemId,
+    String? variationId,
+    int quantityChange,
+  );
 }

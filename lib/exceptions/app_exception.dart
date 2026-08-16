@@ -4,6 +4,10 @@ abstract class AppException implements Exception {
 
   const AppException(this.message, this.code);
 
+  /// User-facing aliases shared by forms, SnackBars and inline messages.
+  String get errorText => message;
+  String get snackBarText => message;
+
   @override
   String toString() => '[$code] $message';
 }
