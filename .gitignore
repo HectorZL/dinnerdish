@@ -54,3 +54,12 @@ android/.gradle/
 .opencode/
 .kiro/
 after-effects-mcp/
+
+# Backend & Python
+backend/venv/
+backend/.venv/
+**/__pycache__/
+*.db
+*.sqlite
+*.sqlite3
+.pytest_cache/
