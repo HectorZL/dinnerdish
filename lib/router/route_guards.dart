@@ -8,14 +8,12 @@ class RouteGuard {
     RolePermissions? permissions,
   ]) {
     if (user == null) return false;
-    return (permissions ?? RolePermissions.defaults()).allows(
-      user.role,
-      permission,
-    );
+    final effectivePermissions = permissions ?? RolePermissions.defaults();
+    return user.roles.any((r) => effectivePermissions.allows(r, permission));
   }
 
   static bool _hasRole(User? user, Set<Role> allowedRoles) {
-    return user != null && allowedRoles.contains(user.role);
+    return user != null && user.roles.any((r) => allowedRoles.contains(r));
   }
 
   /// Administración siempre requiere una cuenta administradora, aunque la
@@ -82,6 +80,11 @@ class RouteGuard {
     }
     if (route.startsWith('/audit')) {
       return canAccessAudit(user, permissions);
+    }
+    if (route.startsWith('/dishes/history')) {
+      return canAccessOrders(user, permissions) ||
+          canAccessReports(user, permissions) ||
+          canAccessAudit(user, permissions);
     }
     if (route.startsWith('/orders/create') || route.startsWith('/orders/')) {
       return canAccessOrders(user, permissions);

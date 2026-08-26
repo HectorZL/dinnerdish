@@ -62,7 +62,7 @@ const meseroUser = User(
   id: 'user-mesero-1',
   username: 'mesero',
   name: 'Juan Pérez',
-  role: Role.mesero,
+  roles: [Role.mesero],
   token: 'mock-token-mesero',
 );
 
@@ -70,7 +70,7 @@ const cajeroUser = User(
   id: 'user-cajero-1',
   username: 'cajero',
   name: 'María García',
-  role: Role.cajero,
+  roles: [Role.cajero],
   token: 'mock-token-cajero',
 );
 
@@ -78,7 +78,7 @@ const cocineroUser = User(
   id: 'user-cocinero-1',
   username: 'cocinero',
   name: 'Carlos López',
-  role: Role.cocinero,
+  roles: [Role.cocinero],
   token: 'mock-token-cocinero',
 );
 
@@ -86,7 +86,7 @@ const adminUser = User(
   id: 'user-admin-1',
   username: 'admin',
   name: 'Ana Martínez',
-  role: Role.admin,
+  roles: [Role.admin],
   token: 'mock-token-admin',
 );
 

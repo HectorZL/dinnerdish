@@ -128,6 +128,8 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
   Future<int?> _showRestockDialog(MenuItem item, {String? variationId}) async {
     final menuService = ref.read(menuServiceProvider);
     final currentItem = await menuService.getMenuItem(item.id) ?? item;
+    if (!mounted) return null;
+
     final variation = variationId == null
         ? null
         : currentItem.variations.cast<MenuItemVariation?>().firstWhere(
@@ -140,12 +142,12 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
         : '${currentItem.name} · ${variation.name}';
     final quantityController = TextEditingController();
 
+    String? errorMessage;
+    bool saving = false;
+
     final result = await showDialog<RestockResult>(
       context: context,
       builder: (dialogContext) {
-        String? errorMessage;
-        bool saving = false;
-
         return StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
             title: const Text('Añadir stock'),
@@ -175,6 +177,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                     ),
                     onSubmitted: (_) async {
                       if (!saving) {
+                        setDialogState(() => saving = true);
                         await _confirmRestock(
                           dialogContext,
                           setDialogState,
@@ -184,6 +187,9 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                           currentStock,
                           targetName,
                         );
+                        if (dialogContext.mounted) {
+                          setDialogState(() => saving = false);
+                        }
                       }
                     },
                   ),
@@ -205,15 +211,21 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
               FilledButton.icon(
                 onPressed: saving
                     ? null
-                    : () => _confirmRestock(
-                        dialogContext,
-                        setDialogState,
-                        quantityController,
-                        currentItem,
-                        variationId,
-                        currentStock,
-                        targetName,
-                      ),
+                    : () async {
+                        setDialogState(() => saving = true);
+                        await _confirmRestock(
+                          dialogContext,
+                          setDialogState,
+                          quantityController,
+                          currentItem,
+                          variationId,
+                          currentStock,
+                          targetName,
+                        );
+                        if (dialogContext.mounted) {
+                          setDialogState(() => saving = false);
+                        }
+                      },
                 icon: saving
                     ? const SizedBox(
                         width: 16,

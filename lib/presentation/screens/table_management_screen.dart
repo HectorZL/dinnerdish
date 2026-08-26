@@ -3,13 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:dinnerhome/models/order.dart';
+import 'package:dinnerhome/models/order_item.dart' as oi;
 import 'package:dinnerhome/models/table.dart' as table_model;
 import 'package:dinnerhome/providers/providers.dart';
 import 'package:dinnerhome/router/route_guards.dart';
 import '../theme/app_theme.dart';
 
 class TableManagementScreen extends ConsumerStatefulWidget {
-  const TableManagementScreen({super.key});
+  final String? initialFilter;
+  const TableManagementScreen({this.initialFilter, super.key});
 
   @override
   ConsumerState<TableManagementScreen> createState() =>
@@ -17,6 +19,14 @@ class TableManagementScreen extends ConsumerStatefulWidget {
 }
 
 class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
+  late String _statusFilter;
+
+  @override
+  void initState() {
+    super.initState();
+    _statusFilter = widget.initialFilter ?? 'all';
+  }
+
   Future<void> _showTableForm({table_model.Table? existing}) async {
     final table = await showDialog<table_model.Table>(
       context: context,
@@ -39,21 +49,202 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
     }
   }
 
+  Order? _findActiveOrderForTable(table_model.Table table, List<Order> activeOrders) {
+    try {
+      return activeOrders.firstWhere(
+        (o) => o.tableId == table.id || o.tableId == table.number.toString(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _openTable(
     table_model.Table table,
-    List<Order> activeOrders,
+    Order? activeOrder,
     bool canManage,
   ) {
-    if (canManage) {
+    if (activeOrder != null) {
+      _showTableDishesDialog(table, activeOrder);
+    } else if (canManage) {
       _showTableForm(existing: table);
-      return;
     }
-    if (table.status != table_model.TableStatus.occupied) return;
-    final order = activeOrders
-        .where((item) => item.tableId == table.id)
-        .cast<Order?>()
-        .firstWhere((item) => item != null, orElse: () => null);
-    if (order != null) context.go('/orders/${order.id}');
+  }
+
+  void _showTableDishesDialog(table_model.Table table, Order order) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl * 1.5),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primaryContainer.withValues(alpha: 0.1),
+              ),
+              child: Center(
+                child: Text(
+                  table.number.toString().padLeft(2, '0'),
+                  style: AppTypography.h3(color: AppColors.primaryContainer),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Mesa ${table.number} • Platos Activos', style: AppTypography.h2()),
+                  Text(
+                    'Mesero ID: ${order.waiterId.isEmpty ? "S/ID" : order.waiterId} • Comanda #${order.id}',
+                    style: AppTypography.statusBadge(color: const Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (order.items.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text('No hay platos registrados en esta mesa aún.'),
+                  ),
+                )
+              else ...[
+                Text(
+                  'Platos servidos y en cocina (${order.items.length}):',
+                  style: AppTypography.bodyMd(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 320),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: order.items.length,
+                    separatorBuilder: (ctx, i) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    itemBuilder: (ctx, idx) {
+                      final item = order.items[idx];
+                      Color statusColor;
+                      String statusText;
+                      switch (item.status) {
+                        case oi.OrderStatus.pending:
+                          statusColor = const Color(0xFFF59E0B);
+                          statusText = 'Pendiente';
+                          break;
+                        case oi.OrderStatus.sent:
+                          statusColor = const Color(0xFF3B82F6);
+                          statusText = 'Enviado';
+                          break;
+                        case oi.OrderStatus.preparing:
+                          statusColor = AppColors.statusCooking;
+                          statusText = 'En Cocina';
+                          break;
+                        case oi.OrderStatus.ready:
+                          statusColor = const Color(0xFF10B981);
+                          statusText = 'Listo';
+                          break;
+                        case oi.OrderStatus.served:
+                          statusColor = AppColors.primaryContainer;
+                          statusText = 'Servido';
+                          break;
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                              ),
+                              child: Text(
+                                'x${item.quantity}',
+                                style: AppTypography.statusBadge(
+                                  color: AppColors.primaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.name ?? 'Plato',
+                                    style: AppTypography.bodyMd(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.onSurface,
+                                    ),
+                                  ),
+                                  if (item.notes != null && item.notes!.isNotEmpty)
+                                    Text(
+                                      'Nota: ${item.notes}',
+                                      style: AppTypography.statusBadge(
+                                        color: const Color(0xFF94A3B8),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(AppRadius.full),
+                              ),
+                              child: Text(
+                                statusText,
+                                style: AppTypography.statusBadge(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cerrar', style: AppTypography.statusBadge(color: const Color(0xFF64748B))),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go('/orders/${order.id}');
+            },
+            icon: const Icon(Icons.receipt_long, size: 16),
+            label: const Text('Ver Comanda Completa'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryContainer,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -96,11 +287,37 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
                     children: [
                       _buildHeader(canManage),
                       const SizedBox(height: AppSpacing.lg),
-                      _buildLegend(),
-                      const SizedBox(height: AppSpacing.lg),
                       tablesAsync.when(
-                        data: (tables) =>
-                            _buildTableGrid(tables, activeOrders, canManage),
+                        data: (tables) {
+                          final occupiedCount = tables
+                              .where((t) => t.status == table_model.TableStatus.occupied)
+                              .length;
+                          final availableCount = tables
+                              .where((t) => t.status == table_model.TableStatus.available)
+                              .length;
+                          final reservedCount = tables
+                              .where((t) => t.status == table_model.TableStatus.reserved)
+                              .length;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Filter Chips
+                              _buildFilterBar(
+                                total: tables.length,
+                                occupied: occupiedCount,
+                                available: availableCount,
+                                reserved: reservedCount,
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              _buildTableGrid(
+                                _filterTables(tables),
+                                activeOrders,
+                                canManage,
+                              ),
+                            ],
+                          );
+                        },
                         loading: () => const Center(
                           child: Padding(
                             padding: EdgeInsets.all(AppSpacing.xl),
@@ -108,9 +325,7 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
                           ),
                         ),
                         error: (error, _) => Center(
-                          child: Text(
-                            'No se pudieron cargar las mesas: $error',
-                          ),
+                          child: Text('No se pudieron cargar las mesas: $error'),
                         ),
                       ),
                     ],
@@ -130,6 +345,68 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
     );
   }
 
+  List<table_model.Table> _filterTables(List<table_model.Table> tables) {
+    switch (_statusFilter) {
+      case 'occupied':
+        return tables.where((t) => t.status == table_model.TableStatus.occupied).toList();
+      case 'available':
+        return tables.where((t) => t.status == table_model.TableStatus.available).toList();
+      case 'reserved':
+        return tables.where((t) => t.status == table_model.TableStatus.reserved).toList();
+      default:
+        return tables;
+    }
+  }
+
+  Widget _buildFilterBar({
+    required int total,
+    required int occupied,
+    required int available,
+    required int reserved,
+  }) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildFilterChip('all', 'Todas ($total)', AppColors.onSurface),
+          const SizedBox(width: 8),
+          _buildFilterChip('occupied', 'Ocupadas con Platos ($occupied)', AppColors.primaryContainer),
+          const SizedBox(width: 8),
+          _buildFilterChip('available', 'Disponibles ($available)', AppColors.tertiaryContainer),
+          const SizedBox(width: 8),
+          _buildFilterChip('reserved', 'Reservadas ($reserved)', const Color(0xFF3B82F6)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String value, String label, Color color) {
+    final isSelected = _statusFilter == value;
+    return FilterChip(
+      selected: isSelected,
+      label: Text(label),
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : AppColors.onSurface,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      selectedColor: color,
+      checkmarkColor: Colors.white,
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: isSelected ? color : const Color(0xFFE2E8F0),
+        width: isSelected ? 1.5 : 1.0,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      onSelected: (selected) {
+        setState(() {
+          _statusFilter = value;
+        });
+      },
+    );
+  }
+
   Widget _buildHeader(bool canManage) {
     return Wrap(
       alignment: WrapAlignment.spaceBetween,
@@ -139,12 +416,10 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Vista de salón', style: AppTypography.h2()),
+            Text('Vista de Salón y Platos por Mesa', style: AppTypography.h2()),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              canManage
-                  ? 'Crea mesas, ajusta su capacidad y cambia su estado.'
-                  : 'Consulta la capacidad y disponibilidad de las mesas.',
+              'Toca cualquier mesa ocupada para revisar los platos que se están preparando o sirviendo.',
               style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant),
             ),
           ],
@@ -158,18 +433,6 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
               onPressed: _showTableForm,
             ),
           ),
-      ],
-    );
-  }
-
-  Widget _buildLegend() {
-    return Wrap(
-      spacing: AppSpacing.md,
-      runSpacing: AppSpacing.sm,
-      children: [
-        _LegendItem(color: AppColors.tertiaryContainer, label: 'Disponible'),
-        const _LegendItem(color: AppColors.primaryContainer, label: 'Ocupada'),
-        const _LegendItem(color: Color(0xFF3B82F6), label: 'Reservada'),
       ],
     );
   }
@@ -192,7 +455,12 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
                 color: AppColors.primaryContainer,
               ),
               const SizedBox(height: AppSpacing.md),
-              Text('No hay mesas configuradas', style: AppTypography.h3()),
+              Text(
+                _statusFilter == 'occupied'
+                    ? 'No hay mesas ocupadas actualmente'
+                    : 'No hay mesas configuradas',
+                style: AppTypography.h3(),
+              ),
               if (canManage) ...[
                 const SizedBox(height: AppSpacing.md),
                 SizedBox(
@@ -210,54 +478,29 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
       );
     }
 
-    return StitchCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          const gap = AppSpacing.lg;
-          final cardWidth = constraints.maxWidth < 768
-              ? (constraints.maxWidth - gap) / 2
-              : 156.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final cardWidth = isMobile
+            ? constraints.maxWidth
+            : (constraints.maxWidth > 900 ? (constraints.maxWidth - 32) / 3 : (constraints.maxWidth - 16) / 2);
 
-          return Wrap(
-            spacing: gap,
-            runSpacing: gap,
-            children: tables
-                .map(
-                  (table) => _TableCard(
-                    width: cardWidth,
-                    table: table,
-                    canManage: canManage,
-                    onTap: () => _openTable(table, activeOrders, canManage),
-                  ),
-                )
-                .toList(),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label;
-
-  const _LegendItem({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: AppSpacing.xs),
-        Text(label, style: AppTypography.statusBadge()),
-      ],
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: tables.map((table) {
+            final activeOrder = _findActiveOrderForTable(table, activeOrders);
+            return _TableCard(
+              width: cardWidth,
+              table: table,
+              activeOrder: activeOrder,
+              canManage: canManage,
+              onTap: () => _openTable(table, activeOrder, canManage),
+              onEdit: canManage ? () => _showTableForm(existing: table) : null,
+            );
+          }).toList(),
+        );
+      },
     );
   }
 }
@@ -265,14 +508,18 @@ class _LegendItem extends StatelessWidget {
 class _TableCard extends StatelessWidget {
   final double width;
   final table_model.Table table;
+  final Order? activeOrder;
   final bool canManage;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
 
   const _TableCard({
     required this.width,
     required this.table,
+    this.activeOrder,
     required this.canManage,
     required this.onTap,
+    this.onEdit,
   });
 
   Color get _statusColor {
@@ -299,75 +546,250 @@ class _TableCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: 'Mesa ${table.number}, ${table.seats} personas, $_statusLabel',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          child: Container(
-            width: width,
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              border: Border.all(color: _statusColor.withValues(alpha: 0.25)),
-              boxShadow: [
-                BoxShadow(
-                  color: _statusColor.withValues(alpha: 0.12),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+    final hasDishes = activeOrder != null && activeOrder!.items.isNotEmpty;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: Container(
+          width: width,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(
+              color: _statusColor.withValues(alpha: table.status == table_model.TableStatus.occupied ? 0.6 : 0.25),
+              width: table.status == table_model.TableStatus.occupied ? 1.5 : 1.0,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Icon(
-                    canManage ? Icons.edit_outlined : Icons.visibility_outlined,
-                    size: 18,
-                    color: _statusColor,
+            boxShadow: [
+              BoxShadow(
+                color: _statusColor.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Row: Table number circle, capacity & actions
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _statusColor.withValues(alpha: 0.12),
+                      border: Border.all(color: _statusColor, width: 3),
+                    ),
+                    child: Text(
+                      table.number.toString().padLeft(2, '0'),
+                      style: AppTypography.h3(
+                        color: _statusColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Mesa ${table.number}',
+                              style: AppTypography.bodyMd(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: _statusColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(AppRadius.full),
+                              ),
+                              child: Text(
+                                _statusLabel.toUpperCase(),
+                                style: AppTypography.statusBadge(
+                                  color: _statusColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${table.seats} comensales',
+                          style: AppTypography.bodyMd(
+                            color: const Color(0xFF64748B),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (onEdit != null) ...[
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      tooltip: 'Editar mesa',
+                      color: const Color(0xFF94A3B8),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: onEdit,
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Dishes breakdown in this table
+              if (hasDishes) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'PLATOS EN MESA (${activeOrder!.items.length}):',
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.labelCaps(
+                          color: AppColors.primaryContainer,
+                        ),
+                      ),
+                    ),
+                    if (activeOrder!.waiterId.isNotEmpty)
+                      Text(
+                        'ID: ${activeOrder!.waiterId}',
+                        style: AppTypography.statusBadge(
+                          color: const Color(0xFF94A3B8),
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
                 ),
-                Container(
-                  width: 78,
-                  height: 78,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _statusColor.withValues(alpha: 0.1),
-                    border: Border.all(color: _statusColor, width: 6),
+                const SizedBox(height: 6),
+                // Show up to 3 dishes
+                ...activeOrder!.items.take(3).map((item) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Text(
+                            'x${item.quantity}',
+                            style: AppTypography.statusBadge(
+                              color: AppColors.primaryContainer,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            item.name ?? 'Plato',
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.bodyMd(
+                              color: AppColors.onSurface,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                if (activeOrder!.items.length > 3)
+                  Text(
+                    '+${activeOrder!.items.length - 3} platos más...',
+                    style: AppTypography.statusBadge(
+                      color: AppColors.primaryContainer,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  child: Text(
-                    table.number.toString().padLeft(2, '0'),
-                    style: AppTypography.h2(
-                      color: _statusColor,
-                      fontWeight: FontWeight.w700,
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryContainer.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.touch_app, size: 14, color: AppColors.primaryContainer),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Toca para ver detalle de platos',
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.statusBadge(
+                              color: AppColors.primaryContainer,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  '${table.seats} personas',
-                  style: AppTypography.bodyMd(
-                    color: AppColors.onSurface,
-                    fontWeight: FontWeight.w700,
+              ] else if (table.status == table_model.TableStatus.occupied) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.hourglass_empty, size: 16, color: AppColors.primaryContainer),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Ocupada • Sin comanda activa',
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.statusBadge(color: const Color(0xFF64748B)),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  _statusLabel.toUpperCase(),
-                  style: AppTypography.statusBadge(
-                    color: _statusColor,
-                    fontWeight: FontWeight.w700,
+              ] else ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle_outline, size: 16, color: const Color(0xFF10B981)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Mesa libre • Lista para servicio',
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.statusBadge(color: const Color(0xFF64748B)),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
+            ],
           ),
         ),
       ),
@@ -411,55 +833,51 @@ class _TableFormDialogState extends State<_TableFormDialog> {
     super.dispose();
   }
 
-  void _save() {
+  void _submit() {
     if (!_formKey.currentState!.validate()) return;
+
     final number = int.parse(_numberController.text.trim());
     final seats = int.parse(_seatsController.text.trim());
-    final id = widget.existing?.id ?? number.toString().padLeft(2, '0');
-    Navigator.of(context).pop(
-      table_model.Table(
-        id: id,
-        number: number,
-        seats: seats,
-        status: _status,
-        section: widget.existing?.section,
-      ),
+
+    final table = table_model.Table(
+      id: widget.existing?.id ?? 'table-$number',
+      number: number,
+      seats: seats,
+      status: _status,
+      section: widget.existing?.section,
     );
+
+    Navigator.of(context).pop(table);
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) {
+  InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: AppColors.primaryContainer, size: 20),
+      labelStyle: const TextStyle(
+        color: Color(0xFF594138),
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+      ),
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Color(0xFFE2D5D0)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Color(0xFFE2D5D0)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: const BorderSide(
-          color: AppColors.primaryContainer,
-          width: 2,
-        ),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFF26522), width: 2),
       ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFBA1A1A)),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     );
-  }
-
-  String _statusLabel(table_model.TableStatus status) {
-    switch (status) {
-      case table_model.TableStatus.available:
-        return 'Disponible';
-      case table_model.TableStatus.occupied:
-        return 'Ocupada';
-      case table_model.TableStatus.reserved:
-        return 'Reservada';
-    }
   }
 
   @override
@@ -469,7 +887,8 @@ class _TableFormDialogState extends State<_TableFormDialog> {
         borderRadius: BorderRadius.circular(AppRadius.xl * 1.5),
       ),
       backgroundColor: const Color(0xFFF8FAFC),
-      child: ConstrainedBox(
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.95,
         constraints: const BoxConstraints(maxWidth: 480),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -481,17 +900,24 @@ class _TableFormDialogState extends State<_TableFormDialog> {
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(AppRadius.xl * 1.5),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
-                  Icon(
-                    _isEditing ? Icons.edit_note : Icons.add_circle_outline,
+                  const Icon(
+                    Icons.table_restaurant,
                     color: AppColors.primaryContainer,
                     size: 28,
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
-                    _isEditing ? 'Editar mesa' : 'Nueva mesa',
+                    _isEditing ? 'Editar Mesa' : 'Nueva Mesa',
                     style: AppTypography.h2(color: AppColors.onSurface),
                   ),
                   const Spacer(),
@@ -509,88 +935,71 @@ class _TableFormDialogState extends State<_TableFormDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Configuración de la mesa',
-                      style: AppTypography.h3(
-                        color: AppColors.primaryContainer,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
                     TextFormField(
                       controller: _numberController,
+                      style: AppTypography.bodyMd(color: AppColors.onSurface),
+                      decoration: _inputDecoration('Número de Mesa'),
                       keyboardType: TextInputType.number,
-                      decoration: _inputDecoration('Número de mesa', Icons.tag),
                       validator: (value) {
-                        final number = int.tryParse(value?.trim() ?? '');
-                        return number == null || number <= 0
-                            ? 'Ingresa un número válido'
-                            : null;
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Requerido';
+                        }
+                        final parsed = int.tryParse(value.trim());
+                        if (parsed == null || parsed <= 0) {
+                          return 'Número inválido';
+                        }
+                        return null;
                       },
                     ),
                     const SizedBox(height: AppSpacing.md),
                     TextFormField(
                       controller: _seatsController,
+                      style: AppTypography.bodyMd(color: AppColors.onSurface),
+                      decoration: _inputDecoration('Capacidad (comensales)'),
                       keyboardType: TextInputType.number,
-                      decoration: _inputDecoration(
-                        'Capacidad (personas)',
-                        Icons.group_outlined,
-                      ),
                       validator: (value) {
-                        final seats = int.tryParse(value?.trim() ?? '');
-                        return seats == null || seats <= 0
-                            ? 'Ingresa una capacidad válida'
-                            : null;
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Requerido';
+                        }
+                        final parsed = int.tryParse(value.trim());
+                        if (parsed == null || parsed <= 0) {
+                          return 'Capacidad inválida';
+                        }
+                        return null;
                       },
                     ),
                     const SizedBox(height: AppSpacing.md),
                     DropdownButtonFormField<table_model.TableStatus>(
                       initialValue: _status,
-                      decoration: _inputDecoration(
-                        'Estado',
-                        Icons.event_available_outlined,
-                      ),
-                      items: table_model.TableStatus.values
-                          .map(
-                            (status) => DropdownMenuItem(
-                              value: status,
-                              child: Text(_statusLabel(status)),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (status) {
-                        if (status != null) setState(() => _status = status);
+                      dropdownColor: Colors.white,
+                      style: AppTypography.bodyMd(color: AppColors.onSurface),
+                      decoration: _inputDecoration('Estado'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: table_model.TableStatus.available,
+                          child: Text('Disponible'),
+                        ),
+                        DropdownMenuItem(
+                          value: table_model.TableStatus.occupied,
+                          child: Text('Ocupada'),
+                        ),
+                        DropdownMenuItem(
+                          value: table_model.TableStatus.reserved,
+                          child: Text('Reservada'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => _status = value);
                       },
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    StitchPrimaryButton(
+                      label: _isEditing ? 'Guardar Cambios' : 'Crear Mesa',
+                      icon: _isEditing ? Icons.save : Icons.add,
+                      onPressed: _submit,
                     ),
                   ],
                 ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(AppRadius.xl * 1.5),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancelar'),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  ElevatedButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(Icons.save),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryContainer,
-                      foregroundColor: Colors.white,
-                    ),
-                    label: Text(_isEditing ? 'Guardar cambios' : 'Crear mesa'),
-                  ),
-                ],
               ),
             ),
           ],

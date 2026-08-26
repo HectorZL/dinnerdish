@@ -19,7 +19,7 @@ const _mockUser = User(
   id: 'user-cajero-1',
   username: 'cajero',
   name: 'María García',
-  role: Role.cajero,
+  roles: [Role.cajero],
 );
 
 class MockDrawerAuthService implements AuthService {

@@ -104,7 +104,13 @@ class InMemoryOrderService implements OrderService {
     auditService?.record(
       action: 'order.item_added',
       userId: order.waiterId,
-      metadata: {'orderId': orderId, 'itemId': item.id},
+      metadata: {
+        'orderId': orderId,
+        'itemId': item.id,
+        'name': item.name,
+        'quantity': item.quantity,
+        'tableId': order.tableId,
+      },
     );
     return updatedOrder;
   }
@@ -158,6 +164,7 @@ class InMemoryOrderService implements OrderService {
         'additionalName': additional.name,
         'quantity': quantity,
         'priceCents': additional.priceCents,
+        'tableId': order.tableId,
       },
     );
     return updatedOrder;
@@ -191,7 +198,13 @@ class InMemoryOrderService implements OrderService {
     auditService?.record(
       action: 'order.item_updated',
       userId: byUserId,
-      metadata: {'orderId': orderId, 'itemId': item.id},
+      metadata: {
+        'orderId': orderId,
+        'itemId': item.id,
+        'name': item.name,
+        'quantity': item.quantity,
+        'tableId': order.tableId,
+      },
     );
     return updatedOrder;
   }
@@ -227,7 +240,13 @@ class InMemoryOrderService implements OrderService {
     auditService?.record(
       action: 'order.item_removed',
       userId: byUserId,
-      metadata: {'orderId': orderId, 'itemId': itemId},
+      metadata: {
+        'orderId': orderId,
+        'itemId': itemId,
+        'name': item.name,
+        'quantity': item.quantity,
+        'tableId': order.tableId,
+      },
     );
     return updatedOrder;
   }
@@ -257,7 +276,12 @@ class InMemoryOrderService implements OrderService {
     auditService?.record(
       action: 'order.sent_to_kitchen',
       userId: byUserId,
-      metadata: {'orderId': orderId},
+      metadata: {
+        'orderId': orderId,
+        'tableId': order.tableId,
+        'itemCount': order.items.length,
+        'items': order.items.map((i) => '${i.quantity}x ${i.name}').join(', '),
+      },
     );
     return updatedOrder;
   }
@@ -428,7 +452,7 @@ class InMemoryOrderService implements OrderService {
     for (final item in order.items) {
       subtotal += item.priceCents * item.quantity;
     }
-    final tax = (subtotal * 0.10).toInt();
+    final tax = (subtotal * 0.15).toInt();
     return order.copyWith(
       subtotalCents: subtotal,
       taxCents: tax,

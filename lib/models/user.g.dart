@@ -16,11 +16,14 @@ class UserAdapter extends TypeAdapter<User> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+    final rolesList = fields[9] != null
+        ? (fields[9] as List).cast<Role>()
+        : (fields[3] != null ? [fields[3] as Role] : const [Role.mesero]);
     return User(
       id: fields[0] as String,
       username: fields[1] as String,
       name: fields[2] as String,
-      role: fields[3] as Role,
+      roles: rolesList,
       token: fields[4] as String?,
       email: fields[5] as String?,
       lastLogin: fields[6] as String?,
@@ -32,7 +35,7 @@ class UserAdapter extends TypeAdapter<User> {
   @override
   void write(BinaryWriter writer, User obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +53,9 @@ class UserAdapter extends TypeAdapter<User> {
       ..writeByte(7)
       ..write(obj.isActive)
       ..writeByte(8)
-      ..write(obj.password);
+      ..write(obj.password)
+      ..writeByte(9)
+      ..write(obj.roles);
   }
 
   @override

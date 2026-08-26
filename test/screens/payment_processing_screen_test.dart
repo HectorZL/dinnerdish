@@ -22,7 +22,7 @@ const _mockUser = User(
   id: 'user-cajero-1',
   username: 'cajero',
   name: 'María García',
-  role: Role.cajero,
+  roles: [Role.cajero],
 );
 
 class MockPaymentProcAuthService implements AuthService {
@@ -116,7 +116,7 @@ class MockPaymentProcOrderService implements OrderService {
       0,
       (sum, line) => sum + line.priceCents * line.quantity,
     );
-    final tax = (subtotal * 0.10).toInt();
+    final tax = (subtotal * 0.15).toInt();
     return current.copyWith(
       items: items,
       subtotalCents: subtotal,
@@ -237,7 +237,7 @@ class MockPaymentProcPaymentService implements PaymentService {
   }) async => [];
 }
 
-Order makeTestOrder({required String id, int totalCents = 2500}) {
+Order makeTestOrder({required String id, int totalCents = 2300}) {
   return Order(
     id: id,
     tableId: 'table-5',
@@ -254,7 +254,7 @@ Order makeTestOrder({required String id, int totalCents = 2500}) {
     ],
     status: OrderStatus.billed,
     subtotalCents: 2000,
-    taxCents: 500,
+    taxCents: 300,
     totalCents: totalCents,
     createdAt: DateTime(2026, 5, 8, 14, 30),
   );
@@ -326,8 +326,8 @@ void main() {
 
       // Prices
       expect(find.text('\$20.00'), findsAtLeastNWidgets(1)); // subtotal and line item
-      expect(find.text('\$5.00'), findsOneWidget); // tax
-      expect(find.text('\$25.00'), findsOneWidget); // total
+      expect(find.text('\$3.00'), findsOneWidget); // tax
+      expect(find.text('\$23.00'), findsOneWidget); // total
     });
 
     testWidgets('shows payment method options', (tester) async {
@@ -570,6 +570,100 @@ void main() {
       expect(find.text('Pago Exitoso'), findsOneWidget);
       expect(find.text('Cuenta Separada'), findsAtLeastNWidgets(1));
       expect(find.text('2 comensales pagaron'), findsOneWidget);
+    });
+
+    testWidgets(
+      r'allows selecting specific dishes for Cortesia ($0.00) and displays discount row',
+      (tester) async {
+      final orderService = MockPaymentProcOrderService(
+        order: makeTestOrder(id: 'order-1'),
+      );
+      final paymentService = MockPaymentProcPaymentService();
+
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // Open Cortesia dialog
+      final cortesiaBtn = find.byKey(const Key('openCortesiaDialogButton'));
+      await tester.ensureVisible(cortesiaBtn);
+      await tester.pump();
+      await tester.tap(cortesiaBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Platos de Cortesía'), findsOneWidget);
+      expect(find.text('Toda la orden (\$0)'), findsOneWidget);
+
+      // Increment courtesy for item-1 by 1
+      final incCourtesyBtn = find.byKey(const Key('incrementCourtesy_item-1'));
+      await tester.tap(incCourtesyBtn);
+      await tester.pump();
+
+      expect(find.text('-\$10.00'), findsOneWidget); // 1x courtesy = $10.00
+
+      // Confirm courtesy
+      final applyCourtesyBtn = find.byKey(const Key('applyCourtesyConfirmButton'));
+      await tester.tap(applyCourtesyBtn);
+      await tester.pumpAndSettle();
+
+      // Badge on item list
+      expect(find.textContaining('🎁 Cortesía: 1 de 2 (\$0.00)'), findsOneWidget);
+
+      // Breakdown displays courtesy discount row
+      expect(find.text('Cortesía (Platos \$0.00)'), findsOneWidget);
+      expect(find.text('-\$10.00'), findsOneWidget);
+
+      // Recalculated total: Net Subtotal $10.00 + 15% IVA ($1.50) = $11.50
+      expect(find.text('\$11.50'), findsOneWidget);
+    });
+
+    testWidgets('discount dialog strictly validates positive numerical inputs and applies discount', (
+      tester,
+    ) async {
+      final orderService = MockPaymentProcOrderService(
+        order: makeTestOrder(id: 'order-1'),
+      );
+      final paymentService = MockPaymentProcPaymentService();
+
+      await tester.pumpWidget(
+        buildPaymentApp(
+          orderService: orderService,
+          paymentService: paymentService,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // Open Discount dialog
+      final discountBtn = find.byKey(const Key('openDiscountDialogButton'));
+      await tester.ensureVisible(discountBtn);
+      await tester.pump();
+      await tester.tap(discountBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Aplicar Descuento'), findsOneWidget);
+      expect(find.text('Monto (\$)'), findsOneWidget);
+
+      // Enter amount discount $5.00
+      final inputField = find.byKey(const Key('discountValueInput'));
+      await tester.enterText(inputField, '5.00');
+      await tester.pump();
+
+      final applyBtn = find.byKey(const Key('applyDiscountConfirmButton'));
+      await tester.tap(applyBtn);
+      await tester.pumpAndSettle();
+
+      // Breakdown displays discount row
+      expect(find.text('Descuento General'), findsOneWidget);
+      expect(find.text('-\$5.00'), findsOneWidget);
+
+      // Recalculated total: Subtotal $20.00 + 15% IVA ($3.00) - $5.00 = $18.00
+      expect(find.text('\$18.00'), findsOneWidget);
     });
   });
 }

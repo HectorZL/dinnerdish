@@ -62,10 +62,10 @@ void main() {
       expect(order.items.first.priceCents, 1500);
       expect(order.items.first.status, order_item.OrderStatus.pending);
 
-      // Totals recalculated: 1500 * 2 = 3000 subtotal, 300 tax, 3300 total
+      // Totals recalculated: 1500 * 2 = 3000 subtotal, 450 tax (15%), 3450 total
       expect(order.subtotalCents, 3000);
-      expect(order.taxCents, 300);
-      expect(order.totalCents, 3300);
+      expect(order.taxCents, 450);
+      expect(order.totalCents, 3450);
     });
 
     // ---------------------------------------------------------------------------

@@ -9,7 +9,7 @@ class InMemoryUserService implements UserService {
       id: 'user-mesero-1',
       username: 'mesero',
       name: 'Juan Pérez',
-      role: Role.mesero,
+      roles: [Role.mesero],
       token: 'mock-token-mesero',
       email: 'juan.p@sabor-y-hogar.com',
       lastLogin: 'Hoy, 10:30 AM',
@@ -20,7 +20,7 @@ class InMemoryUserService implements UserService {
       id: 'user-cajero-1',
       username: 'cajero',
       name: 'María García',
-      role: Role.cajero,
+      roles: [Role.cajero],
       token: 'mock-token-cajero',
       email: 'maria.g@sabor-y-hogar.com',
       lastLogin: 'Hoy, 08:15 AM',
@@ -31,7 +31,7 @@ class InMemoryUserService implements UserService {
       id: 'user-cocinero-1',
       username: 'cocinero',
       name: 'Carlos López',
-      role: Role.cocinero,
+      roles: [Role.cocinero],
       token: 'mock-token-cocinero',
       email: 'carlos.l@sabor-y-hogar.com',
       lastLogin: 'Ayer, 09:00 PM',
@@ -42,7 +42,7 @@ class InMemoryUserService implements UserService {
       id: 'user-admin-1',
       username: 'admin',
       name: 'Ana Martínez',
-      role: Role.admin,
+      roles: [Role.admin],
       token: 'mock-token-admin',
       email: 'ana.m@sabor-y-hogar.com',
       lastLogin: 'Hoy, 09:15 AM',
@@ -53,7 +53,7 @@ class InMemoryUserService implements UserService {
       id: 'user-carlos-1',
       username: 'carlos.m',
       name: 'Carlos Mendez',
-      role: Role.admin,
+      roles: [Role.admin],
       token: 'mock-token-carlos',
       email: 'carlos.m@sabor-y-hogar.com',
       lastLogin: 'Hoy, 09:15 AM',
@@ -64,7 +64,7 @@ class InMemoryUserService implements UserService {
       id: 'user-lucia-1',
       username: 'lucia.f',
       name: 'Lucia Ferrero',
-      role: Role.mesero,
+      roles: [Role.mesero],
       token: 'mock-token-lucia',
       email: 'lucia.f@sabor-y-hogar.com',
       lastLogin: 'Ayer, 11:30 PM',
@@ -75,7 +75,7 @@ class InMemoryUserService implements UserService {
       id: 'user-jorge-1',
       username: 'jruiz',
       name: 'Jorge Ruiz',
-      role: Role.cocinero,
+      roles: [Role.cocinero],
       token: 'mock-token-jorge',
       email: 'jruiz@sabor-y-hogar.com',
       lastLogin: 'Hoy, 06:45 AM',
@@ -86,7 +86,7 @@ class InMemoryUserService implements UserService {
       id: 'user-elena-1',
       username: 'elena.b',
       name: 'Elena Blanco',
-      role: Role.cajero,
+      roles: [Role.cajero],
       token: 'mock-token-elena',
       email: 'elena.b@sabor-y-hogar.com',
       lastLogin: 'Hace 3 dias',
@@ -134,14 +134,14 @@ class InMemoryUserService implements UserService {
     if (index == -1) throw UserNotFoundException(id);
 
     final user = _users[index];
-    if (user.role == Role.admin && user.isActive && _activeAdminCount <= 1) {
+    if (user.hasRole(Role.admin) && user.isActive && _activeAdminCount <= 1) {
       throw LastActiveAdminException();
     }
     _users.removeAt(index);
   }
 
   int get _activeAdminCount =>
-      _users.where((user) => user.role == Role.admin && user.isActive).length;
+      _users.where((user) => user.hasRole(Role.admin) && user.isActive).length;
 
   User _prepareUser(User user, {required bool isNewUser}) {
     final username = user.username.trim().toLowerCase();
@@ -188,9 +188,9 @@ class InMemoryUserService implements UserService {
 
   void _ensureAnActiveAdminRemains(User existing, User updated) {
     final removesAdminAccess =
-        existing.role == Role.admin &&
+        existing.hasRole(Role.admin) &&
         existing.isActive &&
-        (updated.role != Role.admin || !updated.isActive);
+        (!updated.hasRole(Role.admin) || !updated.isActive);
     if (removesAdminAccess && _activeAdminCount <= 1) {
       throw LastActiveAdminException();
     }

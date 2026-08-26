@@ -19,6 +19,7 @@ import '../presentation/screens/table_management_screen.dart';
 import '../presentation/screens/order_tracking_screen.dart';
 import '../presentation/screens/user_management_screen.dart';
 import '../presentation/screens/reports_screen.dart';
+import '../presentation/screens/dish_history_screen.dart';
 import 'route_guards.dart';
 
 class RouterNotifier extends ChangeNotifier {
@@ -95,10 +96,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/tables',
-        builder: (ctx, state) => const TableManagementScreen(),
+        builder: (ctx, state) => TableManagementScreen(
+          initialFilter: state.uri.queryParameters['filter'],
+        ),
       ),
       GoRoute(path: '/kds', builder: (ctx, state) => const KdsScreen()),
-      GoRoute(path: '/audit', builder: (ctx, state) => const AuditLogScreen()),
+      GoRoute(
+        path: '/dishes/history',
+        builder: (ctx, state) => const DishHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/audit',
+        builder: (ctx, state) => AuditLogScreen(
+          initialUserId: state.uri.queryParameters['userId'],
+        ),
+      ),
       GoRoute(
         path: '/cashier/pending',
         builder: (ctx, state) => const CashierPendingScreen(),

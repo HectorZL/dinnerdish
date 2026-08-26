@@ -102,7 +102,7 @@ void main() {
             id: '1',
             username: 'carlos.m',
             name: 'Carlos Mendez',
-            role: Role.admin,
+            roles: [Role.admin],
             email: 'carlos.m@sabor-y-hogar.com',
             isActive: true,
           ),
@@ -110,7 +110,7 @@ void main() {
             id: '2',
             username: 'lucia.f',
             name: 'Lucia Ferrero',
-            role: Role.mesero,
+            roles: [Role.mesero],
             email: 'lucia.f@sabor-y-hogar.com',
             isActive: false,
           ),
@@ -173,12 +173,17 @@ void main() {
       expect(find.text('Correo: nuevo@dinner.com'), findsOneWidget);
       expect(find.text('Contraseña inicial: 123456789'), findsOneWidget);
 
-      await tester.tap(find.byType(DropdownButtonFormField<Role>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Caja').last);
+      final chipFinder = find.widgetWithText(FilterChip, 'Caja');
+      await tester.ensureVisible(chipFinder);
+      await tester.tap(chipFinder);
       await tester.pumpAndSettle();
 
-      final saveButton = find.text('Crear Usuario');
+      final salaChipFinder = find.widgetWithText(FilterChip, 'Sala');
+      await tester.ensureVisible(salaChipFinder);
+      await tester.tap(salaChipFinder);
+      await tester.pumpAndSettle();
+
+      final saveButton = find.text('Crear Usuario').last;
       await tester.ensureVisible(saveButton);
       await tester.tap(saveButton);
       await tester.pumpAndSettle();

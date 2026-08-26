@@ -179,11 +179,11 @@ class MockOrderService implements OrderService {
 
 class MockAuthService implements AuthService {
   @override
-  Future<User> login(String username, String password) async => User(
+  Future<User> login(String username, String password) async => const User(
     id: 'user-1',
     username: 'test',
     name: 'Test Waiter',
-    role: Role.mesero,
+    roles: [Role.mesero],
   );
 
   @override
@@ -193,11 +193,11 @@ class MockAuthService implements AuthService {
   Future<void> logout() async {}
 
   @override
-  Future<User?> getCurrentUser() async => User(
+  Future<User?> getCurrentUser() async => const User(
     id: 'user-1',
     username: 'test',
     name: 'Test Waiter',
-    role: Role.mesero,
+    roles: [Role.mesero],
   );
 }
 
@@ -205,7 +205,7 @@ const _mockUser = User(
   id: 'user-1',
   username: 'test',
   name: 'Test Waiter',
-  role: Role.mesero,
+  roles: [Role.mesero],
 );
 
 class MockAuditService implements AuditService {

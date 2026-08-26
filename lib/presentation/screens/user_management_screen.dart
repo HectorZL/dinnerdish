@@ -62,7 +62,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
   Future<void> _updateUser(String id, User user) async {
     final currentUser = ref.read(currentUserProvider).value;
-    if (currentUser?.id == id && (user.role != Role.admin || !user.isActive)) {
+    if (currentUser?.id == id && (!user.hasRole(Role.admin) || !user.isActive)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -725,7 +725,6 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
   Widget _buildUserRow(User user, bool isDesktop) {
     final roleColor = _getRoleColor(user.role);
-    final roleLabel = _getRoleLabel(user.role);
     final emailLabel = user.email ?? '';
     final lastLoginLabel = user.lastLogin ?? 'Nunca';
 
@@ -786,28 +785,36 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
               ),
             ),
-          // Role
+          // Roles (multi-role display)
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: roleColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Text(
-                  roleLabel,
-                  style: AppTypography.statusBadge(
-                    color: roleColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              child: Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: user.roles.map((r) {
+                  final rColor = _getRoleColor(r);
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: rColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                      border: Border.all(color: rColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      _getRoleLabel(r),
+                      style: AppTypography.statusBadge(
+                        color: rColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
           ),
@@ -852,31 +859,31 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             ),
           ),
           // Actions
-          SizedBox(
-            width: 80,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _iconBtn(
-                  Icons.edit_outlined,
-                  const Color(0xFF64748B),
-                  () => _showEditDialog(user),
-                ),
-                _iconBtn(Icons.delete_outline, AppColors.error, () async {
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildIconButton(
+                Icons.edit_outlined,
+                const Color(0xFF64748B),
+                () => _showEditDialog(user),
+              ),
+              const SizedBox(width: 4),
+              _buildIconButton(
+                Icons.delete_outline,
+                AppColors.error,
+                () async {
                   final confirmed = await _confirmDelete(user);
-                  if (confirmed) {
-                    _deleteUser(user.id);
-                  }
-                }),
-              ],
-            ),
+                  if (confirmed) _deleteUser(user.id);
+                },
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _iconBtn(IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildIconButton(IconData icon, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -889,19 +896,19 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
   Widget _buildRoleDistribution(bool isMobile) {
     final adminCount = _users
-        .where((u) => u.role == Role.admin)
+        .where((u) => u.hasRole(Role.admin))
         .length
         .toString();
     final meseroCount = _users
-        .where((u) => u.role == Role.mesero)
+        .where((u) => u.hasRole(Role.mesero))
         .length
         .toString();
     final cocineroCount = _users
-        .where((u) => u.role == Role.cocinero)
+        .where((u) => u.hasRole(Role.cocinero))
         .length
         .toString();
     final cajeroCount = _users
-        .where((u) => u.role == Role.cajero)
+        .where((u) => u.hasRole(Role.cajero))
         .length
         .toString();
 
@@ -923,19 +930,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Text('Distribucion de Roles', style: AppTypography.h3()),
-            ],
+          Text(
+            'Distribución de Roles',
+            style: AppTypography.h3(color: AppColors.onSurface),
           ),
           const SizedBox(height: AppSpacing.md),
           if (isMobile)
@@ -944,7 +941,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                   .map(
                     (r) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: _buildRoleRow(r),
+                      child: _buildRoleItem(r),
                     ),
                   )
                   .toList(),
@@ -952,11 +949,15 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           else
             Row(
               children: roles
-                  .expand(
-                    (r) => [
-                      Expanded(child: _buildRoleCard(r)),
-                      if (r != roles.last) const SizedBox(width: AppSpacing.sm),
-                    ],
+                  .map(
+                    (r) => Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs,
+                        ),
+                        child: _buildRoleItem(r),
+                      ),
+                    ),
                   )
                   .toList(),
             ),
@@ -965,84 +966,40 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     );
   }
 
-  Widget _buildRoleRow(_RoleData role) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: role.color),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Text(
-            role.label,
-            style: AppTypography.bodyMd(color: const Color(0xFF475569)),
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: 2,
-          ),
-          decoration: BoxDecoration(
-            color: role.color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppRadius.full),
-          ),
-          child: Text(
-            role.count,
-            style: AppTypography.statusBadge(
-              color: role.color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoleCard(_RoleData role) {
+  Widget _buildRoleItem(_RoleData data) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: role.color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: role.color.withValues(alpha: 0.15)),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: role.color,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    role.count,
-                    style: AppTypography.statusBadge(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              Icon(Icons.chevron_right, color: role.color, size: 18),
-            ],
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: data.color,
+              shape: BoxShape.circle,
+            ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            role.label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.bodyMd(
-              color: const Color(0xFF475569),
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data.title,
+                  style: AppTypography.statusBadge(
+                    color: const Color(0xFF64748B),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  data.count,
+                  style: AppTypography.h3(color: AppColors.onSurface),
+                ),
+              ],
             ),
           ),
         ],
@@ -1052,11 +1009,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 }
 
 class _RoleData {
-  final String label;
+  final String title;
   final String count;
   final Color color;
 
-  const _RoleData(this.label, this.count, this.color);
+  _RoleData(this.title, this.count, this.color);
 }
 
 // ────────────────────────────────────────────────────────────
@@ -1082,7 +1039,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
-  late Role _role;
+  late Set<Role> _selectedRoles;
   late bool _isActive;
 
   bool get _isEditing => widget.existingUser != null;
@@ -1101,7 +1058,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
     _lastNameController = TextEditingController();
     _emailController = TextEditingController(text: user?.email ?? '');
     _passwordController = TextEditingController();
-    _role = user?.role ?? Role.mesero;
+    _selectedRoles = user?.roles.toSet() ?? {Role.mesero};
     _isActive = user?.isActive ?? true;
   }
 
@@ -1143,6 +1100,13 @@ class _UserFormDialogState extends State<_UserFormDialog> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedRoles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes asignar al menos un rol.')),
+      );
+      return;
+    }
+
     final password = _isEditing
         ? (_passwordController.text.trim().isNotEmpty
               ? _passwordController.text.trim()
@@ -1161,7 +1125,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
           ? _usernameController.text.trim()
           : _generatedUsername,
       name: fullName,
-      role: _role,
+      roles: _selectedRoles.toList(),
       email: _isEditing ? _emailController.text.trim() : _generatedEmail,
       isActive: _isActive,
       lastLogin: widget.existingUser?.lastLogin ?? 'Nunca',
@@ -1216,6 +1180,19 @@ class _UserFormDialogState extends State<_UserFormDialog> {
     }
   }
 
+  Color _getRoleColor(Role role) {
+    switch (role) {
+      case Role.admin:
+        return AppColors.primaryContainer;
+      case Role.mesero:
+        return const Color(0xFF3B82F6);
+      case Role.cocinero:
+        return const Color(0xFF10B981);
+      case Role.cajero:
+        return const Color(0xFF8B5CF6);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -1226,7 +1203,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
       child: Container(
         width: MediaQuery.of(context).size.width * 0.95,
         constraints: BoxConstraints(
-          maxWidth: 500,
+          maxWidth: 520,
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
         child: Column(
@@ -1423,24 +1400,77 @@ class _UserFormDialogState extends State<_UserFormDialog> {
                                 ),
                                 const SizedBox(height: AppSpacing.md),
                               ],
-                              DropdownButtonFormField<Role>(
-                                initialValue: _role,
-                                dropdownColor: Colors.white,
+                              Text(
+                                'Roles asignados (selecciona uno o más)',
                                 style: AppTypography.bodyMd(
                                   color: AppColors.onSurface,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                decoration: _inputDecoration('Rol'),
-                                items: Role.values
-                                    .map(
-                                      (r) => DropdownMenuItem(
-                                        value: r,
-                                        child: Text(_getRoleLabel(r)),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Puedes asignar múltiples roles al usuario según sus funciones.',
+                                style: AppTypography.bodyMd(
+                                  color: const Color(0xFF64748B),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: Role.values.map((r) {
+                                  final isSelected = _selectedRoles.contains(r);
+                                  final rColor = _getRoleColor(r);
+                                  return FilterChip(
+                                    selected: isSelected,
+                                    label: Text(_getRoleLabel(r)),
+                                    labelStyle: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : AppColors.onSurface,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                    selectedColor: rColor,
+                                    checkmarkColor: Colors.white,
+                                    backgroundColor: Colors.white,
+                                    side: BorderSide(
+                                      color: isSelected
+                                          ? rColor
+                                          : const Color(0xFFE2D5D0),
+                                      width: isSelected ? 1.5 : 1.0,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.lg,
                                       ),
-                                    )
-                                    .toList(),
-                                onChanged: (v) {
-                                  if (v != null) setState(() => _role = v);
-                                },
+                                    ),
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        if (selected) {
+                                          _selectedRoles.add(r);
+                                        } else {
+                                          if (_selectedRoles.length > 1) {
+                                            _selectedRoles.remove(r);
+                                          } else {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'El usuario debe tener al menos un rol.',
+                                                ),
+                                                duration: Duration(seconds: 2),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      });
+                                    },
+                                  );
+                                }).toList(),
                               ),
                               const SizedBox(height: AppSpacing.md),
                               Row(

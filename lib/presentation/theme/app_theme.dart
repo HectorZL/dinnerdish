@@ -158,7 +158,9 @@ class AppRadius {
   AppRadius._();
 
   static const double xs = 4;
-  static const double lg = 8;
+  static const double sm = 6;
+  static const double md = 8;
+  static const double lg = 10;
   static const double xl = 12;
   static const double full = 9999;
 }
@@ -504,8 +506,8 @@ void _showProfileDetails(BuildContext context, User? user) {
                       children: [
                         _ProfileDetailRow(
                           icon: Icons.badge_outlined,
-                          label: 'Rol',
-                          value: _profileRoleLabel(user?.role),
+                          label: user != null && user.roles.length > 1 ? 'Roles' : 'Rol',
+                          value: _profileRolesLabel(user),
                         ),
                         const Divider(height: 1, color: Color(0xFFF1F5F9)),
                         _ProfileDetailRow(
@@ -551,6 +553,11 @@ void _showProfileDetails(BuildContext context, User? user) {
       ),
     ),
   );
+}
+
+String _profileRolesLabel(User? user) {
+  if (user == null || user.roles.isEmpty) return 'Usuario';
+  return user.roles.map((r) => _profileRoleLabel(r)).join(', ');
 }
 
 String _profileRoleLabel(Role? role) {

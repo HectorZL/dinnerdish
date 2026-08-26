@@ -25,9 +25,6 @@ class User {
   @HiveField(2)
   final String name;
 
-  @HiveField(3)
-  final Role role;
-
   @HiveField(4)
   final String? token;
 
@@ -43,11 +40,16 @@ class User {
   @HiveField(8)
   final String? password;
 
+  @HiveField(9)
+  final List<Role> roles;
+
+  Role get role => roles.isNotEmpty ? roles.first : Role.mesero;
+
   const User({
     required this.id,
     required this.username,
     required this.name,
-    required this.role,
+    this.roles = const [Role.mesero],
     this.token,
     this.email,
     this.lastLogin,
@@ -55,22 +57,27 @@ class User {
     this.password,
   });
 
+  bool hasRole(Role targetRole) => roles.contains(targetRole);
+
   User copyWith({
     String? id,
     String? username,
     String? name,
     Role? role,
+    List<Role>? roles,
     String? token,
     String? email,
     String? lastLogin,
     bool? isActive,
     String? password,
   }) {
+    final updatedRoles = roles ??
+        (role != null ? [role] : this.roles);
     return User(
       id: id ?? this.id,
       username: username ?? this.username,
       name: name ?? this.name,
-      role: role ?? this.role,
+      roles: updatedRoles,
       token: token ?? this.token,
       email: email ?? this.email,
       lastLogin: lastLogin ?? this.lastLogin,
@@ -92,10 +99,34 @@ class User {
     if (name == null) {
       throw ArgumentError('Missing required field: name');
     }
-    final roleRaw = json['role'] as String?;
-    if (roleRaw == null) {
-      throw ArgumentError('Missing required field: role');
+    
+    List<Role> parsedRoles = [];
+    if (json['roles'] is List) {
+      parsedRoles = (json['roles'] as List)
+          .map((r) {
+            try {
+              return Role.values.byName(r.toString());
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<Role>()
+          .toList();
     }
+    
+    if (parsedRoles.isEmpty) {
+      final roleRaw = json['role'] as String?;
+      if (roleRaw != null) {
+        try {
+          parsedRoles = [Role.values.byName(roleRaw)];
+        } catch (_) {
+          parsedRoles = [Role.mesero];
+        }
+      } else {
+        parsedRoles = [Role.mesero];
+      }
+    }
+
     final token = json['token'] as String?;
     final email = json['email'] as String?;
     final lastLogin = json['lastLogin'] as String?;
@@ -106,7 +137,7 @@ class User {
       id: id,
       username: username,
       name: name,
-      role: Role.values.byName(roleRaw),
+      roles: parsedRoles,
       token: token,
       email: email,
       lastLogin: lastLogin,
@@ -120,6 +151,7 @@ class User {
         'username': username,
         'name': name,
         'role': role.name,
+        'roles': roles.map((r) => r.name).toList(),
         'token': token,
         'email': email,
         'lastLogin': lastLogin,

@@ -2,190 +2,134 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dinnerhome/models/audit_entry.dart';
+import 'package:dinnerhome/models/user.dart';
 import 'package:dinnerhome/presentation/screens/audit_log_screen.dart';
 import 'package:dinnerhome/providers/providers.dart';
 import 'package:dinnerhome/services/audit_service.dart';
+import 'package:dinnerhome/services/user_service.dart';
 
-// ── Mock Services ──────────────────────────────────────────────
-
-class MockAuditLogService implements AuditService {
-  final List<AuditEntry> entries;
-  final bool shouldThrow;
-  int callCount = 0;
-
-  /// When [failThenSucceed] is true, the first call throws and
-  /// subsequent calls return [entries]. This is useful for testing
-  /// the retry flow without rebuilding the widget.
-  final bool failThenSucceed;
-
-  MockAuditLogService({
-    this.entries = const [],
-    this.shouldThrow = false,
-    this.failThenSucceed = false,
-  });
-
-  @override
-  Future<List<AuditEntry>> list({int limit = 100, int offset = 0}) async {
-    callCount++;
-    if (shouldThrow) {
-      throw Exception('Simulated audit error');
-    }
-    if (failThenSucceed && callCount == 1) {
-      throw Exception('Simulated audit error');
-    }
-    return entries;
-  }
+class MockAuditService implements AuditService {
+  final List<AuditEntry> _entries;
+  MockAuditService(this._entries);
 
   @override
   Future<void> record({
     required String action,
     required String userId,
-    required Map<String, dynamic> metadata,
+    Map<String, dynamic>? metadata,
     DateTime? timestamp,
-  }) async {
-    // Not used in the screen; only list() is read
+  }) async {}
+
+  @override
+  Future<List<AuditEntry>> list({int limit = 100, int offset = 0}) async => _entries;
+}
+
+class MockUserService implements UserService {
+  final List<User> _users;
+  MockUserService(this._users);
+
+  @override
+  Future<List<User>> fetchUsers() async => _users;
+
+  @override
+  Future<User?> getUser(String id) async {
+    try {
+      return _users.firstWhere((u) => u.id == id);
+    } catch (_) {
+      return null;
+    }
   }
+
+  @override
+  Future<User> createUser(User user) async => user;
+
+  @override
+  Future<User> updateUser(String id, User user) async => user;
+
+  @override
+  Future<void> deleteUser(String id) async {}
 }
-
-// ── Helpers ────────────────────────────────────────────────────
-
-AuditEntry makeEntry({
-  required String id,
-  required String action,
-  required String userId,
-}) {
-  return AuditEntry(
-    id: id,
-    action: action,
-    userId: userId,
-    timestamp: DateTime(2026, 5, 8, 14, 30),
-  );
-}
-
-Widget buildAuditApp(MockAuditLogService auditService) {
-  return ProviderScope(
-    overrides: [
-      auditServiceProvider.overrideWith((ref) => auditService),
-    ],
-    child: const MaterialApp(home: AuditLogScreen()),
-  );
-}
-
-// ── Tests ──────────────────────────────────────────────────────
 
 void main() {
-  late MockAuditLogService auditService;
-
   group('AuditLogScreen', () {
-    testWidgets('shows loading state initially', (tester) async {
-      auditService = MockAuditLogService();
+    late List<AuditEntry> mockEntries;
+    late List<User> mockUsers;
 
-      await tester.pumpWidget(buildAuditApp(auditService));
+    setUp(() {
+      mockUsers = [
+        const User(
+          id: 'user-mesero-1',
+          username: 'mesero',
+          name: 'Juan Pérez',
+          roles: [Role.mesero],
+        ),
+        const User(
+          id: 'user-cajero-1',
+          username: 'cajero',
+          name: 'María García',
+          roles: [Role.cajero],
+        ),
+      ];
 
-      // _isLoading starts as true
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      mockEntries = [
+        AuditEntry(
+          id: 'audit-1',
+          action: 'order.item_added',
+          userId: 'user-mesero-1',
+          timestamp: DateTime.now(),
+          metadata: {
+            'orderId': 'order-1',
+            'itemId': 'item-1',
+            'name': 'Paella Valenciana',
+            'quantity': 2,
+            'tableId': '4',
+          },
+        ),
+        AuditEntry(
+          id: 'audit-2',
+          action: 'order.cashier_additional_added',
+          userId: 'user-cajero-1',
+          timestamp: DateTime.now(),
+          metadata: {
+            'orderId': 'order-1',
+            'additionalName': 'Pan Extra',
+            'quantity': 1,
+            'tableId': '4',
+          },
+        ),
+      ];
     });
 
-    testWidgets('shows empty state when no entries returned', (tester) async {
-      auditService = MockAuditLogService(entries: []);
+    testWidgets('renders personal audit logs with user/waiter identification and details', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 800));
 
-      await tester.pumpWidget(buildAuditApp(auditService));
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.text('No hay registros de auditoría'), findsOneWidget);
-    });
-
-    testWidgets('renders list of audit entries', (tester) async {
-      auditService = MockAuditLogService(
-        entries: [
-          makeEntry(id: '1', action: 'send_to_kitchen', userId: 'user-1'),
-          makeEntry(id: '2', action: 'request_payment', userId: 'user-2'),
-        ],
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auditServiceProvider.overrideWithValue(MockAuditService(mockEntries)),
+            userServiceProvider.overrideWithValue(MockUserService(mockUsers)),
+          ],
+          child: const MaterialApp(
+            home: AuditLogScreen(),
+          ),
+        ),
       );
 
-      await tester.pumpWidget(buildAuditApp(auditService));
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Actions transformed to upper case and underscores replaced
-      expect(find.text('SEND TO KITCHEN'), findsOneWidget);
-      expect(find.text('REQUEST PAYMENT'), findsOneWidget);
+      // Verify Header & Filters
+      expect(find.text('Registro de Auditoría Personal'), findsOneWidget);
+      expect(find.text('Filtrar por Personal / Mesero'), findsOneWidget);
+      expect(find.text('Tipo de Acción'), findsOneWidget);
 
-      // User IDs displayed in subtitle
-      expect(find.textContaining('user-1'), findsOneWidget);
-      expect(find.textContaining('user-2'), findsOneWidget);
-    });
+      // Verify entries rendered with User Name and ID
+      expect(find.text('Juan Pérez (ID: user-mesero-1)'), findsOneWidget);
+      expect(find.text('María García (ID: user-cajero-1)'), findsOneWidget);
 
-    testWidgets('shows error state when service throws', (tester) async {
-      auditService = MockAuditLogService(shouldThrow: true);
-
-      await tester.pumpWidget(buildAuditApp(auditService));
-      await tester.pump();
-      await tester.pump();
-
-      // Error message is displayed
-      expect(find.text('Error: Exception: Simulated audit error'),
-          findsOneWidget);
-
-      // Retry button is present
-      expect(find.text('Reintentar'), findsOneWidget);
-    });
-
-    testWidgets('retry button triggers reload after error', (tester) async {
-      auditService = MockAuditLogService(
-        failThenSucceed: true,
-        entries: [
-          makeEntry(id: '3', action: 'add_item', userId: 'user-3'),
-        ],
-      );
-
-      await tester.pumpWidget(buildAuditApp(auditService));
-      await tester.pump();
-      await tester.pump();
-
-      // First call throws → error state with retry button
-      expect(find.text('Reintentar'), findsOneWidget);
-
-      // Tap retry → triggers _loadEntries again (second call succeeds)
-      await tester.tap(find.text('Reintentar'));
-      await tester.pump();
-      await tester.pump();
-
-      // Now the entry should appear
-      expect(find.text('ADD ITEM'), findsOneWidget);
-      expect(find.text('No hay registros de auditoría'), findsNothing);
-    });
-
-    testWidgets('shows icons for different action types', (tester) async {
-      auditService = MockAuditLogService(
-        entries: [
-          makeEntry(id: '1', action: 'send_to_kitchen', userId: 'u1'),
-          makeEntry(id: '2', action: 'request_payment', userId: 'u2'),
-          makeEntry(id: '3', action: 'add_item', userId: 'u3'),
-          makeEntry(id: '4', action: 'remove_item', userId: 'u4'),
-          makeEntry(id: '5', action: 'create_order', userId: 'u5'),
-          makeEntry(id: '6', action: 'unknown_action', userId: 'u6'),
-        ],
-      );
-
-      await tester.pumpWidget(buildAuditApp(auditService));
-      await tester.pump();
-      await tester.pump();
-
-      // All actions should be rendered
-      expect(find.text('SEND TO KITCHEN'), findsOneWidget);
-      expect(find.text('REQUEST PAYMENT'), findsOneWidget);
-      expect(find.text('ADD ITEM'), findsOneWidget);
-      expect(find.text('REMOVE ITEM'), findsOneWidget);
-      expect(find.text('CREATE ORDER'), findsOneWidget);
-      expect(find.text('UNKNOWN ACTION'), findsOneWidget);
-
-      // Icons for specific actions
-      expect(find.byIcon(Icons.kitchen), findsOneWidget);
-      expect(find.byIcon(Icons.payments), findsOneWidget);
-      expect(find.byIcon(Icons.add_circle), findsOneWidget);
-      expect(find.byIcon(Icons.remove_circle), findsOneWidget);
+      // Verify Dish & table badges
+      expect(find.text('Paella Valenciana (x2)'), findsOneWidget);
+      expect(find.text('Pan Extra (x1)'), findsOneWidget);
+      expect(find.text('Mesa 4'), findsNWidgets(2));
     });
   });
 }

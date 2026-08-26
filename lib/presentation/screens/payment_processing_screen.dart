@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/global_additional.dart';
@@ -36,6 +37,7 @@ class _PaymentProcessingScreenState
   Map<String, MenuItem> _menuItems = {};
   List<GlobalAdditional> _availableAdditions = [];
   int _discountAmountCents = 0;
+  final Map<String, int> _courtesyItemQuantities = {};
 
   // Split-by-dishes state
   int _currentDinerNumber = 1;
@@ -43,9 +45,35 @@ class _PaymentProcessingScreenState
   final Map<String, int> _selectedItemQuantities = {};
   final List<Map<String, dynamic>> _dinerPaymentsHistory = [];
 
+  int get _courtesyDiscountCents {
+    if (_order == null) return 0;
+    return _order!.items.fold<int>(
+      0,
+      (sum, item) =>
+          sum + (item.priceCents * (_courtesyItemQuantities[item.id] ?? 0)),
+    );
+  }
+
+  int get _totalDiscountCents => _discountAmountCents + _courtesyDiscountCents;
+
+  int get _effectiveOrderSubtotalCents {
+    if (_order == null) return 0;
+    final net = _order!.subtotalCents - _courtesyDiscountCents;
+    return net < 0 ? 0 : net;
+  }
+
+  int get _effectiveOrderTaxCents {
+    if (_order == null) return 0;
+    if (_courtesyDiscountCents >= _order!.subtotalCents && _order!.subtotalCents > 0) return 0;
+    return (_effectiveOrderSubtotalCents * 0.15).round();
+  }
+
   int get _finalTotalCents {
     if (_order == null) return 0;
-    int total = _order!.totalCents - _discountAmountCents;
+    if (_effectiveOrderSubtotalCents == 0 && _order!.subtotalCents > 0) return 0;
+    final total = _effectiveOrderSubtotalCents +
+        _effectiveOrderTaxCents -
+        _discountAmountCents;
     return total < 0 ? 0 : total;
   }
 
@@ -65,21 +93,24 @@ class _PaymentProcessingScreenState
   }
 
   int get _currentDinerSubtotalCents {
-    if (!_isSplitMode) return _order?.subtotalCents ?? 0;
+    if (!_isSplitMode) return _effectiveOrderSubtotalCents;
     if (_order == null) return 0;
-    return _order!.items.fold<int>(
-      0,
-      (sum, item) => sum + (item.priceCents * _getSelectedQuantity(item)),
-    );
+    return _order!.items.fold<int>(0, (sum, item) {
+      final selected = _getSelectedQuantity(item);
+      if (selected == 0) return sum;
+      final courtesy = _courtesyItemQuantities[item.id] ?? 0;
+      final paidSoFar = _paidItemQuantities[item.id] ?? 0;
+      final totalNonCourtesy = (item.quantity - courtesy).clamp(0, item.quantity);
+      final nonCourtesyRemaining = (totalNonCourtesy - paidSoFar).clamp(0, totalNonCourtesy);
+      final chargedForDiner = selected.clamp(0, nonCourtesyRemaining);
+      return sum + (item.priceCents * chargedForDiner);
+    });
   }
 
   int get _currentDinerTaxCents {
-    if (!_isSplitMode) return _order?.taxCents ?? 0;
+    if (!_isSplitMode) return _effectiveOrderTaxCents;
     if (_order == null || _currentDinerSubtotalCents == 0) return 0;
-    if (_order!.subtotalCents > 0) {
-      return ((_order!.taxCents * (_currentDinerSubtotalCents / _order!.subtotalCents))).round();
-    }
-    return ((_currentDinerSubtotalCents * 0.10).round());
+    return (_currentDinerSubtotalCents * 0.15).round();
   }
 
   int get _currentDinerTotalCents {
@@ -89,13 +120,17 @@ class _PaymentProcessingScreenState
 
   int get _remainingTableTotalCents {
     if (_order == null) return 0;
-    final remainingSubtotal = _order!.items.fold<int>(
-      0,
-      (sum, item) => sum + (item.priceCents * _getUnpaidQuantity(item)),
-    );
-    final remainingTax = _order!.subtotalCents > 0
-        ? ((_order!.taxCents * (remainingSubtotal / _order!.subtotalCents))).round()
-        : (remainingSubtotal * 0.10).round();
+    final remainingSubtotal = _order!.items.fold<int>(0, (sum, item) {
+      final unpaid = _getUnpaidQuantity(item);
+      if (unpaid == 0) return sum;
+      final courtesy = _courtesyItemQuantities[item.id] ?? 0;
+      final paidSoFar = _paidItemQuantities[item.id] ?? 0;
+      final totalNonCourtesy = (item.quantity - courtesy).clamp(0, item.quantity);
+      final nonCourtesyRemaining = (totalNonCourtesy - paidSoFar).clamp(0, totalNonCourtesy);
+      final chargedRemaining = unpaid.clamp(0, nonCourtesyRemaining);
+      return sum + (item.priceCents * chargedRemaining);
+    });
+    final remainingTax = (remainingSubtotal * 0.15).round();
     return remainingSubtotal + remainingTax;
   }
 
@@ -344,7 +379,7 @@ class _PaymentProcessingScreenState
       return;
     }
 
-    if (_isSplitMode && _currentDinerTotalCents == 0) {
+    if (_isSplitMode && (_selectedItemQuantities.isEmpty || _selectedItemQuantities.values.every((q) => q == 0))) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Debes seleccionar al menos 1 plato para este comensal.'),
@@ -372,9 +407,9 @@ class _PaymentProcessingScreenState
       }
 
       if (!_isSplitMode) {
-        if (_finalTotalCents == 0 && _discountAmountCents != _order!.totalCents) {
+        if (_finalTotalCents == 0 && _totalDiscountCents == 0 && _order!.totalCents > 0) {
           throw Exception(
-            'El total a pagar no puede ser 0 a menos que sea una cortesía del 100%.',
+            'El total a pagar no puede ser 0 a menos que sea una cortesía o descuento del 100%.',
           );
         }
 
@@ -988,6 +1023,29 @@ class _PaymentProcessingScreenState
                                     ),
                                   ),
                                   const SizedBox(height: 4),
+                                  if ((_courtesyItemQuantities[item.id] ?? 0) > 0)
+                                    Container(
+                                      margin: const EdgeInsets.only(bottom: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFEF3C7),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.xs,
+                                        ),
+                                        border: Border.all(
+                                          color: const Color(0xFFF59E0B),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '🎁 Cortesía: ${_courtesyItemQuantities[item.id]} de ${item.quantity} (\$0.00)',
+                                        style: AppTypography.statusBadge(
+                                          color: const Color(0xFFB45309),
+                                        ),
+                                      ),
+                                    ),
                                   if (isPaidOut)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -1236,6 +1294,7 @@ class _PaymentProcessingScreenState
                       'Descuento',
                       AppColors.primaryContainer,
                       _showDiscountDialog,
+                      key: const Key('openDiscountDialogButton'),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -1244,7 +1303,8 @@ class _PaymentProcessingScreenState
                       Icons.card_giftcard,
                       'Cortesia',
                       AppColors.onSurfaceVariant,
-                      _applyCortesia,
+                      _showCortesiaDialog,
+                      key: const Key('openCortesiaDialogButton'),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -1288,13 +1348,21 @@ class _PaymentProcessingScreenState
                       ),
                       const SizedBox(height: AppSpacing.base),
                       _buildTotalRow(
-                        'IVA (10%)',
-                        '\$${(order.taxCents / 100).toStringAsFixed(2)}',
+                        'IVA (15%)',
+                        '\$${(_effectiveOrderTaxCents / 100).toStringAsFixed(2)}',
                       ),
+                      if (_courtesyDiscountCents > 0) ...[
+                        const SizedBox(height: AppSpacing.base),
+                        _buildTotalRow(
+                          'Cortesía (Platos \$0.00)',
+                          '-\$${(_courtesyDiscountCents / 100).toStringAsFixed(2)}',
+                          isDiscount: true,
+                        ),
+                      ],
                       if (_discountAmountCents > 0) ...[
                         const SizedBox(height: AppSpacing.base),
                         _buildTotalRow(
-                          'Descuento',
+                          'Descuento General',
                           '-\$${(_discountAmountCents / 100).toStringAsFixed(2)}',
                           isDiscount: true,
                         ),
@@ -1312,7 +1380,7 @@ class _PaymentProcessingScreenState
                       ),
                       const SizedBox(height: AppSpacing.base),
                       _buildTotalRow(
-                        'IVA Comensal (10%)',
+                        'IVA Comensal (15%)',
                         '\$${(_currentDinerTaxCents / 100).toStringAsFixed(2)}',
                       ),
                       const Divider(height: 24, color: Color(0xFFE2E8F0)),
@@ -1575,9 +1643,11 @@ class _PaymentProcessingScreenState
     IconData icon,
     String label,
     Color color,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    Key? key,
+  }) {
     return OutlinedButton.icon(
+      key: key,
       onPressed: onTap,
       icon: Icon(icon, size: 18),
       label: Text(label, style: AppTypography.statusBadge(color: color)),
@@ -1629,82 +1699,427 @@ class _PaymentProcessingScreenState
     );
   }
 
-  void _applyCortesia() {
-    if (_order == null) return;
-    setState(() {
-      _discountAmountCents = _order!.totalCents;
-    });
+  void _showCortesiaDialog() {
+    if (_order == null || _order!.items.isEmpty) return;
+
+    final tempCourtesy = Map<String, int>.from(_courtesyItemQuantities);
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          int calcTempDiscount() {
+            return _order!.items.fold<int>(
+              0,
+              (sum, item) =>
+                  sum + (item.priceCents * (tempCourtesy[item.id] ?? 0)),
+            );
+          }
+
+          final currentDiscount = calcTempDiscount();
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryContainer.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                  ),
+                  child: const Icon(
+                    Icons.card_giftcard,
+                    color: AppColors.primaryContainer,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Platos de Cortesía',
+                        style: AppTypography.h3(),
+                      ),
+                      Text(
+                        'Asigna valor \$0.00 a platos específicos o a la orden completa',
+                        style: AppTypography.bodyMd(
+                          fontSize: 12,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 500,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            key: const Key('allOrderCourtesyButton'),
+                            onPressed: () {
+                              setDialogState(() {
+                                for (final item in _order!.items) {
+                                  tempCourtesy[item.id] = item.quantity;
+                                }
+                              });
+                            },
+                            icon: const Icon(Icons.all_inclusive, size: 16),
+                            label: const Text('Toda la orden (\$0)'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primaryContainer,
+                              side: const BorderSide(
+                                color: AppColors.primaryContainer,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            key: const Key('clearCourtesyButton'),
+                            onPressed: () {
+                              setDialogState(() {
+                                tempCourtesy.clear();
+                              });
+                            },
+                            icon: const Icon(Icons.clear_all, size: 16),
+                            label: const Text('Limpiar cortesías'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    const Divider(height: 1),
+                    const SizedBox(height: AppSpacing.sm),
+                    ..._order!.items.map((item) {
+                      final itemCourtesy = tempCourtesy[item.id] ?? 0;
+                      final isCourtesy = itemCourtesy > 0;
+                      final name = item.name ??
+                          _menuItems[item.menuItemId]?.name ??
+                          'Item ${item.menuItemId}';
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isCourtesy
+                              ? const Color(0xFFFEF3C7)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(
+                            color: isCourtesy
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: AppTypography.bodyMd(
+                                      color: AppColors.onSurface,
+                                    ).copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${item.quantity} pedida(s) · \$${(item.priceCents / 100).toStringAsFixed(2)} c/u',
+                                    style: AppTypography.bodyMd(
+                                      fontSize: 12,
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  if (isCourtesy)
+                                    Text(
+                                      'Cortesía: ${itemCourtesy}x (Valor: \$0.00)',
+                                      style: AppTypography.statusBadge(
+                                        color: const Color(0xFFB45309),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceContainerLow,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.lg),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    key: Key('decrementCourtesy_${item.id}'),
+                                    icon: const Icon(Icons.remove, size: 16),
+                                    onPressed: itemCourtesy > 0
+                                        ? () {
+                                            setDialogState(() {
+                                              if (itemCourtesy == 1) {
+                                                tempCourtesy.remove(item.id);
+                                              } else {
+                                                tempCourtesy[item.id] =
+                                                    itemCourtesy - 1;
+                                              }
+                                            });
+                                          }
+                                        : null,
+                                  ),
+                                  Text(
+                                    '$itemCourtesy',
+                                    style: AppTypography.bodyLg(
+                                      color: AppColors.onSurface,
+                                    ).copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  IconButton(
+                                    key: Key('incrementCourtesy_${item.id}'),
+                                    icon: const Icon(Icons.add, size: 16),
+                                    onPressed: itemCourtesy < item.quantity
+                                        ? () {
+                                            setDialogState(() {
+                                              tempCourtesy[item.id] =
+                                                  itemCourtesy + 1;
+                                            });
+                                          }
+                                        : null,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: AppSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Descuento por Cortesía:',
+                            style: AppTypography.bodyMd(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            '-\$${(currentDiscount / 100).toStringAsFixed(2)}',
+                            style: AppTypography.h3(
+                              color: const Color(0xFFD97706),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                key: const Key('applyCourtesyConfirmButton'),
+                onPressed: () {
+                  setState(() {
+                    _courtesyItemQuantities.clear();
+                    _courtesyItemQuantities.addAll(tempCourtesy);
+                  });
+                  Navigator.of(dialogContext).pop();
+                },
+                child: const Text('Aplicar Cortesía'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _showDiscountDialog() {
     if (_order == null) return;
-    final controller = TextEditingController();
-    bool isPercentage = true;
+    final controller = TextEditingController(
+      text: _discountAmountCents > 0
+          ? (_discountAmountCents / 100).toStringAsFixed(2)
+          : '',
+    );
+    bool isPercentage = false;
+    String? errorMessage;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
-          title: Text('Aplicar Descuento', style: AppTypography.h3()),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                ),
+                child: const Icon(
+                  Icons.percent,
+                  color: AppColors.primaryContainer,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text('Aplicar Descuento', style: AppTypography.h3()),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
                   Expanded(
                     child: ChoiceChip(
-                      label: const Text('%'),
-                      selected: isPercentage,
-                      onSelected: (_) =>
-                          setStateDialog(() => isPercentage = true),
+                      label: const Text(
+                        'Monto (\$)',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      selected: !isPercentage,
+                      onSelected: (_) => setStateDialog(() {
+                        isPercentage = false;
+                        errorMessage = null;
+                      }),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: ChoiceChip(
-                      label: const Text('\$'),
-                      selected: !isPercentage,
-                      onSelected: (_) =>
-                          setStateDialog(() => isPercentage = false),
+                      label: const Text(
+                        'Porcentaje (%)',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      selected: isPercentage,
+                      onSelected: (_) => setStateDialog(() {
+                        isPercentage = true;
+                        errorMessage = null;
+                      }),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.md),
               TextField(
+                key: const Key('discountValueInput'),
                 controller: controller,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                ],
                 decoration: InputDecoration(
-                  labelText: 'Valor',
+                  labelText: isPercentage
+                      ? 'Porcentaje (0-100%)'
+                      : 'Monto de Descuento (\$)',
+                  prefixText: isPercentage ? '' : '\$ ',
+                  suffixText: isPercentage ? '%' : '',
+                  errorText: errorMessage,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
+                ),
+                onChanged: (_) {
+                  if (errorMessage != null) {
+                    setStateDialog(() => errorMessage = null);
+                  }
+                },
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Solo valores numéricos positivos. No se permiten caracteres especiales ni negativos.',
+                style: AppTypography.bodyMd(
+                  fontSize: 12,
+                  color: AppColors.onSurfaceVariant,
                 ),
               ),
             ],
           ),
           actions: [
+            if (_discountAmountCents > 0)
+              TextButton(
+                onPressed: () {
+                  setState(() => _discountAmountCents = 0);
+                  Navigator.pop(ctx);
+                },
+                child: const Text(
+                  'Quitar Descuento',
+                  style: TextStyle(color: AppColors.error),
+                ),
+              ),
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
+              key: const Key('applyDiscountConfirmButton'),
               onPressed: () {
-                final val = double.tryParse(controller.text) ?? 0;
-                if (val > 0) {
-                  setState(() {
-                    if (isPercentage) {
-                      _discountAmountCents = (_order!.totalCents * (val / 100))
-                          .round();
-                    } else {
-                      _discountAmountCents = (val * 100).round();
-                    }
-                    if (_discountAmountCents > _order!.totalCents) {
-                      _discountAmountCents = _order!.totalCents;
-                    }
+                final text = controller.text.trim();
+                final val = double.tryParse(text);
+                if (val == null || val < 0) {
+                  setStateDialog(() {
+                    errorMessage = 'Ingresa un número positivo válido';
                   });
+                  return;
                 }
+                if (isPercentage && val > 100) {
+                  setStateDialog(() {
+                    errorMessage = 'El porcentaje no puede superar 100%';
+                  });
+                  return;
+                }
+
+                final maxAllowedCents =
+                    _effectiveOrderSubtotalCents + _effectiveOrderTaxCents;
+                int calculatedDiscount = 0;
+                if (isPercentage) {
+                  calculatedDiscount =
+                      ((_order!.totalCents * val) / 100).round();
+                } else {
+                  calculatedDiscount = (val * 100).round();
+                }
+
+                if (calculatedDiscount > maxAllowedCents) {
+                  calculatedDiscount = maxAllowedCents;
+                }
+
+                setState(() {
+                  _discountAmountCents = calculatedDiscount;
+                });
                 Navigator.pop(ctx);
               },
               child: const Text('Aplicar'),

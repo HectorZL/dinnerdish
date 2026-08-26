@@ -5,6 +5,7 @@ import '../../providers/providers.dart';
 import '../../router/route_guards.dart';
 import '../theme/app_theme.dart';
 import 'package:dinnerhome/models/order.dart';
+import 'package:dinnerhome/models/order_item.dart' as oi;
 import 'package:dinnerhome/models/table.dart' as table_model;
 
 class MainMenuDashboardScreen extends ConsumerStatefulWidget {
@@ -221,28 +222,30 @@ class _MainMenuDashboardScreenState
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 600;
             return GridView.count(
-              crossAxisCount: isWide ? (canViewRevenue ? 4 : 3) : 2,
+              crossAxisCount: isWide ? (canViewRevenue ? 3 : 2) : 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: AppSpacing.md,
               mainAxisSpacing: AppSpacing.md,
-              childAspectRatio: isWide ? 1.6 : 1.3,
+              childAspectRatio: isWide ? 1.8 : 1.3,
               children: [
                 _buildStatCard(
                   'PEDIDOS ACTIVOS',
                   '$activeCount',
                   '+${todayOrders.length} hoy',
                   AppColors.primaryContainer,
+                  onTap: () => context.go('/orders/tracking'),
                 ),
                 _buildStatCard(
                   'MESAS OCUPADAS',
                   '$occupiedTables/$totalTables',
-                  null,
+                  'Ver mesas',
                   AppColors.tertiaryContainer,
                   showProgress: true,
                   progressValue: totalTables > 0
                       ? occupiedTables / totalTables
                       : 0,
+                  onTap: () => context.go('/tables?filter=occupied'),
                 ),
                 if (canViewRevenue)
                   _buildStatCard(
@@ -252,13 +255,6 @@ class _MainMenuDashboardScreenState
                     AppColors.tertiary,
                     showIcon: Icons.trending_up,
                   ),
-                _buildStatCard(
-                  'TIEMPO MEDIO',
-                  '12 min',
-                  null,
-                  AppColors.error,
-                  showIcon: Icons.timer,
-                ),
               ],
             );
           },
@@ -275,59 +271,79 @@ class _MainMenuDashboardScreenState
     bool showProgress = false,
     double progressValue = 0,
     IconData? showIcon,
+    VoidCallback? onTap,
   }) {
-    return StitchCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(label, style: AppTypography.labelCaps()),
-          const SizedBox(height: AppSpacing.xs),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: StitchCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(value, style: AppTypography.h2()),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(label, style: AppTypography.labelCaps()),
+                  if (onTap != null)
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 12,
+                      color: Color(0xFF94A3B8),
+                    ),
+                ],
               ),
-              if (badge != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryFixed,
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                  child: Text(
-                    badge,
-                    style: AppTypography.statusBadge(
-                      color: AppColors.primaryContainer,
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(value, style: AppTypography.h2()),
                     ),
                   ),
+                  if (badge != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                      ),
+                      child: Text(
+                        badge,
+                        style: AppTypography.statusBadge(
+                          color: accentColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  if (showIcon != null)
+                    Icon(showIcon, color: accentColor, size: 24),
+                ],
+              ),
+              if (showProgress) ...[
+                const SizedBox(height: AppSpacing.base),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  child: LinearProgressIndicator(
+                    value: progressValue,
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    color: accentColor,
+                    minHeight: 8,
+                  ),
                 ),
-              if (showIcon != null)
-                Icon(showIcon, color: accentColor, size: 24),
+              ],
             ],
           ),
-          if (showProgress) ...[
-            const SizedBox(height: AppSpacing.base),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              child: LinearProgressIndicator(
-                value: progressValue,
-                backgroundColor: const Color(0xFFF1F5F9),
-                color: accentColor,
-                minHeight: 8,
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -882,10 +898,62 @@ class _MainMenuDashboardScreenState
   }
 
   Widget _buildRecentOrders(List<Order> activeOrders) {
+    // Flatten active orders into dish items
+    final recentDishes = <_DishSummaryItem>[];
+    for (final order in activeOrders) {
+      for (final item in order.items) {
+        recentDishes.add(
+          _DishSummaryItem(
+            orderId: order.id,
+            tableName: order.tableId.isEmpty ? 'S/A' : 'Mesa ${order.tableId}',
+            waiterId: order.waiterId,
+            dishName: item.name ?? 'Plato',
+            quantity: item.quantity,
+            status: item.status,
+            createdAt: order.createdAt,
+          ),
+        );
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Últimos Pedidos', style: AppTypography.h2()),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Actividad Reciente de Platos', style: AppTypography.h2()),
+                Text(
+                  'Seguimiento en tiempo real de platos en servicio.',
+                  style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
+                ),
+              ],
+            ),
+            ElevatedButton.icon(
+              onPressed: () => context.go('/dishes/history'),
+              icon: const Icon(Icons.history_rounded, size: 18),
+              label: Text(
+                'REVISAR HISTORIAL DE PLATOS',
+                style: AppTypography.statusBadge(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryContainer,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                ),
+                elevation: 4,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: AppSpacing.md),
         StitchCard(
           padding: EdgeInsets.zero,
@@ -901,7 +969,7 @@ class _MainMenuDashboardScreenState
                 child: Row(
                   children: [
                     Expanded(
-                      flex: 3,
+                      flex: 2,
                       child: Text(
                         'MESA',
                         style: AppTypography.labelCaps(
@@ -910,7 +978,25 @@ class _MainMenuDashboardScreenState
                       ),
                     ),
                     Expanded(
+                      flex: 4,
+                      child: Text(
+                        'PLATO / DETALLE',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    Expanded(
                       flex: 3,
+                      child: Text(
+                        'RESPONSABLE (ID)',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
                       child: Text(
                         'ESTADO',
                         style: AppTypography.labelCaps(
@@ -921,16 +1007,7 @@ class _MainMenuDashboardScreenState
                     Expanded(
                       flex: 2,
                       child: Text(
-                        'TOTAL',
-                        style: AppTypography.labelCaps(
-                          color: const Color(0xFF64748B),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Text(
-                        'ACCIÓN',
+                        'HORA',
                         style: AppTypography.labelCaps(
                           color: const Color(0xFF64748B),
                         ),
@@ -940,28 +1017,21 @@ class _MainMenuDashboardScreenState
                 ),
               ),
               // Table Rows
-              if (activeOrders.isEmpty)
+              if (recentDishes.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(24.0),
                   child: Center(
                     child: Text(
-                      'No hay pedidos recientes',
+                      'No hay actividad de platos reciente',
                       style: TextStyle(color: Color(0xFF64748B)),
                     ),
                   ),
                 )
               else
-                ...activeOrders.take(5).map((order) {
+                ...recentDishes.take(6).map((dish) {
                   return Column(
                     children: [
-                      _buildOrderRow(
-                        'Mesa ${order.tableId.isEmpty ? 'S/A' : order.tableId}',
-                        'Salón',
-                        order.status.name,
-                        AppColors.primaryContainer,
-                        '${(order.totalCents / 100).toStringAsFixed(2)}€',
-                        Icons.visibility,
-                      ),
+                      _buildDishRow(dish),
                       const Divider(height: 1, color: Color(0xFFF8FAFC)),
                     ],
                   );
@@ -973,91 +1043,152 @@ class _MainMenuDashboardScreenState
     );
   }
 
-  Widget _buildOrderRow(
-    String tableName,
-    String location,
-    String status,
-    Color statusColor,
-    String total,
-    IconData actionIcon,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tableName,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.bodyMd(
-                    color: AppColors.onSurface,
-                  ).copyWith(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  location,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.statusBadge(
-                    color: const Color(0xFF94A3B8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppRadius.full),
+  Widget _buildDishRow(_DishSummaryItem dish) {
+    Color statusColor;
+    String statusLabel;
+    switch (dish.status) {
+      case oi.OrderStatus.pending:
+        statusColor = const Color(0xFFF59E0B);
+        statusLabel = 'Pendiente';
+        break;
+      case oi.OrderStatus.sent:
+        statusColor = const Color(0xFF3B82F6);
+        statusLabel = 'Enviado';
+        break;
+      case oi.OrderStatus.preparing:
+        statusColor = AppColors.statusCooking;
+        statusLabel = 'En Cocina';
+        break;
+      case oi.OrderStatus.ready:
+        statusColor = const Color(0xFF10B981);
+        statusLabel = 'Listo';
+        break;
+      case oi.OrderStatus.served:
+        statusColor = AppColors.primaryContainer;
+        statusLabel = 'Servido';
+        break;
+    }
+
+    final timeStr =
+        '${dish.createdAt.hour.toString().padLeft(2, '0')}:${dish.createdAt.minute.toString().padLeft(2, '0')}';
+
+    return InkWell(
+      onTap: () => context.go('/orders/${dish.orderId}'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        child: Row(
+          children: [
+            // Mesa
+            Expanded(
+              flex: 2,
+              child: Text(
+                dish.tableName,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyMd(
+                  color: AppColors.onSurface,
+                ).copyWith(fontWeight: FontWeight.bold),
               ),
+            ),
+            // Plato & Cantidad
+            Expanded(
+              flex: 4,
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 8,
-                    height: 8,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: statusColor,
+                      color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Text(
+                      'x${dish.quantity}',
+                      style: AppTypography.statusBadge(
+                        color: AppColors.primaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      status,
+                      dish.dishName,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.statusBadge(color: statusColor),
+                      style: AppTypography.bodyMd(
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              total,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.bodyMd(
-                color: AppColors.onSurface,
-              ).copyWith(fontWeight: FontWeight.bold),
+            // Responsable (ID)
+            Expanded(
+              flex: 3,
+              child: Text(
+                dish.waiterId.isEmpty ? 'S/ID' : dish.waiterId,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyMd(
+                  color: const Color(0xFF64748B),
+                  fontSize: 13,
+                ),
+              ),
             ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Icon(
-              actionIcon,
-              color: AppColors.primaryContainer,
-              size: 20,
+            // Estado
+            Expanded(
+              flex: 2,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: AppTypography.statusBadge(
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+            // Hora
+            Expanded(
+              flex: 2,
+              child: Text(
+                timeStr,
+                style: AppTypography.bodyMd(color: const Color(0xFF94A3B8)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _DishSummaryItem {
+  final String orderId;
+  final String tableName;
+  final String waiterId;
+  final String dishName;
+  final int quantity;
+  final oi.OrderStatus status;
+  final DateTime createdAt;
+
+  _DishSummaryItem({
+    required this.orderId,
+    required this.tableName,
+    required this.waiterId,
+    required this.dishName,
+    required this.quantity,
+    required this.status,
+    required this.createdAt,
+  });
 }
