@@ -30,12 +30,15 @@ def seed_database(db: Session):
 
     # Sample staff users
     sample_users = [
+        ("admin", "Administrador", "admin123", ["admin"]),
+        ("admin1", "Administrador Principal", "admin123", ["admin"]),
         ("mesero1", "Carlos Mesero", "mesero123", ["mesero"]),
         ("cajero1", "Ana Cajera", "cajero123", ["cajero"]),
         ("cocinero1", "Chef Mario", "cocinero123", ["cocinero"]),
     ]
     for username, name, pwd, roles in sample_users:
-        if not db.query(UserDB).filter(UserDB.username == username).first():
+        existing = db.query(UserDB).filter(UserDB.username == username).first()
+        if not existing:
             u = UserDB(
                 id=f"user-{username}",
                 username=username,
@@ -46,6 +49,10 @@ def seed_database(db: Session):
                 is_active=True,
             )
             db.add(u)
+        else:
+            existing.hashed_password = get_password_hash(pwd)
+            existing.is_active = True
+            existing.roles = roles
 
     # 2. Seed Default Tables
     if db.query(TableDB).count() == 0:
