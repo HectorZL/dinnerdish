@@ -66,4 +66,34 @@ class CashDrawerSession {
       status: status ?? this.status,
     );
   }
+
+  factory CashDrawerSession.fromJson(Map<String, dynamic> json) {
+    return CashDrawerSession(
+      id: json['id'] as String,
+      cashierId: json['cashierId'] as String,
+      openedAt: DateTime.parse(json['openedAt'] as String),
+      closedAt: json['closedAt'] != null
+          ? DateTime.parse(json['closedAt'] as String)
+          : null,
+      startingBalanceCents: json['startingBalanceCents'] as int? ?? 0,
+      expectedBalanceCents: json['expectedBalanceCents'] as int? ?? 0,
+      actualBalanceCents: json['actualBalanceCents'] as int? ?? 0,
+      differenceCents: json['differenceCents'] as int? ?? 0,
+      status: CashDrawerStatus.values.byName(
+        json['status'] as String? ?? 'open',
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'cashierId': cashierId,
+    'openedAt': openedAt.toIso8601String(),
+    'closedAt': closedAt?.toIso8601String(),
+    'startingBalanceCents': startingBalanceCents,
+    'expectedBalanceCents': expectedBalanceCents,
+    'actualBalanceCents': actualBalanceCents,
+    'differenceCents': differenceCents,
+    'status': status.name,
+  };
 }

@@ -18,4 +18,19 @@ class PaymentSummary {
     required this.totalCents,
   }) : assert(count >= 0, 'count must be >= 0'),
        assert(totalCents >= 0, 'totalCents must be >= 0');
+
+  factory PaymentSummary.fromJson(Map<String, dynamic> json) {
+    final methodRaw = json['method'] as String? ?? 'cash';
+    return PaymentSummary(
+      method: PaymentMethod.values.byName(methodRaw),
+      count: json['transactionCount'] as int? ?? json['count'] as int? ?? 0,
+      totalCents: json['totalAmountCents'] as int? ?? json['totalCents'] as int? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'method': method.name,
+    'count': count,
+    'totalCents': totalCents,
+  };
 }

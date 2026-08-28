@@ -15,26 +15,42 @@ import 'package:dinnerhome/services/payment_service.dart';
 import 'package:dinnerhome/services/socket_service.dart';
 import 'package:dinnerhome/services/audit_service.dart';
 import 'package:dinnerhome/services/additional_service.dart';
-import 'package:dinnerhome/services/hive/hive_additional_service.dart';
-import 'package:dinnerhome/services/in_memory/in_memory_auth_service.dart';
-import 'package:dinnerhome/services/role_permissions_service.dart';
-import 'package:dinnerhome/services/user_service.dart';
-import 'package:dinnerhome/services/in_memory/in_memory_user_service.dart';
-import 'package:dinnerhome/services/in_memory/in_memory_cash_drawer_service.dart';
-import 'package:dinnerhome/services/in_memory/in_memory_order_service.dart';
-import 'package:dinnerhome/services/in_memory/in_memory_payment_service.dart';
-import 'package:dinnerhome/services/in_memory/in_memory_socket_service.dart';
-import 'package:dinnerhome/services/hive/hive_audit_service.dart';
-import 'package:dinnerhome/services/hive/hive_menu_service.dart';
 import 'package:dinnerhome/models/table.dart';
+import 'package:dinnerhome/services/user_service.dart';
 import 'package:dinnerhome/services/table_service.dart';
+import 'package:dinnerhome/services/role_permissions_service.dart';
+import 'package:dinnerhome/services/hive/hive_audit_service.dart';
+import 'package:dinnerhome/services/in_memory/in_memory_auth_service.dart';
+import 'package:dinnerhome/services/in_memory/in_memory_user_service.dart';
+import 'package:dinnerhome/services/in_memory/in_memory_order_service.dart';
 import 'package:dinnerhome/services/in_memory/in_memory_table_service.dart';
+import 'package:dinnerhome/services/in_memory/in_memory_payment_service.dart';
+import 'package:dinnerhome/services/in_memory/in_memory_cash_drawer_service.dart';
+import 'package:dinnerhome/services/in_memory/in_memory_socket_service.dart';
+import 'package:dinnerhome/services/hive/hive_menu_service.dart';
+import 'package:dinnerhome/services/hive/hive_additional_service.dart';
+import 'package:dinnerhome/services/api/api_config.dart';
+import 'package:dinnerhome/services/api/http_auth_service.dart';
+import 'package:dinnerhome/services/api/http_user_service.dart';
+import 'package:dinnerhome/services/api/http_menu_service.dart';
+import 'package:dinnerhome/services/api/http_additional_service.dart';
+import 'package:dinnerhome/services/api/http_order_service.dart';
+import 'package:dinnerhome/services/api/http_table_service.dart';
+import 'package:dinnerhome/services/api/http_payment_service.dart';
+import 'package:dinnerhome/services/api/http_cash_drawer_service.dart';
+import 'package:dinnerhome/services/api/ws_socket_service.dart';
+
 // ──────────────────────────────────────────────
-// Service Providers
+// Service Providers (Railway API & WebSockets with Test Mock fallback)
 // ──────────────────────────────────────────────
 
 final socketServiceProvider = Provider<SocketService>((ref) {
-  return InMemorySocketService();
+  if (ApiConfig.isTestEnvironment) {
+    return InMemorySocketService();
+  }
+  final ws = WsSocketService();
+  ref.onDispose(() => ws.dispose());
+  return ws;
 });
 
 final rolePermissionsProvider =
@@ -43,16 +59,24 @@ final rolePermissionsProvider =
     });
 
 final userServiceProvider = Provider<UserService>((ref) {
-  return InMemoryUserService();
+  if (ApiConfig.isTestEnvironment) {
+    return InMemoryUserService();
+  }
+  return HttpUserService();
 });
 
 final authServiceProvider = Provider<AuthService>((ref) {
-  final userService = ref.watch(userServiceProvider);
-  return InMemoryAuthService(userService);
+  if (ApiConfig.isTestEnvironment) {
+    return InMemoryAuthService(ref.watch(userServiceProvider));
+  }
+  return HttpAuthService();
 });
 
 final menuServiceProvider = Provider<MenuService>((ref) {
-  return HiveMenuService();
+  if (ApiConfig.isTestEnvironment) {
+    return HiveMenuService();
+  }
+  return HttpMenuService();
 });
 
 final stockServiceProvider = Provider<StockService>((ref) {
@@ -63,7 +87,10 @@ final stockServiceProvider = Provider<StockService>((ref) {
 });
 
 final additionalServiceProvider = Provider<AdditionalService>((ref) {
-  return HiveAdditionalService();
+  if (ApiConfig.isTestEnvironment) {
+    return HiveAdditionalService();
+  }
+  return HttpAdditionalService();
 });
 
 final availableAdditionsProvider = FutureProvider<List<GlobalAdditional>>((
@@ -81,15 +108,15 @@ final menuItemsProvider = FutureProvider<List<MenuItem>>((ref) async {
 
 final orderServiceProvider = Provider<OrderService>((ref) {
   final socketService = ref.watch(socketServiceProvider);
-  final menuService = ref.watch(menuServiceProvider);
-  final additionalService = ref.watch(additionalServiceProvider);
-  final auditService = ref.watch(auditServiceProvider);
-  return InMemoryOrderService(
-    socketService,
-    menuService: menuService,
-    additionalService: additionalService,
-    auditService: auditService,
-  );
+  if (ApiConfig.isTestEnvironment) {
+    return InMemoryOrderService(
+      socketService,
+      menuService: ref.watch(menuServiceProvider),
+      additionalService: ref.watch(additionalServiceProvider),
+      auditService: ref.watch(auditServiceProvider),
+    );
+  }
+  return HttpOrderService(socketService);
 });
 
 final activeOrdersProvider = StreamProvider<List<Order>>((ref) async* {
@@ -109,7 +136,13 @@ final allOrdersProvider = StreamProvider<List<Order>>((ref) async* {
 });
 
 final tableServiceProvider = Provider<TableService>((ref) {
-  return InMemoryTableService();
+  if (ApiConfig.isTestEnvironment) {
+    return InMemoryTableService();
+  }
+  final socketService = ref.watch(socketServiceProvider);
+  final service = HttpTableService(socketService: socketService);
+  ref.onDispose(() => service.dispose());
+  return service;
 });
 
 final tablesProvider = StreamProvider<List<Table>>((ref) async* {
@@ -121,14 +154,20 @@ final tablesProvider = StreamProvider<List<Table>>((ref) async* {
 });
 
 final paymentServiceProvider = Provider<PaymentService>((ref) {
-  final auditService = ref.watch(auditServiceProvider);
-  return InMemoryPaymentService(auditService: auditService);
+  if (ApiConfig.isTestEnvironment) {
+    return InMemoryPaymentService(auditService: ref.watch(auditServiceProvider));
+  }
+  return HttpPaymentService();
 });
 
 final cashDrawerServiceProvider = Provider<CashDrawerService>((ref) {
-  final paymentService = ref.watch(paymentServiceProvider);
-  final auditService = ref.watch(auditServiceProvider);
-  return InMemoryCashDrawerService(paymentService, auditService: auditService);
+  if (ApiConfig.isTestEnvironment) {
+    return InMemoryCashDrawerService(
+      ref.watch(paymentServiceProvider),
+      auditService: ref.watch(auditServiceProvider),
+    );
+  }
+  return HttpCashDrawerService();
 });
 
 final auditServiceProvider = Provider<AuditService>((ref) {
