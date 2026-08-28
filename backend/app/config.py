@@ -33,12 +33,35 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: str | None) -> str:
-        if not v:
+        # Check explicit value first
+        resolved = (
+            v
+            or os.getenv("DATABASE_URL")
+            or os.getenv("DATABASE_PRIVATE_URL")
+            or os.getenv("DATABASE_PUBLIC_URL")
+            or os.getenv("POSTGRES_URL")
+            or os.getenv("POSTGRESQL_URL")
+        )
+
+        # Fallback: construct from standard PostgreSQL env vars injected by Railway/Docker
+        if not resolved or resolved.startswith("sqlite"):
+            pghost = os.getenv("PGHOST")
+            pgdb = os.getenv("PGDATABASE")
+            if pghost and pgdb:
+                pguser = os.getenv("PGUSER", "postgres")
+                pgpassword = os.getenv("PGPASSWORD", "")
+                pgport = os.getenv("PGPORT", "5432")
+                auth = f"{pguser}:{pgpassword}@" if pgpassword else f"{pguser}@"
+                resolved = f"postgresql://{auth}{pghost}:{pgport}/{pgdb}"
+
+        if not resolved:
             return "sqlite:///./dinnerhome.db"
+
         # Railway provides 'postgres://', SQLAlchemy 2.0 requires 'postgresql://'
-        if v.startswith("postgres://"):
-            return v.replace("postgres://", "postgresql://", 1)
-        return v
+        if resolved.startswith("postgres://"):
+            resolved = resolved.replace("postgres://", "postgresql://", 1)
+
+        return resolved
 
     @property
     def cors_origins_list(self) -> List[str]:
