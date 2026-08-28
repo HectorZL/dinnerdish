@@ -33,24 +33,33 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: str | None) -> str:
-        # Check explicit value first
-        resolved = (
-            v
-            or os.getenv("DATABASE_URL")
-            or os.getenv("DATABASE_PRIVATE_URL")
-            or os.getenv("DATABASE_PUBLIC_URL")
-            or os.getenv("POSTGRES_URL")
-            or os.getenv("POSTGRESQL_URL")
-        )
+        # Check explicit environment variables first
+        candidate_keys = [
+            "DATABASE_URL",
+            "DATABASE_PRIVATE_URL",
+            "DATABASE_PUBLIC_URL",
+            "POSTGRES_URL",
+            "POSTGRESQL_URL",
+            "PGDATABASE_URL",
+        ]
+        resolved = None
+        for k in candidate_keys:
+            val = os.getenv(k)
+            if val and not val.startswith("sqlite"):
+                resolved = val
+                break
+
+        if not resolved and v and not v.startswith("sqlite"):
+            resolved = v
 
         # Fallback: construct from standard PostgreSQL env vars injected by Railway/Docker
-        if not resolved or resolved.startswith("sqlite"):
-            pghost = os.getenv("PGHOST")
-            pgdb = os.getenv("PGDATABASE")
+        if not resolved:
+            pghost = os.getenv("PGHOST") or os.getenv("POSTGRES_HOST")
+            pgdb = os.getenv("PGDATABASE") or os.getenv("POSTGRES_DB")
             if pghost and pgdb:
-                pguser = os.getenv("PGUSER", "postgres")
-                pgpassword = os.getenv("PGPASSWORD", "")
-                pgport = os.getenv("PGPORT", "5432")
+                pguser = os.getenv("PGUSER") or os.getenv("POSTGRES_USER", "postgres")
+                pgpassword = os.getenv("PGPASSWORD") or os.getenv("POSTGRES_PASSWORD", "")
+                pgport = os.getenv("PGPORT") or os.getenv("POSTGRES_PORT", "5432")
                 auth = f"{pguser}:{pgpassword}@" if pgpassword else f"{pguser}@"
                 resolved = f"postgresql://{auth}{pghost}:{pgport}/{pgdb}"
 
@@ -58,6 +67,7 @@ class Settings(BaseSettings):
             return "sqlite:///./dinnerhome.db"
 
         # Railway provides 'postgres://', SQLAlchemy 2.0 requires 'postgresql://'
+        resolved = resolved.strip()
         if resolved.startswith("postgres://"):
             resolved = resolved.replace("postgres://", "postgresql://", 1)
 

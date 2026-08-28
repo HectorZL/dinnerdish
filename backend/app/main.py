@@ -24,8 +24,12 @@ logger = logging.getLogger("main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Log environment variables (masking secrets)
+    safe_env_keys = [k for k in os.environ.keys() if not any(s in k.lower() for s in ["key", "secret", "token", "pass", "pwd"])]
+    logger.info(f"Container environment keys: {safe_env_keys}")
+    
     # Startup: Ensure tables exist & seed default data
-    db_target = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else settings.DATABASE_URL[:20]
+    db_target = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else settings.DATABASE_URL[:25]
     logger.info(f"Initializing database tables on: {db_target}...")
     try:
         Base.metadata.create_all(bind=engine)
