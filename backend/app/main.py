@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base, SessionLocal
 from app.seed import seed_database
+import app.models  # Ensure all models are registered in Base.metadata
 from app.routers import (
     auth_router,
     users_router,
@@ -24,13 +25,21 @@ logger = logging.getLogger("main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Ensure tables exist & seed default data
-    logger.info("Initializing database tables...")
-    Base.metadata.create_all(bind=engine)
-    
+    db_target = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else settings.DATABASE_URL[:20]
+    logger.info(f"Initializing database tables on: {db_target}...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables initialized successfully.")
+    except Exception as e:
+        logger.error(f"Error creating database tables: {e}")
+
     logger.info("Checking & applying seed data...")
     db = SessionLocal()
     try:
         seed_database(db)
+        logger.info("Seed data applied successfully.")
+    except Exception as e:
+        logger.error(f"Error seeding database: {e}")
     finally:
         db.close()
     
@@ -69,11 +78,25 @@ app.include_router(ws_router)
 
 @app.get("/health", tags=["system"])
 def health_check():
+    db_type = "sqlite" if settings.DATABASE_URL.startswith("sqlite") else "postgresql"
+    db_status = "connected"
+    tables_count = 0
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        tables_count = len(tables)
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    
     return {
-        "status": "healthy",
+        "status": "healthy" if db_status == "connected" else "degraded",
         "service": "dinnerhome-api",
         "env": settings.ENV,
-        "database": "connected"
+        "database_type": db_type,
+        "database_status": db_status,
+        "tables_count": tables_count,
+        "tables": tables if db_status == "connected" else []
     }
 
 @app.get("/", tags=["system"])
