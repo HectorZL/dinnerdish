@@ -23,6 +23,10 @@ def seed_database(db: Session):
         )
         db.add(admin_user)
         logger.info(f"Created default admin user '{settings.ADMIN_USERNAME}'")
+    else:
+        admin.hashed_password = get_password_hash(settings.ADMIN_PASSWORD)
+        admin.is_active = True
+        admin.roles = ["admin"]
 
     # Sample staff users
     sample_users = [
