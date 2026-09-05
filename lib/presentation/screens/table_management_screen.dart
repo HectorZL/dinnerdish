@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:dinnerhome/models/order.dart';
 import 'package:dinnerhome/models/order_item.dart' as oi;
@@ -72,177 +73,320 @@ class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
   }
 
   void _showTableDishesDialog(table_model.Table table, Order order) {
+    final currentUser = ref.read(currentUserProvider).value;
+    final waiterDisplay = (currentUser != null && currentUser.id == order.waiterId)
+        ? currentUser.name
+        : (order.waiterId.length > 8
+            ? 'Mesero #${order.waiterId.substring(0, 6).toUpperCase()}'
+            : (order.waiterId.isEmpty ? 'No asignado' : order.waiterId));
+    final shortOrderId = order.id.length > 8
+        ? order.id.substring(0, 8).toUpperCase()
+        : order.id.toUpperCase();
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 12,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl * 1.5),
+          borderRadius: BorderRadius.circular(24),
         ),
-        title: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primaryContainer.withValues(alpha: 0.1),
-              ),
-              child: Center(
-                child: Text(
-                  table.number.toString().padLeft(2, '0'),
-                  style: AppTypography.h3(color: AppColors.primaryContainer),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header with close button
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          table.number.toString().padLeft(2, '0'),
+                          style: AppTypography.h3(
+                            color: AppColors.primaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mesa ${table.number} • Platos Activos',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            (table.section != null && table.section!.isNotEmpty)
+                                ? table.section!
+                                : 'Salón Principal',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: const Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Color(0xFF94A3B8), size: 22),
+                      onPressed: () => Navigator.pop(ctx),
+                      tooltip: 'Cerrar',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Mesa ${table.number} • Platos Activos', style: AppTypography.h2()),
-                  Text(
-                    'Mesero ID: ${order.waiterId.isEmpty ? "S/ID" : order.waiterId} • Comanda #${order.id}',
-                    style: AppTypography.statusBadge(color: const Color(0xFF64748B)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: 480,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (order.items.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: Text('No hay platos registrados en esta mesa aún.'),
-                  ),
-                )
-              else ...[
-                Text(
-                  'Platos servidos y en cocina (${order.items.length}):',
-                  style: AppTypography.bodyMd(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 320),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: order.items.length,
-                    separatorBuilder: (ctx, i) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                    itemBuilder: (ctx, idx) {
-                      final item = order.items[idx];
-                      Color statusColor;
-                      String statusText;
-                      switch (item.status) {
-                        case oi.OrderStatus.pending:
-                          statusColor = const Color(0xFFF59E0B);
-                          statusText = 'Pendiente';
-                          break;
-                        case oi.OrderStatus.sent:
-                          statusColor = const Color(0xFF3B82F6);
-                          statusText = 'Enviado';
-                          break;
-                        case oi.OrderStatus.preparing:
-                          statusColor = AppColors.statusCooking;
-                          statusText = 'En Cocina';
-                          break;
-                        case oi.OrderStatus.ready:
-                          statusColor = const Color(0xFF10B981);
-                          statusText = 'Listo';
-                          break;
-                        case oi.OrderStatus.served:
-                          statusColor = AppColors.primaryContainer;
-                          statusText = 'Servido';
-                          break;
-                      }
+                const SizedBox(height: 14),
 
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                // Meta Info Box (Mesero & Comanda)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      // Waiter
+                      Expanded(
                         child: Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryContainer.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(AppRadius.md),
-                              ),
-                              child: Text(
-                                'x${item.quantity}',
-                                style: AppTypography.statusBadge(
-                                  color: AppColors.primaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
+                            const Icon(Icons.person_outline, size: 16, color: Color(0xFF64748B)),
+                            const SizedBox(width: 6),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.name ?? 'Plato',
-                                    style: AppTypography.bodyMd(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.onSurface,
-                                    ),
-                                  ),
-                                  if (item.notes != null && item.notes!.isNotEmpty)
-                                    Text(
-                                      'Nota: ${item.notes}',
-                                      style: AppTypography.statusBadge(
-                                        color: const Color(0xFF94A3B8),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: statusColor.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(AppRadius.full),
-                              ),
                               child: Text(
-                                statusText,
-                                style: AppTypography.statusBadge(
-                                  color: statusColor,
+                                waiterDisplay,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF334155),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      );
+                      ),
+                      Container(
+                        width: 1,
+                        height: 16,
+                        color: const Color(0xFFCBD5E1),
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                      ),
+                      // Comanda
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.receipt_outlined, size: 16, color: Color(0xFF64748B)),
+                          const SizedBox(width: 6),
+                          Text(
+                            '#$shortOrderId',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Section title
+                Text(
+                  'Platos servidos y en cocina (${order.items.length}):',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF475569),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Dish Items List
+                if (order.items.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text('No hay platos registrados en esta mesa aún.'),
+                    ),
+                  )
+                else
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 280),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: order.items.length,
+                      separatorBuilder: (ctx, i) => const SizedBox(height: 8),
+                      itemBuilder: (ctx, idx) {
+                        final item = order.items[idx];
+                        Color statusColor;
+                        Color statusBg;
+                        String statusText;
+                        switch (item.status) {
+                          case oi.OrderStatus.pending:
+                            statusColor = const Color(0xFFD97706);
+                            statusBg = const Color(0xFFFEF3C7);
+                            statusText = 'Pendiente';
+                            break;
+                          case oi.OrderStatus.sent:
+                            statusColor = const Color(0xFF2563EB);
+                            statusBg = const Color(0xFFDBEAFE);
+                            statusText = 'Enviado';
+                            break;
+                          case oi.OrderStatus.preparing:
+                            statusColor = AppColors.statusCooking;
+                            statusBg = AppColors.statusCooking.withValues(alpha: 0.15);
+                            statusText = 'En Cocina';
+                            break;
+                          case oi.OrderStatus.ready:
+                            statusColor = const Color(0xFF059669);
+                            statusBg = const Color(0xFFD1FAE5);
+                            statusText = 'Listo';
+                            break;
+                          case oi.OrderStatus.served:
+                            statusColor = AppColors.primaryContainer;
+                            statusBg = AppColors.primaryContainer.withValues(alpha: 0.15);
+                            statusText = 'Servido';
+                            break;
+                        }
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFF1F5F9)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.02),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'x${item.quantity}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: AppColors.primaryContainer,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name ?? 'Plato',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                        color: AppColors.onSurface,
+                                      ),
+                                    ),
+                                    if (item.notes != null && item.notes!.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          'Nota: ${item.notes}',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 11,
+                                            color: const Color(0xFF94A3B8),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: statusBg,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  statusText,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: statusColor,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 18),
+
+                // Button "Ver Comanda Completa"
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      context.go('/orders/${order.id}');
                     },
+                    icon: const Icon(Icons.receipt_long, size: 18),
+                    label: const Text('Ver Comanda Completa'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryContainer,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      textStyle: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cerrar', style: AppTypography.statusBadge(color: const Color(0xFF64748B))),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.go('/orders/${order.id}');
-            },
-            icon: const Icon(Icons.receipt_long, size: 16),
-            label: const Text('Ver Comanda Completa'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryContainer,
-              foregroundColor: Colors.white,
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -668,14 +812,13 @@ class _TableCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (activeOrder!.waiterId.isNotEmpty)
-                      Text(
-                        'ID: ${activeOrder!.waiterId}',
-                        style: AppTypography.statusBadge(
-                          color: const Color(0xFF94A3B8),
-                          fontSize: 10,
-                        ),
+                    Text(
+                      '#${activeOrder!.id.length > 6 ? activeOrder!.id.substring(0, 6).toUpperCase() : activeOrder!.id.toUpperCase()}',
+                      style: AppTypography.statusBadge(
+                        color: const Color(0xFF94A3B8),
+                        fontSize: 10,
                       ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 6),

@@ -632,6 +632,12 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
       );
     }
 
+    if (!isDesktop) {
+      return Column(
+        children: _users.map((u) => _buildMobileUserCard(u)).toList(),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -665,16 +671,15 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     ),
                   ),
                 ),
-                if (isDesktop)
-                  Expanded(
-                    flex: 4,
-                    child: Text(
-                      'EMAIL',
-                      style: AppTypography.labelCaps(
-                        color: const Color(0xFF94A3B8),
-                      ),
+                Expanded(
+                  flex: 4,
+                  child: Text(
+                    'EMAIL',
+                    style: AppTypography.labelCaps(
+                      color: const Color(0xFF94A3B8),
                     ),
                   ),
+                ),
                 Expanded(
                   flex: 2,
                   child: Text(
@@ -684,16 +689,15 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     ),
                   ),
                 ),
-                if (isDesktop)
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      'ULTIMA SESION',
-                      style: AppTypography.labelCaps(
-                        color: const Color(0xFF94A3B8),
-                      ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'ULTIMA SESION',
+                    style: AppTypography.labelCaps(
+                      color: const Color(0xFF94A3B8),
                     ),
                   ),
+                ),
                 Expanded(
                   flex: 2,
                   child: Text(
@@ -718,6 +722,135 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               ],
             );
           }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileUserCard(User user) {
+    final roleColor = _getRoleColor(user.role);
+    final emailLabel = user.email ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [AppShadows.card],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Avatar
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: roleColor.withValues(alpha: 0.12),
+            ),
+            child: Center(
+              child: Text(
+                user.name.isEmpty ? '?' : user.name[0].toUpperCase(),
+                style: AppTypography.h3(color: roleColor),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          // User Info & Roles
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        user.name,
+                        style: AppTypography.bodyLg(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: user.isActive
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                ),
+                if (emailLabel.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    emailLabel,
+                    style: AppTypography.bodyMd(
+                      color: const Color(0xFF94A3B8),
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: user.roles.map((r) {
+                    final rColor = _getRoleColor(r);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: rColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                        border: Border.all(color: rColor.withValues(alpha: 0.25)),
+                      ),
+                      child: Text(
+                        _getRoleLabel(r),
+                        style: AppTypography.statusBadge(
+                          color: rColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          // Actions
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildIconButton(
+                Icons.edit_outlined,
+                const Color(0xFF64748B),
+                () => _showEditDialog(user),
+              ),
+              const SizedBox(width: 4),
+              _buildIconButton(
+                Icons.delete_outline,
+                AppColors.error,
+                () async {
+                  final confirmed = await _confirmDelete(user);
+                  if (confirmed) _deleteUser(user.id);
+                },
+              ),
+            ],
+          ),
         ],
       ),
     );

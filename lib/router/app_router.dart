@@ -78,7 +78,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/orders/create',
-        builder: (ctx, state) => const CreateOrderScreen(),
+        builder: (ctx, state) => CreateOrderScreen(
+          tableId: state.uri.queryParameters['tableId'],
+        ),
       ),
       GoRoute(
         path: '/orders/:id/edit',

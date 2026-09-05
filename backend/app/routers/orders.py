@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 from app.database import get_db
 from app.models.order import OrderDB
 from app.models.table import TableDB
@@ -84,7 +85,11 @@ def order_db_to_out(order: OrderDB) -> OrderOut:
 @router.get("/active", response_model=List[OrderOut])
 def get_active_orders(db: Session = Depends(get_db)):
     orders = db.query(OrderDB).filter(OrderDB.status != "closed").order_by(OrderDB.created_at.desc()).all()
-    return [order_db_to_out(o) for o in orders]
+    valid_orders = [
+        o for o in orders
+        if not (o.status == "draft" and (o.table_id == "unassigned" or not o.items))
+    ]
+    return [order_db_to_out(o) for o in valid_orders]
 
 @router.get("", response_model=List[OrderOut])
 def get_all_orders(db: Session = Depends(get_db)):
@@ -165,6 +170,7 @@ async def add_item_to_order(
     
     items.append(new_item_dict)
     order.items = items
+    flag_modified(order, "items")
     recalculate_order_totals(order)
 
     db.commit()
@@ -204,6 +210,7 @@ async def add_cashier_additional(
     items = list(order.items or [])
     items.append(item_dict)
     order.items = items
+    flag_modified(order, "items")
     recalculate_order_totals(order)
 
     # Log audit
@@ -250,6 +257,7 @@ async def update_item_in_order(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item no encontrado en el pedido")
     
     order.items = items
+    flag_modified(order, "items")
     recalculate_order_totals(order)
 
     db.commit()
@@ -273,6 +281,7 @@ async def remove_item_from_order(
     items = list(order.items or [])
     items = [it for it in items if it.get("id") != item_id]
     order.items = items
+    flag_modified(order, "items")
     recalculate_order_totals(order)
 
     if byUserId:
@@ -310,6 +319,7 @@ async def send_to_kitchen(
         if it.get("status") in ["pending", "draft", None]:
             it["status"] = "sent"
     order.items = items
+    flag_modified(order, "items")
 
     # Reduce stock for ordered items
     for it in items:
@@ -358,6 +368,20 @@ async def update_order_status(
     order.status = req.status.value
     if req.status == OrderStatusEnum.ready:
         order.ready_at = datetime.utcnow()
+        # Mark all items as ready if not already served
+        items = list(order.items or [])
+        for it in items:
+            if it.get("status") not in ["ready", "served"]:
+                it["status"] = "ready"
+        order.items = items
+        flag_modified(order, "items")
+    elif req.status == OrderStatusEnum.prepping:
+        items = list(order.items or [])
+        for it in items:
+            if it.get("status") in ["pending", "sent", None]:
+                it["status"] = "preparing"
+        order.items = items
+        flag_modified(order, "items")
     elif req.status == OrderStatusEnum.closed:
         # Release table if all orders on this table are closed
         table = db.query(TableDB).filter(TableDB.id == order.table_id).first()
@@ -410,8 +434,9 @@ async def update_order_item_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item no encontrado en el pedido")
     
     order.items = items
+    flag_modified(order, "items")
 
-    # Check if all items are ready or preparing to optionally advance order status
+    # Check if all items are ready or served to optionally advance order status
     if all(it.get("status") in ["ready", "served"] for it in items):
         order.status = "ready"
         order.ready_at = datetime.utcnow()
@@ -427,4 +452,5 @@ async def update_order_item_status(
         "status": req.status.value,
         "order": out.model_dump(by_alias=True)
     })
+    await ws_manager.broadcast("order_updated", out.model_dump(by_alias=True))
     return out

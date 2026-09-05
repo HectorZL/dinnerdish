@@ -69,7 +69,7 @@ class MainApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
-    final currentUser = ref.watch(currentUserProvider).value;
+    final currentUser = ref.watch(currentUserProvider).valueOrNull;
     final isAdmin = currentUser != null && currentUser.role == Role.admin;
 
     return MaterialApp.router(

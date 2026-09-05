@@ -20,11 +20,11 @@ class _MainMenuDashboardScreenState
     extends ConsumerState<MainMenuDashboardScreen> {
   @override
   Widget build(BuildContext context) {
-    final currentUser = ref.watch(currentUserProvider).value;
+    final currentUser = ref.watch(currentUserProvider).valueOrNull;
     final isLoggedIn = currentUser != null;
     final isDesktop = MediaQuery.of(context).size.width > 768;
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
-    final activeOrders = activeOrdersAsync.value ?? [];
+    final activeOrders = activeOrdersAsync.valueOrNull ?? [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -169,7 +169,7 @@ class _MainMenuDashboardScreenState
     );
 
     final tablesAsync = ref.watch(tablesProvider);
-    final tables = tablesAsync.value ?? [];
+    final tables = tablesAsync.valueOrNull ?? [];
     final totalTables = tables.length;
     final occupiedTables = tables
         .where((t) => t.status != table_model.TableStatus.available)
@@ -287,7 +287,14 @@ class _MainMenuDashboardScreenState
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(label, style: AppTypography.labelCaps()),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: AppTypography.labelCaps(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   if (onTap != null)
                     const Icon(
                       Icons.arrow_forward_ios,
@@ -400,7 +407,7 @@ class _MainMenuDashboardScreenState
   Widget _buildOrdersModule(bool isLoggedIn, dynamic currentUser) {
     final canAccess = isLoggedIn && RouteGuard.canAccessOrders(currentUser);
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
-    final activeOrders = activeOrdersAsync.value ?? [];
+    final activeOrders = activeOrdersAsync.valueOrNull ?? [];
 
     final inKitchenOrders = activeOrders
         .where((o) => o.status == OrderStatus.prepping)
@@ -426,38 +433,37 @@ class _MainMenuDashboardScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryFixed,
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                      ),
-                      child: Text(
-                        'MÓDULO CRÍTICO',
-                        style: AppTypography.labelCaps(
-                          color: AppColors.primaryContainer,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryFixed,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                        ),
+                        child: Text(
+                          'MÓDULO CRÍTICO',
+                          style: AppTypography.labelCaps(
+                            color: AppColors.primaryContainer,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.base),
-                    Text('Gestión de Pedidos', style: AppTypography.h2()),
-                    const SizedBox(height: AppSpacing.xs),
-                    SizedBox(
-                      width: 280,
-                      child: Text(
+                      const SizedBox(height: AppSpacing.base),
+                      Text('Gestión de Pedidos', style: AppTypography.h2()),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
                         'Supervisa las comandas en tiempo real, desde la entrada hasta el servicio.',
                         style: AppTypography.bodyMd(
                           color: const Color(0xFF64748B),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -560,7 +566,7 @@ class _MainMenuDashboardScreenState
   Widget _buildKdsModule(bool isLoggedIn, dynamic currentUser) {
     final canAccess = isLoggedIn && RouteGuard.canAccessKds(currentUser);
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
-    final activeOrders = activeOrdersAsync.value ?? [];
+    final activeOrders = activeOrdersAsync.valueOrNull ?? [];
 
     final inKitchenOrders = activeOrders
         .where(
@@ -626,7 +632,7 @@ class _MainMenuDashboardScreenState
   Widget _buildCashierModule(bool isLoggedIn, dynamic currentUser) {
     final canAccess = isLoggedIn && RouteGuard.canAccessPayment(currentUser);
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
-    final activeOrders = activeOrdersAsync.value ?? [];
+    final activeOrders = activeOrdersAsync.valueOrNull ?? [];
 
     final pendingPaymentOrders = activeOrders
         .where((o) => o.status == OrderStatus.ready)
@@ -919,8 +925,11 @@ class _MainMenuDashboardScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.md,
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1129,7 +1138,9 @@ class _MainMenuDashboardScreenState
             Expanded(
               flex: 3,
               child: Text(
-                dish.waiterId.isEmpty ? 'S/ID' : dish.waiterId,
+                dish.waiterId.length > 8
+                    ? 'Mesero #${dish.waiterId.substring(0, 6).toUpperCase()}'
+                    : (dish.waiterId.isEmpty ? 'S/ID' : dish.waiterId),
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodyMd(
                   color: const Color(0xFF64748B),

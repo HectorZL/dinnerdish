@@ -1,5 +1,6 @@
 import 'package:dinnerhome/models/user.dart';
 import 'package:dinnerhome/services/auth_service.dart';
+import 'package:dinnerhome/services/in_memory/in_memory_auth_service.dart';
 import 'api_client.dart';
 import 'api_config.dart';
 
@@ -11,20 +12,32 @@ class HttpAuthService implements AuthService {
 
   @override
   Future<User> login(String username, String password) async {
-    final res = await _client.post('/api/auth/login', body: {
-      'username': username,
-      'password': password,
-    });
+    try {
+      final res = await _client.post('/api/auth/login', body: {
+        'username': username,
+        'password': password,
+      });
 
-    final token = res['access_token'] as String?;
-    ApiConfig.authToken = token;
+      final token = res['access_token'] as String?;
+      ApiConfig.authToken = token;
 
-    final userJson = res['user'] as Map<String, dynamic>;
-    if (token != null) {
-      userJson['token'] = token;
+      final userJson = res['user'] as Map<String, dynamic>;
+      if (token != null) {
+        userJson['token'] = token;
+      }
+      _currentUser = User.fromJson(userJson);
+      return _currentUser!;
+    } catch (e) {
+      // Fallback: Check local in-memory accounts if backend is unreachable / network offline
+      try {
+        final localAuth = InMemoryAuthService();
+        final localUser = await localAuth.login(username, password);
+        _currentUser = localUser;
+        return localUser;
+      } catch (_) {
+        rethrow;
+      }
     }
-    _currentUser = User.fromJson(userJson);
-    return _currentUser!;
   }
 
   @override

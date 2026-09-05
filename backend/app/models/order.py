@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Integer, DateTime, JSON, Text
+from sqlalchemy.ext.mutable import MutableList
 from app.database import Base
 
 class OrderDB(Base):
@@ -14,7 +15,7 @@ class OrderDB(Base):
     subtotal_cents = Column(Integer, nullable=False, default=0)
     tax_cents = Column(Integer, nullable=False, default=0)
     total_cents = Column(Integer, nullable=False, default=0)
-    items = Column(JSON, nullable=False, default=list)  # List[OrderItem]
+    items = Column(MutableList.as_mutable(JSON), nullable=False, default=list)  # List[OrderItem]
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     sent_to_kitchen_at = Column(DateTime, nullable=True)

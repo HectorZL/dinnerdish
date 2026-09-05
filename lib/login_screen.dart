@@ -377,7 +377,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildLabel('Contrasena'),
+                Flexible(child: _buildLabel('Contrasena')),
+                const SizedBox(width: 8),
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(

@@ -17,7 +17,7 @@ class KdsScreen extends ConsumerStatefulWidget {
 
 class _KdsScreenState extends ConsumerState<KdsScreen> {
   String? _getCurrentUserId() {
-    return ref.read(currentUserProvider).value?.id;
+    return ref.read(currentUserProvider).valueOrNull?.id;
   }
 
   Future<void> _markAsPrepping(Order order) async {
@@ -36,6 +36,14 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
         orderId: order.id,
         status: OrderStatus.prepping,
         byUserId: userId,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Iniciando preparación de orden'),
+          backgroundColor: Color(0xFF3B82F6),
+          duration: Duration(seconds: 2),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -57,30 +65,19 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
 
     try {
       final orderService = ref.read(orderServiceProvider);
-      // F3-01: Marcar cada ítem pendiente como listo para que el auto-promote funcione correctamente.
-      // Esto evita el bypass de la lógica de ítems individuales.
-      final pendingItems = order.items
-          .where((item) =>
-              item.status != oi.OrderStatus.ready &&
-              item.status != oi.OrderStatus.served)
-          .toList();
-
-      for (final item in pendingItems) {
-        await orderService.updateItemStatus(
-          orderId: order.id,
-          itemId: item.id,
-          status: oi.OrderStatus.ready,
-          byUserId: userId,
-        );
-      }
-      // Si no había ítems pendientes, forzar la transición directamente
-      if (pendingItems.isEmpty) {
-        await orderService.updateStatus(
-          orderId: order.id,
-          status: OrderStatus.ready,
-          byUserId: userId,
-        );
-      }
+      await orderService.updateStatus(
+        orderId: order.id,
+        status: OrderStatus.ready,
+        byUserId: userId,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Orden marcada como lista'),
+          backgroundColor: Color(0xFF10B981),
+          duration: Duration(seconds: 2),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -90,7 +87,7 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
   }
 
   Future<void> _markItemAsReady(Order order, String itemId) async {
-    final userId = ref.read(currentUserProvider).value?.id;
+    final userId = _getCurrentUserId();
     if (userId == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -101,12 +98,10 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
 
     try {
       final orderService = ref.read(orderServiceProvider);
-      // Asumiendo que has importado 'package:dinnerhome/models/order_item.dart' as oi
-      // Pero mejor usamos dynamic o si podemos usamos OrderStatus desde order_item
       await orderService.updateItemStatus(
         orderId: order.id,
         itemId: itemId,
-        status: oi.OrderStatus.ready, // Esto requiere importar order_item como oi
+        status: oi.OrderStatus.ready,
         byUserId: userId,
       );
     } catch (e) {
@@ -120,7 +115,7 @@ class _KdsScreenState extends ConsumerState<KdsScreen> {
   @override
   Widget build(BuildContext context) {
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
-    final activeOrders = activeOrdersAsync.value ?? [];
+    final activeOrders = activeOrdersAsync.valueOrNull ?? [];
     
     final pendingTickets = activeOrders.where((o) => o.status == OrderStatus.sentToKitchen).toList();
     final preppingTickets = activeOrders.where((o) => o.status == OrderStatus.prepping).toList();

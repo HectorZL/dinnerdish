@@ -121,18 +121,34 @@ final orderServiceProvider = Provider<OrderService>((ref) {
 
 final activeOrdersProvider = StreamProvider<List<Order>>((ref) async* {
   final orderService = ref.watch(orderServiceProvider);
-  yield await orderService.getActiveOrders();
-  await for (final _ in orderService.watchOrders()) {
+  try {
     yield await orderService.getActiveOrders();
+  } catch (_) {
+    yield [];
   }
+  try {
+    await for (final _ in orderService.watchOrders()) {
+      try {
+        yield await orderService.getActiveOrders();
+      } catch (_) {}
+    }
+  } catch (_) {}
 });
 
 final allOrdersProvider = StreamProvider<List<Order>>((ref) async* {
   final orderService = ref.watch(orderServiceProvider);
-  yield await orderService.getAllOrders();
-  await for (final _ in orderService.watchOrders()) {
+  try {
     yield await orderService.getAllOrders();
+  } catch (_) {
+    yield [];
   }
+  try {
+    await for (final _ in orderService.watchOrders()) {
+      try {
+        yield await orderService.getAllOrders();
+      } catch (_) {}
+    }
+  } catch (_) {}
 });
 
 final tableServiceProvider = Provider<TableService>((ref) {
@@ -147,10 +163,16 @@ final tableServiceProvider = Provider<TableService>((ref) {
 
 final tablesProvider = StreamProvider<List<Table>>((ref) async* {
   final tableService = ref.watch(tableServiceProvider);
-  yield await tableService.getTables();
-  await for (final tables in tableService.watchTables()) {
-    yield tables;
+  try {
+    yield await tableService.getTables();
+  } catch (_) {
+    yield [];
   }
+  try {
+    await for (final tables in tableService.watchTables()) {
+      yield tables;
+    }
+  } catch (_) {}
 });
 
 final paymentServiceProvider = Provider<PaymentService>((ref) {

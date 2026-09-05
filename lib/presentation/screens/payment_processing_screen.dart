@@ -841,7 +841,7 @@ class _PaymentProcessingScreenState
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      '${order.items.length} Comensales | Atendido por: ${order.waiterId}',
+                      '${order.items.length} ${order.items.length == 1 ? "Ítem" : "Ítems"} | Atendido por: ${order.waiterId.length > 8 ? "Mesero #${order.waiterId.substring(0, 6).toUpperCase()}" : (order.waiterId.isEmpty ? "Personal de sala" : order.waiterId)}',
                       style: AppTypography.bodyMd(
                         color: AppColors.onSurfaceVariant,
                       ),

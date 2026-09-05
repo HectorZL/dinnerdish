@@ -232,92 +232,113 @@ class KdsTicket extends StatelessWidget {
         final item = order.items[idx];
         final isItemReady = item.status.name == 'ready' || item.status.name == 'served';
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (onItemMarkReady != null)
-                GestureDetector(
-                  onTap: isItemReady ? null : () => onItemMarkReady!(item.id),
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                    child: Icon(
-                      isItemReady
-                          ? Icons.check_box_rounded
-                          : Icons.check_box_outline_blank_rounded,
-                      color: isItemReady ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
-                      size: 24,
-                    ),
-                  ),
-                )
-              else if (isItemReady)
-                const Padding(
-                  padding: EdgeInsets.only(right: 8, left: 8),
-                  child: Icon(
-                    Icons.check_circle_rounded,
-                    color: Color(0xFF10B981),
-                    size: 20,
-                  ),
-                ),
+        final canTapItem = onItemMarkReady != null && !isItemReady;
 
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isItemReady ? const Color(0xFFF1F5F9) : const Color(0xFFFFF7ED),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '${item.quantity}x',
-                  style: TextStyle(
-                    color: isItemReady ? const Color(0xFF94A3B8) : const Color(0xFFEA580C),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    decoration: isItemReady ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: canTapItem ? () => onItemMarkReady!(item.id) : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      item.name ?? item.menuItemId,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: isItemReady ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        decoration: isItemReady ? TextDecoration.lineThrough : null,
-                      ),
-                    ),
-                    if (item.notes != null && item.notes!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        item.notes!,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFFEA580C),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          fontStyle: FontStyle.italic,
+                    if (onItemMarkReady != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8, left: 4),
+                        child: Icon(
+                          isItemReady
+                              ? Icons.check_box_rounded
+                              : Icons.check_box_outline_blank_rounded,
+                          color: isItemReady
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFF94A3B8),
+                          size: 24,
+                        ),
+                      )
+                    else if (isItemReady)
+                      const Padding(
+                        padding: EdgeInsets.only(right: 8, left: 4),
+                        child: Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF10B981),
+                          size: 20,
                         ),
                       ),
-                    ],
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isItemReady
+                            ? const Color(0xFFF1F5F9)
+                            : const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${item.quantity}x',
+                        style: TextStyle(
+                          color: isItemReady
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFFEA580C),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          decoration:
+                              isItemReady ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item.name ?? item.menuItemId,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: isItemReady
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF1E293B),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              decoration:
+                                  isItemReady ? TextDecoration.lineThrough : null,
+                            ),
+                          ),
+                          if (item.notes != null && item.notes!.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              item.notes!,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFFEA580C),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (item.modifierIds.isNotEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4),
+                        child: Icon(
+                          Icons.tune,
+                          color: Color(0xFF94A3B8),
+                          size: 16,
+                        ),
+                      ),
                   ],
                 ),
               ),
-              if (item.modifierIds.isNotEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Icon(
-                    Icons.tune,
-                    color: Color(0xFF94A3B8),
-                    size: 16,
-                  ),
-                ),
-            ],
+            ),
           ),
         );
       },

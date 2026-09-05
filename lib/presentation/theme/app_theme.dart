@@ -214,9 +214,9 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 768;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
+        color: Colors.white.withValues(alpha: 0.95),
         border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
         boxShadow: [AppShadows.card],
       ),
@@ -237,7 +237,7 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                         onPressed:
                             onBack ?? () => Navigator.of(context).maybePop(),
                       ),
-                    if (showBack) const SizedBox(width: 8),
+                    if (showBack) const SizedBox(width: 4),
                     if (!showBack)
                       IconButton(
                         icon: const Icon(
@@ -248,14 +248,14 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                           Scaffold.of(context).openDrawer();
                         },
                       ),
-                    if (!showBack) const SizedBox(width: 8),
+                    if (!showBack) const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 20,
+                          fontSize: isDesktop ? 20 : 16,
                           fontWeight: FontWeight.w900,
                           color: AppColors.primaryContainer,
                           letterSpacing: -0.5,
@@ -265,10 +265,9 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ],
                 ),
               ),
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   if (navLinks != null && isDesktop) ...[
                     ...navLinks!.map(
                       (link) => Padding(
@@ -296,7 +295,7 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                   if (actions != null) ...actions!,
                   Consumer(
                     builder: (context, ref, child) {
-                      final currentUser = ref.watch(currentUserProvider).value;
+                      final currentUser = ref.watch(currentUserProvider).valueOrNull;
                       return PopupMenuButton<String>(
                         tooltip: 'Opciones de usuario',
                         position: PopupMenuPosition.under,
@@ -379,9 +378,8 @@ class StitchTopAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ),
       ),
     );
@@ -526,24 +524,23 @@ void _showProfileDetails(BuildContext context, User? user) {
                 ],
               ),
             ),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(AppRadius.xl * 1.5),
-                ),
-              ),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text(
-                    'Cerrar',
-                    style: AppTypography.statusBadge(
-                      color: AppColors.primaryContainer,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+              child: SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF64748B),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
+                  ),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text(
+                    'Cerrar',
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -657,11 +654,14 @@ class _ProfileDetailRow extends StatelessWidget {
               style: AppTypography.bodyMd(color: AppColors.onSurfaceVariant),
             ),
           ),
-          Text(
-            value,
-            style: AppTypography.bodyMd(
-              color: valueColor ?? AppColors.onSurface,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              value,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.bodyMd(
+                color: valueColor ?? AppColors.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

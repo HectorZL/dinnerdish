@@ -23,7 +23,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   Widget build(BuildContext context) {
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
     final menuItemsAsync = ref.watch(menuItemsProvider);
-    final currentUser = ref.watch(currentUserProvider).value;
+    final currentUser = ref.watch(currentUserProvider).valueOrNull;
     final permissions = ref.watch(rolePermissionsProvider);
     final isDesktop = MediaQuery.of(context).size.width > 768;
     final isMobile = !isDesktop;
@@ -73,7 +73,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                         _buildOrderGrid(
                           isDesktop,
                           activeOrdersAsync,
-                          menuItemsAsync.value ?? [],
+                          menuItemsAsync.valueOrNull ?? [],
                           currentUser,
                         ),
                         const SizedBox(height: 100),
@@ -121,7 +121,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   }
 
   Widget _buildFilters(AsyncValue<List<Order>> activeOrdersAsync) {
-    final orders = activeOrdersAsync.value ?? [];
+    final orders = activeOrdersAsync.valueOrNull ?? [];
     int allCount = orders.length;
     int pendingCount = orders
         .where((o) => o.status == OrderStatus.sentToKitchen)

@@ -32,8 +32,11 @@ def seed_database(db: Session):
     sample_users = [
         ("admin", "Administrador", "admin123", ["admin"]),
         ("admin1", "Administrador Principal", "admin123", ["admin"]),
+        ("mesero", "Juan Mesero", "mesero123", ["mesero"]),
         ("mesero1", "Carlos Mesero", "mesero123", ["mesero"]),
+        ("cajero", "Maria Cajera", "cajero123", ["cajero"]),
         ("cajero1", "Ana Cajera", "cajero123", ["cajero"]),
+        ("cocinero", "Carlos Cocinero", "cocinero123", ["cocinero"]),
         ("cocinero1", "Chef Mario", "cocinero123", ["cocinero"]),
     ]
     for username, name, pwd, roles in sample_users:

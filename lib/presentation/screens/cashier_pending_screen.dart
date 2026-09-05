@@ -12,10 +12,10 @@ class CashierPendingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentUser = ref.watch(currentUserProvider).value;
+    final currentUser = ref.watch(currentUserProvider).valueOrNull;
     final activeOrdersAsync = ref.watch(activeOrdersProvider);
 
-    final readyOrders = activeOrdersAsync.value
+    final readyOrders = activeOrdersAsync.valueOrNull
             ?.where((o) => o.status == OrderStatus.billed)
             .toList() ??
         [];

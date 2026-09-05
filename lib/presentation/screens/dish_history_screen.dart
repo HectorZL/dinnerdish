@@ -58,6 +58,9 @@ class _DishHistoryScreenState extends ConsumerState<DishHistoryScreen> {
     if (waiterId.isEmpty) return 'No asignado';
     final user = _findUser(waiterId);
     if (user != null) return user.name;
+    if (waiterId.length > 8) {
+      return 'Personal #${waiterId.substring(0, 6).toUpperCase()}';
+    }
     return waiterId;
   }
 
@@ -130,7 +133,7 @@ class _DishHistoryScreenState extends ConsumerState<DishHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final allOrdersAsync = ref.watch(allOrdersProvider);
-    final allOrders = allOrdersAsync.value ?? [];
+    final allOrders = allOrdersAsync.valueOrNull ?? [];
     final isDesktop = MediaQuery.of(context).size.width > 768;
 
     // Filter orders by period
@@ -368,243 +371,8 @@ class _DishHistoryScreenState extends ConsumerState<DishHistoryScreen> {
                         ),
                         const SizedBox(height: AppSpacing.lg),
 
-                        // Dishes Table
-                        StitchCard(
-                          padding: EdgeInsets.zero,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Table Header
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 14,
-                                ),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF8FAFC),
-                                  borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(AppRadius.xl),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 3,
-                                      child: Text(
-                                        'PLATO',
-                                        style: AppTypography.labelCaps(
-                                          color: const Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 1,
-                                      child: Text(
-                                        'CANT.',
-                                        style: AppTypography.labelCaps(
-                                          color: const Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(
-                                        'MESA',
-                                        style: AppTypography.labelCaps(
-                                          color: const Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 3,
-                                      child: Text(
-                                        'RESPONSABLE (ID)',
-                                        style: AppTypography.labelCaps(
-                                          color: const Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(
-                                        'ESTADO',
-                                        style: AppTypography.labelCaps(
-                                          color: const Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(
-                                        'HORA',
-                                        style: AppTypography.labelCaps(
-                                          color: const Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Table Rows
-                              if (dishRecords.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.all(36.0),
-                                  child: Center(
-                                    child: Column(
-                                      children: [
-                                        Icon(Icons.restaurant,
-                                            size: 40, color: Color(0xFF94A3B8)),
-                                        SizedBox(height: 8),
-                                        Text(
-                                          'No se encontraron platos registrados en este periodo',
-                                          style: TextStyle(color: Color(0xFF64748B)),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              else
-                                ...dishRecords.map((record) {
-                                  final statusColor = _getItemStatusColor(record.item.status);
-                                  final waiterName = _getWaiterDisplayName(record.waiterId);
-
-                                  return Column(
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 12,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            // Dish name
-                                            Expanded(
-                                              flex: 3,
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    record.item.name ?? 'Plato',
-                                                    style: AppTypography.bodyMd(
-                                                      color: AppColors.onSurface,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                  if (record.item.notes != null &&
-                                                      record.item.notes!.isNotEmpty)
-                                                    Text(
-                                                      'Nota: ${record.item.notes}',
-                                                      style: AppTypography.statusBadge(
-                                                        color: const Color(0xFF94A3B8),
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                            // Quantity
-                                            Expanded(
-                                              flex: 1,
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 3,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.primaryContainer
-                                                      .withValues(alpha: 0.1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(AppRadius.full),
-                                                ),
-                                                child: Text(
-                                                  'x${record.item.quantity}',
-                                                  textAlign: TextAlign.center,
-                                                  style: AppTypography.statusBadge(
-                                                    color: AppColors.primaryContainer,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            // Table
-                                            Expanded(
-                                              flex: 2,
-                                              child: Text(
-                                                'Mesa ${record.tableId}',
-                                                style: AppTypography.bodyMd(
-                                                  color: AppColors.onSurface,
-                                                ),
-                                              ),
-                                            ),
-                                            // Waiter / Staff with ID
-                                            Expanded(
-                                              flex: 3,
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    waiterName,
-                                                    style: AppTypography.bodyMd(
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                  Text(
-                                                    record.waiterId.isEmpty
-                                                        ? 'S/ID'
-                                                        : record.waiterId,
-                                                    style: AppTypography.statusBadge(
-                                                      color: const Color(0xFF94A3B8),
-                                                      fontSize: 10,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            // Status
-                                            Expanded(
-                                              flex: 2,
-                                              child: Align(
-                                                alignment: Alignment.centerLeft,
-                                                child: Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 4,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: statusColor.withValues(alpha: 0.1),
-                                                    borderRadius:
-                                                        BorderRadius.circular(AppRadius.full),
-                                                  ),
-                                                  child: Text(
-                                                    _getItemStatusLabel(record.item.status),
-                                                    style: AppTypography.statusBadge(
-                                                      color: statusColor,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            // Date / Time
-                                            Expanded(
-                                              flex: 2,
-                                              child: Text(
-                                                _formatDate(record.createdAt),
-                                                style: AppTypography.bodyMd(
-                                                  color: const Color(0xFF64748B),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                                    ],
-                                  );
-                                }),
-                            ],
-                          ),
-                        ),
+                        // Dishes Section (Adaptive: Mobile Cards / Desktop Table)
+                        _buildDishesSection(dishRecords, isDesktop),
                       ],
                     ),
                   ),
@@ -612,6 +380,431 @@ class _DishHistoryScreenState extends ConsumerState<DishHistoryScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDishesSection(List<_DishRecord> dishRecords, bool isDesktop) {
+    if (dishRecords.isEmpty) {
+      return StitchCard(
+        padding: const EdgeInsets.all(36.0),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.restaurant_outlined,
+                size: 48,
+                color: const Color(0xFF94A3B8).withValues(alpha: 0.6),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No se encontraron platos registrados en este periodo',
+                style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!isDesktop) {
+      return Column(
+        children: dishRecords.map((record) => _buildMobileDishCard(record)).toList(),
+      );
+    }
+
+    return _buildDesktopDishTable(dishRecords);
+  }
+
+  Widget _buildMobileDishCard(_DishRecord record) {
+    final statusColor = _getItemStatusColor(record.item.status);
+    final waiterName = _getWaiterDisplayName(record.waiterId);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [AppShadows.card],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row 1: Qty pill + Dish name + Status Badge
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: Text(
+                  'x${record.item.quantity}',
+                  style: AppTypography.statusBadge(
+                    color: AppColors.primaryContainer,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  record.item.name ?? 'Plato',
+                  style: AppTypography.bodyLg(
+                    color: AppColors.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      _getItemStatusLabel(record.item.status),
+                      style: AppTypography.statusBadge(
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (record.item.notes != null && record.item.notes!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 14, color: Color(0xFFD97706)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      record.item.notes!,
+                      style: AppTypography.bodyMd(
+                        color: const Color(0xFF92400E),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 10),
+          // Row 2: Table chip, Waiter, and Time
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Table chip
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.table_restaurant_rounded, size: 14, color: Color(0xFF64748B)),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Mesa ${record.tableId}',
+                      style: AppTypography.statusBadge(
+                        color: const Color(0xFF334155),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Waiter name
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.person_outline_rounded, size: 14, color: Color(0xFF94A3B8)),
+                  const SizedBox(width: 4),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: Text(
+                      waiterName,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.statusBadge(
+                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Time
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.schedule_rounded, size: 13, color: Color(0xFF94A3B8)),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatDate(record.createdAt),
+                    style: AppTypography.statusBadge(
+                      color: const Color(0xFF94A3B8),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopDishTable(List<_DishRecord> dishRecords) {
+    return StitchCard(
+      padding: EdgeInsets.zero,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(
+          width: 900,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Table Header
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.xl),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 240,
+                      child: Text(
+                        'PLATO',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 80,
+                      child: Text(
+                        'CANT.',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        'MESA',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 180,
+                      child: Text(
+                        'RESPONSABLE',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 130,
+                      child: Text(
+                        'ESTADO',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 110,
+                      child: Text(
+                        'HORA',
+                        style: AppTypography.labelCaps(
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Table Rows
+              ...dishRecords.map((record) {
+                final statusColor = _getItemStatusColor(record.item.status);
+                final waiterName = _getWaiterDisplayName(record.waiterId);
+
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          // Dish name
+                          SizedBox(
+                            width: 240,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  record.item.name ?? 'Plato',
+                                  style: AppTypography.bodyMd(
+                                    color: AppColors.onSurface,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (record.item.notes != null &&
+                                    record.item.notes!.isNotEmpty)
+                                  Text(
+                                    'Nota: ${record.item.notes}',
+                                    style: AppTypography.statusBadge(
+                                      color: const Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          // Quantity
+                          SizedBox(
+                            width: 80,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryContainer
+                                      .withValues(alpha: 0.1),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.full),
+                                ),
+                                child: Text(
+                                  'x${record.item.quantity}',
+                                  textAlign: TextAlign.center,
+                                  style: AppTypography.statusBadge(
+                                    color: AppColors.primaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Table
+                          SizedBox(
+                            width: 120,
+                            child: Text(
+                              'Mesa ${record.tableId}',
+                              style: AppTypography.bodyMd(
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                          ),
+                          // Waiter / Staff with clean label
+                          SizedBox(
+                            width: 180,
+                            child: Text(
+                              waiterName,
+                              style: AppTypography.bodyMd(
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Status
+                          SizedBox(
+                            width: 130,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withValues(alpha: 0.1),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.full),
+                                ),
+                                child: Text(
+                                  _getItemStatusLabel(record.item.status),
+                                  style: AppTypography.statusBadge(
+                                    color: statusColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Date / Time
+                          SizedBox(
+                            width: 110,
+                            child: Text(
+                              _formatDate(record.createdAt),
+                              style: AppTypography.bodyMd(
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  ],
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );

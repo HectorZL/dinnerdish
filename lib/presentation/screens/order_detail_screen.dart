@@ -175,9 +175,27 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                               ],
                             ),
                             const SizedBox(height: AppSpacing.md),
-                            _buildInfoRow('Mesa', _order!.tableId),
-                            _buildInfoRow('Mesero', _order!.waiterId),
-                            _buildInfoRow('Items', '${_order!.items.length}'),
+                            Builder(
+                              builder: (context) {
+                                final tables = ref.watch(tablesProvider).valueOrNull ?? [];
+                                final table = tables.where((t) => t.id == _order!.tableId).firstOrNull;
+                                final tableLabel = table != null
+                                    ? 'Mesa ${table.number}'
+                                    : (_order!.tableId.length > 8
+                                        ? 'Mesa #${_order!.tableId.substring(0, 4).toUpperCase()}'
+                                        : _order!.tableId);
+                                final waiterLabel = _order!.waiterId.length > 8
+                                    ? 'Mesero #${_order!.waiterId.substring(0, 6).toUpperCase()}'
+                                    : (_order!.waiterId.isEmpty ? 'No asignado' : _order!.waiterId);
+                                return Column(
+                                  children: [
+                                    _buildInfoRow('Mesa', tableLabel),
+                                    _buildInfoRow('Mesero', waiterLabel),
+                                    _buildInfoRow('Items', '${_order!.items.length}'),
+                                  ],
+                                );
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -419,11 +437,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             label,
             style: AppTypography.bodyMd(color: const Color(0xFF64748B)),
           ),
-          Text(
-            value,
-            style: AppTypography.bodyMd(
-              color: AppColors.onSurface,
-            ).copyWith(fontWeight: FontWeight.bold),
+          Flexible(
+            child: Text(
+              value,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.bodyMd(
+                color: AppColors.onSurface,
+              ).copyWith(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
